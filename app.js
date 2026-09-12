@@ -59,7 +59,7 @@ const FILES = [
   }
 ];
 
-const QUESTIONS = FILES.flatMap((file) =>
+const QUESTIONS = FILES.filter((file) => file.id !== "voice").flatMap((file) =>
   file.fields.map(([key, label]) => ({
     fileId: file.id,
     fileTitle: file.title,
@@ -69,6 +69,8 @@ const QUESTIONS = FILES.flatMap((file) =>
     label
   }))
 );
+const LAB_STEP = QUESTIONS.length;
+const INTERVIEW_LEN = LAB_STEP + 1;
 
 const KEY = "liberty-four-files-v1";
 const UI_KEY = "liberty-four-files-ui-v1";
@@ -91,7 +93,7 @@ function loadUi() {
     const q = Number(raw.q);
     return {
       desk: !!raw.desk,
-      q: Number.isInteger(q) ? Math.min(Math.max(q, 0), QUESTIONS.length - 1) : 0,
+      q: Number.isInteger(q) ? Math.min(Math.max(q, 0), LAB_STEP) : 0,
       done: !!raw.done
     };
   } catch {
@@ -105,7 +107,15 @@ function ensure(id) {
   if (!state[id]) state[id] = {};
   return state[id];
 }
+function ensureLab() {
+  if (!state.lab || typeof state.lab !== "object") state.lab = { proud: "", hate: "" };
+  if (typeof state.lab.proud !== "string") state.lab.proud = "";
+  if (typeof state.lab.hate !== "string") state.lab.hate = "";
+  return state.lab;
+}
 function hasAnswers() {
+  const lab = state.lab || {};
+  if (String(lab.proud || "").trim() || String(lab.hate || "").trim()) return true;
   return FILES.some((file) => {
     const data = state[file.id] || {};
     return file.fields.some(([key]) => String(data[key] || "").trim());
@@ -138,12 +148,22 @@ function renderEditor() {
   const file = FILES.find((f) => f.id === tab);
   const box = document.getElementById("editor");
   const data = ensure(file.id);
-  box.innerHTML = `<p class="hint">${file.hint}</p>`;
+  box.innerHTML = "";
+  if (file.id === "voice") {
+    const mount = document.createElement("div");
+    box.appendChild(mount);
+    mountVoiceLab(mount, { headed: true, showFields: false });
+  }
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = file.hint;
+  box.appendChild(hint);
   for (const [key, label] of file.fields) {
     const lab = document.createElement("label");
     lab.textContent = label;
     const ta = document.createElement("textarea");
     ta.value = data[key] || "";
+    if (file.id === "voice") ta.dataset.voiceKey = key;
     ta.oninput = () => { data[key] = ta.value; save(); preview(); };
     box.appendChild(lab);
     box.appendChild(ta);
@@ -156,11 +176,14 @@ function preview() {
 }
 
 function renderInterview() {
+  if (ui.q >= LAB_STEP) {
+    renderVoiceLabInterview();
+    return;
+  }
   const q = QUESTIONS[ui.q];
   const data = ensure(q.fileId);
-  const n = QUESTIONS.length;
+  const n = INTERVIEW_LEN;
   const pct = ((ui.q + 1) / n) * 100;
-  const last = ui.q === n - 1;
   const root = document.getElementById("interview");
   root.innerHTML = `
     <p class="progress" id="progress-label">Question ${ui.q + 1} of ${n} · ${q.fileTitle}</p>
@@ -172,10 +195,14 @@ function renderInterview() {
     <textarea id="answer" class="interview-answer" rows="8" placeholder="Write it in your words."></textarea>
     <div class="interview-nav">
       <button class="btn" id="back" type="button"${ui.q === 0 ? " disabled" : ""}>Back</button>
-      <button class="btn" id="skip" type="button">${last ? "Skip and finish" : "Skip"}</button>
-      <button class="btn gold" id="next" type="button">${last ? "Finish" : "Next"}</button>
+      <button class="btn" id="skip" type="button">Skip</button>
+      <button class="btn gold" id="next" type="button">Next</button>
     </div>
-    <p class="quiet-tools"><button class="linkish" id="interview-clear" type="button">Clear this browser</button></p>
+    <p class="quiet-tools">
+      <button class="linkish" id="jump-lab" type="button">Voice lab</button>
+      ·
+      <button class="linkish" id="interview-clear" type="button">Clear this browser</button>
+    </p>
   `;
   const ta = document.getElementById("answer");
   ta.value = data[q.key] || "";
@@ -183,7 +210,145 @@ function renderInterview() {
   document.getElementById("back").onclick = () => step(-1);
   document.getElementById("skip").onclick = () => step(1);
   document.getElementById("next").onclick = () => step(1);
+  document.getElementById("jump-lab").onclick = openVoiceLab;
   document.getElementById("interview-clear").onclick = clearDrafts;
+}
+
+function renderVoiceLabInterview() {
+  const root = document.getElementById("interview");
+  root.innerHTML = `
+    <p class="progress">Voice lab · last step</p>
+    <div class="progress-track" aria-hidden="true"><span style="width:100%"></span></div>
+    <p class="file-chip">voice.md</p>
+    <h2 class="question">Voice from examples.</h2>
+    <p class="hint">Adjectives lie. Paste writing you would put your name on, and writing you never want to sound like. We quote it. We do not invent a brand voice.</p>
+    <div id="voice-lab-mount"></div>
+    <div class="interview-nav">
+      <button class="btn" id="back" type="button">Back</button>
+      <button class="btn" id="skip" type="button">Skip and finish</button>
+      <button class="btn gold" id="next" type="button">Finish</button>
+    </div>
+    <p class="quiet-tools"><button class="linkish" id="interview-clear" type="button">Clear this browser</button></p>
+  `;
+  mountVoiceLab(document.getElementById("voice-lab-mount"), { headed: false, showFields: true });
+  document.getElementById("back").onclick = () => step(-1);
+  document.getElementById("skip").onclick = () => step(1);
+  document.getElementById("next").onclick = () => step(1);
+  document.getElementById("interview-clear").onclick = clearDrafts;
+}
+
+function mountVoiceLab(host, { headed = false, showFields = false } = {}) {
+  const lab = ensureLab();
+  host.innerHTML = `
+    <div class="voice-lab">
+      ${headed ? `
+        <h2 class="lab-heading">Voice from examples</h2>
+        <p class="hint">Adjectives lie. Paste writing you would put your name on, and writing you never want to sound like. We quote it. We do not invent a brand voice.</p>
+      ` : ""}
+      <label for="lab-proud">Writing I’m proud of</label>
+      <textarea id="lab-proud" class="lab-pile" rows="8" placeholder="A note you’d send. A product page you’d publish. Two or three sentences that already sound like you."></textarea>
+      <label for="lab-hate">Writing I hate (mine or generic AI)</label>
+      <textarea id="lab-hate" class="lab-pile" rows="8" placeholder="A line you regret, or a blob of “elevate your space” slop. We will ban the patterns, not invent new ones."></textarea>
+      <p class="lab-status" id="lab-status" role="status" aria-live="polite" hidden></p>
+      <div class="row lab-actions">
+        <button class="btn gold" id="lab-draft" type="button">Draft voice.md from these piles</button>
+      </div>
+      ${showFields ? voiceFieldsMarkup() : ""}
+    </div>
+  `;
+  const proud = host.querySelector("#lab-proud");
+  const hate = host.querySelector("#lab-hate");
+  proud.value = lab.proud;
+  hate.value = lab.hate;
+  proud.oninput = () => { lab.proud = proud.value; save(); };
+  hate.oninput = () => { lab.hate = hate.value; save(); };
+  host.querySelector("#lab-draft").onclick = () => runVoiceDraft(host);
+  if (showFields) bindVoiceFields(host);
+}
+
+function voiceFieldsMarkup() {
+  const file = FILES.find((f) => f.id === "voice");
+  return `
+    <div class="lab-fields">
+      <p class="hint">The draft lands in these fields. Edit anything. Same zip as before.</p>
+      ${file.fields.map(([key, label]) => `
+        <label for="voice-field-${key}">${escapeHtml(label)}</label>
+        <textarea id="voice-field-${key}" data-voice-key="${key}"></textarea>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bindVoiceFields(host) {
+  const data = ensure("voice");
+  for (const ta of host.querySelectorAll("[data-voice-key]")) {
+    const key = ta.dataset.voiceKey;
+    ta.value = data[key] || "";
+    ta.oninput = () => { data[key] = ta.value; save(); };
+  }
+}
+
+function setLabStatus(host, message, kind) {
+  const el = host.querySelector("#lab-status");
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = "";
+    el.className = "lab-status";
+    return;
+  }
+  el.hidden = false;
+  el.textContent = message;
+  el.className = "lab-status" + (kind ? " " + kind : "");
+}
+
+function runVoiceDraft(host) {
+  const lab = ensureLab();
+  const api = window.LibertyVoice;
+  if (!api) {
+    setLabStatus(host, "Voice lab failed to load. Refresh the page.", "warn");
+    return;
+  }
+  const result = api.deriveVoiceDraft(lab.proud, lab.hate);
+  if (!result.ok) {
+    setLabStatus(host, result.notes.join(" "), "warn");
+    return;
+  }
+  const voice = ensure("voice");
+  const keys = Object.keys(result.fields);
+  const wouldOverwrite = keys.some((k) => String(voice[k] || "").trim());
+  if (wouldOverwrite && !confirm("Replace the current voice.md draft with rules quoted from these piles?")) {
+    return;
+  }
+  for (const k of keys) voice[k] = result.fields[k];
+  save();
+  for (const ta of document.querySelectorAll("[data-voice-key]")) {
+    const key = ta.dataset.voiceKey;
+    if (Object.prototype.hasOwnProperty.call(result.fields, key)) ta.value = result.fields[key];
+  }
+  const bits = [];
+  if (result.notes.length) bits.push(result.notes.join(" "));
+  if (result.missing.length) {
+    bits.push("I left " + result.missing.join(", ") + " empty — not enough in the pile to fill them without inventing.");
+  }
+  bits.push("Drafted from your piles. Edit anything. Nothing left this browser.");
+  setLabStatus(host, bits.join(" "), result.notes.length ? "warn" : "ok");
+  if (ui.desk) preview();
+}
+
+function openVoiceLab() {
+  if (ui.desk) {
+    tab = "voice";
+  } else {
+    ui.done = false;
+    ui.q = LAB_STEP;
+  }
+  saveUi();
+  draw();
+  const el = document.querySelector(".voice-lab");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  const proud = document.getElementById("lab-proud");
+  if (proud) proud.focus();
 }
 
 function renderFinish() {
@@ -195,20 +360,22 @@ function renderFinish() {
     </article>
   `).join("");
   root.innerHTML = `
-    <p class="progress">All ${QUESTIONS.length} questions · four files</p>
+    <p class="progress">Four files · voice from examples</p>
     <h2 class="question">Your pack is ready.</h2>
     <p class="hint">Read the four files. Download the zip. Hand the folder to any model.</p>
     <div class="row finish-actions">
       <button class="btn gold" id="finish-export" type="button">Download the zip</button>
+      <button class="btn" id="finish-lab" type="button">Voice lab</button>
       <button class="btn" id="finish-back" type="button">Back to questions</button>
       <button class="btn" id="finish-clear" type="button">Clear this browser</button>
     </div>
     ${blocks}
   `;
   document.getElementById("finish-export").onclick = download;
+  document.getElementById("finish-lab").onclick = openVoiceLab;
   document.getElementById("finish-back").onclick = () => {
     ui.done = false;
-    ui.q = QUESTIONS.length - 1;
+    ui.q = LAB_STEP;
     saveUi();
     draw();
   };
@@ -227,19 +394,19 @@ function escapeHtml(s) {
 
 function step(delta) {
   const next = ui.q + delta;
-  if (delta > 0 && ui.q >= QUESTIONS.length - 1) {
+  if (delta > 0 && ui.q >= LAB_STEP) {
     ui.done = true;
     saveUi();
     draw();
     window.scrollTo(0, 0);
     return;
   }
-  if (next < 0 || next >= QUESTIONS.length) return;
+  if (next < 0 || next > LAB_STEP) return;
   ui.q = next;
   ui.done = false;
   saveUi();
   draw();
-  const ta = document.getElementById("answer");
+  const ta = document.getElementById("answer") || document.getElementById("lab-proud");
   if (ta) ta.focus();
 }
 
@@ -339,6 +506,10 @@ const HARBOR_LAMP = {
     skip: "Elevate. Curate. Luxury. Artisanal — unless quoting a customer. Limited drop. Join the list. Unlock.",
     good: "The small table lamp is $240 because that’s two evenings and honest brass. It will spot. That’s the metal doing what metal does. If the socket ever fails, mail it back and I will put a new one in.",
     bad: "Introducing our heritage-inspired lighting collection — meticulously crafted to elevate everyday moments and bring luxury warmth into your sanctuary."
+  },
+  lab: {
+    proud: "This one left the bench on a Tuesday. The brass will darken where you touch it.\n\nIf you want it brighter, use a 60-watt-equivalent warm bulb. I ship a 40 because most rooms already have too much glare.\n\nI don’t do wholesale. I barely do shipping. That’s the honest version.\n\nThe small table lamp is $240 because that’s two evenings and honest brass. It will spot. That’s the metal doing what metal does. If the socket ever fails, mail it back and I will put a new one in.",
+    hate: "Introducing our heritage-inspired lighting collection — meticulously crafted to elevate everyday moments and bring luxury warmth into your sanctuary.\n\nUnlock a curated lighting experience that seamlessly elevates your space. Join the list for our limited drop of artisanal luxury fixtures!"
   }
 };
 
@@ -347,10 +518,11 @@ function loadExample() {
   for (const file of FILES) {
     state[file.id] = { ...HARBOR_LAMP[file.id] };
   }
+  state.lab = { proud: HARBOR_LAMP.lab.proud, hate: HARBOR_LAMP.lab.hate };
   save();
   ui.desk = false;
   ui.done = true;
-  ui.q = QUESTIONS.length - 1;
+  ui.q = LAB_STEP;
   saveUi();
   draw();
   window.scrollTo(0, 0);
@@ -399,6 +571,7 @@ document.getElementById("toggle-desk").onclick = () => {
   draw();
 };
 document.getElementById("example").onclick = loadExample;
+document.getElementById("voice-lab").onclick = openVoiceLab;
 document.getElementById("desk-export").onclick = download;
 document.getElementById("desk-clear").onclick = clearDrafts;
 draw();
