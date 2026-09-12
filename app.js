@@ -314,9 +314,11 @@ function renderInterview() {
   const pct = ((ui.q + 1) / n) * 100;
   const root = document.getElementById("interview");
   root.innerHTML = `
-    <p class="progress" id="progress-label">Question ${ui.q + 1} of ${n} · ${q.fileTitle}</p>
-    <div class="progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
-    <p class="file-chip">${q.fileName}</p>
+    <div class="interview-chrome">
+      <p class="progress" id="progress-label">Question ${ui.q + 1} of ${n} · ${q.fileTitle}</p>
+      <div class="progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
+      <p class="file-chip">${q.fileName}</p>
+    </div>
     <h2 class="question">${q.label}</h2>
     ${q.example ? `<p class="q-example">${escapeHtml(q.example)}</p>` : ""}
     <p class="hint">${q.hint}</p>
@@ -352,9 +354,11 @@ function renderInterview() {
 function renderVoiceLabInterview() {
   const root = document.getElementById("interview");
   root.innerHTML = `
-    <p class="progress">Voice lab · last step</p>
-    <div class="progress-track" aria-hidden="true"><span style="width:100%"></span></div>
-    <p class="file-chip">voice.md</p>
+    <div class="interview-chrome">
+      <p class="progress">Voice lab · last step</p>
+      <div class="progress-track" aria-hidden="true"><span style="width:100%"></span></div>
+      <p class="file-chip">voice.md</p>
+    </div>
     <h2 class="question">Voice from examples.</h2>
     <p class="q-example">Harbor Lamp: a Tuesday bench note vs. “elevate your sanctuary.”</p>
     <p class="hint">Adjectives lie. Paste writing you would put your name on, and writing you never want to sound like. We quote it. We do not invent a brand voice.</p>
@@ -583,12 +587,16 @@ function renderFinish() {
     <h2 class="question">Your pack is ready.</h2>
     <p class="hint">Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.</p>
     ${finishWarning()}
-    <div class="row finish-actions">
-      <button class="btn gold" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
-      <button class="btn" id="finish-export" type="button">Download the zip</button>
-      <button class="btn" id="finish-lab" type="button">Voice lab</button>
-      <button class="btn" id="finish-back" type="button">Back to questions</button>
-      <button class="btn" id="finish-clear" type="button">Clear this browser</button>
+    <div class="finish-toolbar">
+      <div class="row finish-actions finish-primary">
+        <button class="btn gold" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
+        <button class="btn" id="finish-export" type="button">Download the zip</button>
+      </div>
+      <div class="row finish-actions finish-more">
+        <button class="btn" id="finish-lab" type="button">Voice lab</button>
+        <button class="btn" id="finish-back" type="button">Back to questions</button>
+        <button class="btn" id="finish-clear" type="button">Clear this browser</button>
+      </div>
     </div>
     ${blocks}
   `;
@@ -763,7 +771,27 @@ function loadExample() {
   window.scrollTo(0, 0);
 }
 
+function syncPageMode() {
+  const desk = !!ui.desk;
+  const finish = !desk && !!ui.done;
+  const interview = !desk && !finish;
+  document.body.classList.toggle("mode-desk", desk);
+  document.body.classList.toggle("mode-finish", finish);
+  document.body.classList.toggle("mode-interview", interview);
+  const label = document.getElementById("mode-label");
+  if (!label) return;
+  if (desk) {
+    label.hidden = true;
+    return;
+  }
+  label.hidden = false;
+  if (finish) label.textContent = "Finish · four files";
+  else if (ui.q >= LAB_STEP) label.textContent = "Voice lab · last step";
+  else label.textContent = "Interview · one question";
+}
+
 function draw() {
+  syncPageMode();
   const interview = document.getElementById("interview");
   const desk = document.getElementById("desk");
   const finish = document.getElementById("finish");

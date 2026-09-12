@@ -29,6 +29,13 @@ a { color: var(--gold); }
   color: var(--gold);
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
+.mode-label {
+  display: none;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--mist);
+  margin: 8px 0 0;
+}
 h1 {
   font-weight: 500;
   font-size: clamp(42px, 8vw, 76px);
@@ -203,7 +210,7 @@ textarea { min-height: 88px; resize: vertical; }
   line-height: 1.15;
   margin: 0 0 10px;
 }
-.lab-pile { min-height: 160px; }
+.lab-pile { min-height: 160px; font-size: 18px; }
 .lab-status {
   font-size: 15px;
   color: var(--mist);
@@ -347,6 +354,119 @@ textarea { min-height: 88px; resize: vertical; }
   }
   .claims-list li { flex-wrap: wrap; }
   .lab-pile { min-height: 140px; }
+}
+
+/* Phone-first interview / finish. Desk mode is left alone. */
+@media (max-width: 719px) {
+  body.mode-interview .hero,
+  body.mode-interview .example-note,
+  body.mode-finish .hero,
+  body.mode-finish .example-note {
+    display: none;
+  }
+  body.mode-interview .mode-label,
+  body.mode-finish .mode-label {
+    display: block;
+  }
+  body.mode-interview .wrap,
+  body.mode-finish .wrap {
+    padding-top: 16px;
+    padding-bottom: calc(28px + var(--dock-space, 0px));
+  }
+  body.mode-interview {
+    --dock-space: calc(148px + env(safe-area-inset-bottom, 0px));
+  }
+  body.mode-interview .tools,
+  body.mode-finish .tools {
+    margin: 10px 0 14px;
+    gap: 6px;
+  }
+  body.mode-interview .tools .btn,
+  body.mode-finish .tools .btn {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--quiet);
+  }
+  body.mode-interview .interview-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: -28px -24px 14px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 24px 10px;
+    background: color-mix(in srgb, var(--panel) 92%, black);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  body.mode-interview .interview-chrome .progress { margin-bottom: 8px; }
+  body.mode-interview .interview-chrome .progress-track { margin-bottom: 10px; }
+  body.mode-interview .interview-chrome .file-chip { margin-bottom: 0; }
+  body.mode-interview .interview-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    margin: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--panel) 92%, black);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  body.mode-interview .interview {
+    padding-bottom: var(--dock-space);
+  }
+  body.mode-interview .interview-answer {
+    min-height: min(46vh, 340px);
+    font-size: 18px;
+    scroll-margin-top: calc(96px + env(safe-area-inset-top, 0px));
+    scroll-margin-bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+  }
+  body.mode-interview .lab-pile {
+    min-height: 180px;
+    font-size: 18px;
+    scroll-margin-top: calc(96px + env(safe-area-inset-top, 0px));
+    scroll-margin-bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+  }
+  body.mode-interview .question {
+    scroll-margin-top: calc(96px + env(safe-area-inset-top, 0px));
+  }
+  body.mode-finish .finish-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  body.mode-finish .finish-primary {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 12px -24px 8px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 24px 12px;
+    background: color-mix(in srgb, var(--panel) 92%, black);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  body.mode-finish .finish-more {
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 720px) {
+  .finish-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0 8px;
+  }
+  .finish-toolbar .finish-actions {
+    display: contents;
+  }
 }
 .pitch .statement {
   color: var(--gold);
