@@ -59,12 +59,42 @@ const FILES = [
   }
 ];
 
+const HARBOR_HINTS = {
+  company: {
+    sells: "Harbor Lamp: small-batch brass table lamps, made by one person in a Portland garage.",
+    serves: "Harbor Lamp: people who want one good lamp in a room they actually live in.",
+    money: "Harbor Lamp: $240–$380 a lamp. No wholesale. Repair is free — that’s the promise.",
+    believes: "Harbor Lamp: a lamp should outlive the person who bought it. Brass should tarnish.",
+    different: "Harbor Lamp: one maker. If something is wrong, you email the person who built it."
+  },
+  customer: {
+    icp: "Harbor Lamp: adults who already buy objects on purpose — a used chair, a cast-iron pan.",
+    pains: "Harbor Lamp: big-box lamps feel hollow; $1,200 designer ones still look like a hotel.",
+    objections: "Harbor Lamp: “That’s a lot for a lamp.” “I rent — I shouldn’t buy something this heavy.”",
+    triggers: "Harbor Lamp: a move, a winter cave of a living room, the last cheap lamp dying.",
+    language: "Harbor Lamp: warm light, heavy, not plastic. “I don’t want it to scream new.”",
+    fears: "Harbor Lamp: a lamp that photographs well and lives badly.",
+    criteria: "Harbor Lamp: weight in the photos, a real person on email, a return if it arrives dented.",
+    quotes: "Harbor Lamp: “I just want one lamp I don’t have to think about again.”"
+  },
+  offer: {
+    packages: "Harbor Lamp: one lamp at a time. Table or sconce. No bundles, no starter kit.",
+    deliverables: "Harbor Lamp: the lamp, a spare bulb, a care card, a note with the finish date.",
+    pricing: "Harbor Lamp: $240 is two evenings and honest brass — cheap lamps already exist.",
+    proof: "Harbor Lamp: fourteen lamps this year, three free rewires, no press, a garage workshop.",
+    promises: "Harbor Lamp: it will be heavy. I reply within two days. Faulty brass, I make it right.",
+    avoid: "Harbor Lamp: never invent a waitlist, never imply a studio of apprentices, never say “heirloom” first.",
+    fit: "Harbor Lamp: good fit — one lamp, you can wait. Bad fit — twenty matching fixtures by Friday."
+  }
+};
+
 const QUESTIONS = FILES.filter((file) => file.id !== "voice").flatMap((file) =>
   file.fields.map(([key, label]) => ({
     fileId: file.id,
     fileTitle: file.title,
     fileName: file.name,
     hint: file.hint,
+    example: (HARBOR_HINTS[file.id] || {})[key] || "",
     key,
     label
   }))
@@ -163,11 +193,24 @@ function renderEditor() {
     lab.textContent = label;
     const ta = document.createElement("textarea");
     ta.value = data[key] || "";
+    ta.dataset.fileId = file.id;
+    ta.dataset.fieldKey = key;
     if (file.id === "voice") ta.dataset.voiceKey = key;
-    ta.oninput = () => { data[key] = ta.value; save(); preview(); };
+    ta.oninput = () => {
+      data[key] = ta.value;
+      save();
+      preview();
+      if (file.id === "offer" || file.id === "company") refreshClaimsWatch();
+    };
     box.appendChild(lab);
     box.appendChild(ta);
+    if (file.id === "offer" && key === "avoid") {
+      const mount = document.createElement("div");
+      mount.id = "claims-watch-mount";
+      box.appendChild(mount);
+    }
   }
+  if (file.id === "offer") refreshClaimsWatch();
 }
 
 function preview() {
@@ -190,9 +233,11 @@ function renderInterview() {
     <div class="progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
     <p class="file-chip">${q.fileName}</p>
     <h2 class="question">${q.label}</h2>
+    ${q.example ? `<p class="q-example">${escapeHtml(q.example)}</p>` : ""}
     <p class="hint">${q.hint}</p>
     <label class="sr-only" for="answer">${q.label}</label>
     <textarea id="answer" class="interview-answer" rows="8" placeholder="Write it in your words."></textarea>
+    ${q.key === "avoid" ? `<div id="claims-watch-mount"></div>` : ""}
     <div class="interview-nav">
       <button class="btn" id="back" type="button"${ui.q === 0 ? " disabled" : ""}>Back</button>
       <button class="btn" id="skip" type="button">Skip</button>
@@ -206,7 +251,12 @@ function renderInterview() {
   `;
   const ta = document.getElementById("answer");
   ta.value = data[q.key] || "";
-  ta.oninput = () => { data[q.key] = ta.value; save(); };
+  ta.oninput = () => {
+    data[q.key] = ta.value;
+    save();
+    if (q.key === "avoid") refreshClaimsWatch();
+  };
+  if (q.key === "avoid") refreshClaimsWatch();
   document.getElementById("back").onclick = () => step(-1);
   document.getElementById("skip").onclick = () => step(1);
   document.getElementById("next").onclick = () => step(1);
@@ -221,6 +271,7 @@ function renderVoiceLabInterview() {
     <div class="progress-track" aria-hidden="true"><span style="width:100%"></span></div>
     <p class="file-chip">voice.md</p>
     <h2 class="question">Voice from examples.</h2>
+    <p class="q-example">Harbor Lamp: a Tuesday bench note vs. “elevate your sanctuary.”</p>
     <p class="hint">Adjectives lie. Paste writing you would put your name on, and writing you never want to sound like. We quote it. We do not invent a brand voice.</p>
     <div id="voice-lab-mount"></div>
     <div class="interview-nav">
@@ -351,6 +402,86 @@ function openVoiceLab() {
   if (proud) proud.focus();
 }
 
+function claimsApi() {
+  return window.LibertyClaims || null;
+}
+
+function refreshClaimsWatch() {
+  const mount = document.getElementById("claims-watch-mount");
+  if (!mount) return;
+  const api = claimsApi();
+  if (!api) {
+    mount.innerHTML = "";
+    return;
+  }
+  const hits = api.remainingHits(state);
+  if (!hits.length) {
+    mount.innerHTML = "";
+    return;
+  }
+  mount.innerHTML = `
+    <div class="claims-watch" role="region" aria-label="Claims watch">
+      <p class="claims-kicker">Claims watch</p>
+      <p class="claims-lead">Your own company and offer still say these. Tap to add one to claims you will never make. We only list words you already wrote.</p>
+      <ul class="claims-list">
+        ${hits.map((hit, i) => `
+          <li>
+            <div>
+              <p class="claims-phrase">“${escapeHtml(hit.excerpt || hit.match)}”</p>
+              <p class="claims-where">${escapeHtml(hit.label)}</p>
+            </div>
+            <button class="btn" type="button" data-claim-index="${i}">Add</button>
+          </li>
+        `).join("")}
+      </ul>
+    </div>
+  `;
+  for (const btn of mount.querySelectorAll("[data-claim-index]")) {
+    btn.onclick = () => addClaimHit(hits[Number(btn.dataset.claimIndex)]);
+  }
+}
+
+function addClaimHit(hit) {
+  const api = claimsApi();
+  if (!api || !hit) return;
+  const data = ensure("offer");
+  data.avoid = api.addClaimLine(data.avoid, hit);
+  save();
+  const interviewTa = document.getElementById("answer");
+  if (interviewTa && QUESTIONS[ui.q] && QUESTIONS[ui.q].key === "avoid") {
+    interviewTa.value = data.avoid;
+  }
+  const deskTa = document.querySelector('textarea[data-file-id="offer"][data-field-key="avoid"]');
+  if (deskTa) deskTa.value = data.avoid;
+  if (ui.desk) preview();
+  refreshClaimsWatch();
+}
+
+function openAvoidQuestion() {
+  const idx = QUESTIONS.findIndex((q) => q.key === "avoid");
+  ui.desk = false;
+  ui.done = false;
+  ui.q = idx >= 0 ? idx : 0;
+  saveUi();
+  draw();
+  const ta = document.getElementById("answer");
+  if (ta) ta.focus();
+}
+
+function finishWarning() {
+  const api = claimsApi();
+  if (!api) return "";
+  const hits = api.remainingHits(state);
+  if (!hits.length) return "";
+  const line = api.formatStillSays(hits);
+  return `
+    <div class="claims-banner" role="status">
+      <p>${escapeHtml(line)} You can add ${hits.length === 1 ? "it" : "them"} to claims to avoid, or download anyway.</p>
+      <button class="linkish" id="finish-claims" type="button">Review claims to avoid</button>
+    </div>
+  `;
+}
+
 function renderFinish() {
   const root = document.getElementById("finish");
   const blocks = FILES.map((file) => `
@@ -363,6 +494,7 @@ function renderFinish() {
     <p class="progress">Four files · voice from examples</p>
     <h2 class="question">Your pack is ready.</h2>
     <p class="hint">Read the four files. Download the zip. Hand the folder to any model.</p>
+    ${finishWarning()}
     <div class="row finish-actions">
       <button class="btn gold" id="finish-export" type="button">Download the zip</button>
       <button class="btn" id="finish-lab" type="button">Voice lab</button>
@@ -380,6 +512,8 @@ function renderFinish() {
     draw();
   };
   document.getElementById("finish-clear").onclick = clearDrafts;
+  const review = document.getElementById("finish-claims");
+  if (review) review.onclick = openAvoidQuestion;
 }
 
 function escapeHtml(s) {
