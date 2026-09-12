@@ -13,7 +13,7 @@ A free, no-login tool. Answer one question at a time (or show all fields) and dr
 - `offer.md`
 - `voice.md`
 
-Then download them as a zip (it includes `HOW_TO_USE.md`) or copy the pack for ChatGPT. They stay in your browser until you export. Nothing is uploaded.
+Then download them as a zip (it includes `HOW_TO_USE.md`) or copy the pack for ChatGPT. They stay in your browser until you export. Nothing is uploaded. On a phone, interview chrome stays compact so the question and Next stay in reach.
 
 Inspired by [Corey Ganim's thread](https://x.com/coreyganim/status/2098536815175340180) and the Grok Bot "build whatever you want" brief.
 
