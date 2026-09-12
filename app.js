@@ -161,6 +161,86 @@ function markdown(file) {
   return lines.join("\n").trim() + "\n";
 }
 
+function howToUseMarkdown() {
+  return [
+    "# How to use these four files",
+    "",
+    "You finished the pack. The AI still needs you to hand it over.",
+    "",
+    "## On a computer",
+    "",
+    "1. Unzip `four-files.zip`.",
+    "2. You should see `company.md`, `customer.md`, `offer.md`, `voice.md`, and this note.",
+    "3. Open ChatGPT, Claude, or Grok.",
+    "4. Start a new chat. Attach the four `.md` files, or paste them.",
+    "5. Ask for one job — not “help me with my brand.”",
+    "",
+    "## On a phone",
+    "",
+    "Zip files are awkward. On the Liberty finish screen, tap **Copy pack for ChatGPT**, then paste into the app.",
+    "",
+    "## Starter prompts",
+    "",
+    "- Draft an About page from these files. Stay inside the claims I said never to make.",
+    "- Reply to this customer email in my voice. Use their words where they already said it.",
+    "- Write an Instagram caption in my voice. If you do not have an example that matches, say so instead of inventing one.",
+    "",
+    "## Do not skip",
+    "",
+    "- **Claims to avoid** in `offer.md` — if you skip them, the model will praise you with words you forbade.",
+    "- **Voice examples** in `voice.md` — the good and bad lines matter more than any adjective.",
+    "",
+    "One job at a time. These files stay yours.",
+    ""
+  ].join("\n");
+}
+
+function packClipboardMarkdown() {
+  const header = [
+    "These four files are the source of truth for my company, customer, offer, and voice.",
+    "",
+    "- Use them. Do not invent a brand.",
+    "- Stay inside claims-to-avoid in offer.md.",
+    "- Prefer the voice examples over adjectives. If a line is not in my voice, rewrite or say so.",
+    "",
+    "Ask me what to write, or start with: draft an About page / reply to a customer email / write an Instagram caption in my voice."
+  ].join("\n");
+  const bodies = FILES.map((file) => markdown(file).trim());
+  return [header, ...bodies].join("\n\n---\n\n") + "\n";
+}
+
+function copyText(text, button) {
+  const idle = button.dataset.copyIdle || button.textContent;
+  button.dataset.copyIdle = idle;
+  const reset = (label, ms) => {
+    button.textContent = label;
+    window.clearTimeout(Number(button.dataset.copyTimer || 0));
+    button.dataset.copyTimer = String(window.setTimeout(() => {
+      button.textContent = idle;
+    }, ms));
+  };
+  const done = () => reset("Copied", 1600);
+  const fail = () => reset("Copy failed", 2200);
+  const viaExec = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;left:-9999px;top:0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (!ok) throw new Error("copy");
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {
+      try { viaExec(); done(); } catch { fail(); }
+    });
+    return;
+  }
+  try { viaExec(); done(); } catch { fail(); }
+}
+
 function renderTabs() {
   const nav = document.getElementById("tabs");
   nav.innerHTML = "";
@@ -486,24 +566,37 @@ function renderFinish() {
   const root = document.getElementById("finish");
   const blocks = FILES.map((file) => `
     <article class="finish-file">
-      <h3>${file.name}</h3>
+      <div class="finish-file-head">
+        <h3>${file.name}</h3>
+        <button class="btn compact" type="button" data-copy-file="${file.id}">Copy</button>
+      </div>
       <pre class="preview">${escapeHtml(markdown(file))}</pre>
     </article>
   `).join("");
   root.innerHTML = `
     <p class="progress">Four files · voice from examples</p>
     <h2 class="question">Your pack is ready.</h2>
-    <p class="hint">Read the four files. Download the zip. Hand the folder to any model.</p>
+    <p class="hint">Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.</p>
     ${finishWarning()}
     <div class="row finish-actions">
-      <button class="btn gold" id="finish-export" type="button">Download the zip</button>
+      <button class="btn gold" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
+      <button class="btn" id="finish-export" type="button">Download the zip</button>
       <button class="btn" id="finish-lab" type="button">Voice lab</button>
       <button class="btn" id="finish-back" type="button">Back to questions</button>
       <button class="btn" id="finish-clear" type="button">Clear this browser</button>
     </div>
     ${blocks}
   `;
+  document.getElementById("finish-copy-pack").onclick = () => {
+    copyText(packClipboardMarkdown(), document.getElementById("finish-copy-pack"));
+  };
   document.getElementById("finish-export").onclick = download;
+  for (const btn of root.querySelectorAll("[data-copy-file]")) {
+    btn.onclick = () => {
+      const file = FILES.find((f) => f.id === btn.dataset.copyFile);
+      if (file) copyText(markdown(file), btn);
+    };
+  }
   document.getElementById("finish-lab").onclick = openVoiceLab;
   document.getElementById("finish-back").onclick = () => {
     ui.done = false;
@@ -582,7 +675,10 @@ function zipStore(files) {
 }
 
 function download() {
-  const files = FILES.map((f) => ({ name: f.name, body: markdown(f) }));
+  const files = [
+    { name: "HOW_TO_USE.md", body: howToUseMarkdown() },
+    ...FILES.map((f) => ({ name: f.name, body: markdown(f) }))
+  ];
   const zip = zipStore(files);
   const blob = new Blob([zip], { type: "application/zip" });
   const a = document.createElement("a");
@@ -707,5 +803,8 @@ document.getElementById("toggle-desk").onclick = () => {
 document.getElementById("example").onclick = loadExample;
 document.getElementById("voice-lab").onclick = openVoiceLab;
 document.getElementById("desk-export").onclick = download;
+document.getElementById("desk-copy-pack").onclick = () => {
+  copyText(packClipboardMarkdown(), document.getElementById("desk-copy-pack"));
+};
 document.getElementById("desk-clear").onclick = clearDrafts;
 draw();
