@@ -99,3 +99,19 @@ textarea { min-height: 88px; resize: vertical; }
 .log { margin-top: 48px; color: var(--mist); }
 .log h2 { font-weight: 500; }
 .foot { margin-top: 48px; color: var(--quiet); font-size: 13px; }
+.pitch .statement {
+  color: var(--gold);
+  font-size: 24px;
+  margin: 28px 0 16px;
+}
+.pitch-list {
+  color: var(--mist);
+  font-size: 20px;
+  line-height: 1.45;
+  max-width: 38rem;
+  padding-left: 1.2em;
+  margin: 8px 0 28px;
+}
+.pitch-list li { margin: 10px 0; }
+.pitch .row { margin-top: 32px; }
+.pitch .btn { text-decoration: none; display: inline-block; }
