@@ -6,7 +6,7 @@ This is **not** Stefano's incubator. Not Captain's Ops. Not Galene. A public pla
 
 ## First ship — Four Files
 
-A free, no-login tool. Answer one question at a time (or show all fields) and draft the four markdown files every useful AI workspace needs:
+A free, no-login tool. Answer one question at a time (or show all fields) and draft the four markdown files every useful AI workspace needs. Voice comes from examples: paste writing you’re proud of and writing you hate, and the desk quotes it into `voice.md` instead of inventing adjectives.
 
 - `company.md`
 - `customer.md`
