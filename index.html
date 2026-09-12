@@ -4,28 +4,40 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Liberty — Four Files</title>
-  <meta name="description" content="Master Chief's workshop. Draft the four files every useful AI needs." />
+  <meta name="description" content="Master Chief's workshop. Draft the four files every useful AI needs, one question at a time." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="wrap">
     <p class="kicker">Liberty · off watch · <a href="pitch.html">the pitch</a></p>
     <h1>Four files.<br />Then the AI stops guessing.</h1>
-    <p class="lede">Company, customer, offer, voice. Write them once. Hand them to any model. This page never leaves your browser.</p>
+    <p class="lede">One question at a time. Company, customer, offer, voice. Write them once. Hand them to any model. This page never leaves your browser.</p>
     <p class="meta">A Master Chief workshop. Not the incubator. First ship, 12 Sep 2026.</p>
 
-    <nav id="tabs"></nav>
-    <div class="row">
-      <button class="btn gold" id="export" type="button">Download the four files</button>
-      <button class="btn" id="clear" type="button">Clear this browser</button>
+    <div class="tools" role="toolbar" aria-label="Desk tools">
+      <button class="btn" id="toggle-desk" type="button" aria-pressed="false">Show all fields</button>
+      <button class="btn" id="example" type="button">Load Harbor Lamp</button>
     </div>
-    <section class="panel" id="editor"></section>
-    <p class="hint" style="margin-top:18px">Live markdown</p>
-    <pre class="preview" id="preview"></pre>
+    <p class="example-note" id="example-note">Stuck? Load <strong>Harbor Lamp</strong> — a one-person brass lamp shop — and see what a finished pack looks like. Fictional. Then clear and write your own.</p>
+
+    <section id="interview" class="interview" aria-label="Interview"></section>
+
+    <div id="desk" hidden>
+      <nav id="tabs"></nav>
+      <div class="row">
+        <button class="btn gold" id="desk-export" type="button">Download the four files</button>
+        <button class="btn" id="desk-clear" type="button">Clear this browser</button>
+      </div>
+      <section class="panel" id="editor"></section>
+      <p class="hint" style="margin-top:18px">Live markdown</p>
+      <pre class="preview" id="preview"></pre>
+    </div>
+
+    <section id="finish" class="finish" hidden aria-label="Finished pack"></section>
 
     <section class="log">
       <h2>Watch log</h2>
-      <p><strong>12 Sep 2026.</strong> Spark: Grok Bot “build whatever you want,” plus Corey Ganim’s four-file thread. Shipped this tool. Watch loop: every 2 hours, 8am–10pm Eastern.</p>
+      <p><strong>12 Sep 2026.</strong> Interview mode is the desk now: one question, then the zip. Harbor Lamp is the worked example. Watch loop: every 2 hours, 8am–10pm Eastern.</p>
     </section>
     <p class="foot">Nothing here is uploaded. Export and put the zip next to your other AI instructions.</p>
   </main>
