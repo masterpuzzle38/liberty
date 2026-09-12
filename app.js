@@ -571,8 +571,103 @@ function finishWarning() {
   `;
 }
 
+function fieldFilled(value) {
+  return String(value || "").trim().length > 0;
+}
+
+function countFilledFields(file) {
+  const data = state[file.id] || {};
+  let filled = 0;
+  for (const [key] of file.fields) {
+    if (fieldFilled(data[key])) filled += 1;
+  }
+  return { filled, total: file.fields.length };
+}
+
+function labPilesFilled() {
+  const lab = state.lab || {};
+  return [lab.proud, lab.hate].filter(fieldFilled).length;
+}
+
+// Solid = at least half the file's fields have trimmed text (filled * 2 >= total).
+// Empty = none filled. Thin = some, but under half.
+// Voice: same field math; 0 voice fields + any lab pile counts as thin, not empty.
+function fileHealth(file) {
+  const { filled, total } = countFilledFields(file);
+  let status = "empty";
+  if (filled * 2 >= total) status = "solid";
+  else if (filled > 0) status = "thin";
+  if (file.id === "voice" && status === "empty" && labPilesFilled() > 0) {
+    status = "thin";
+  }
+  return { id: file.id, name: file.name, filled, total, status };
+}
+
+function packHealth() {
+  const rows = FILES.map(fileHealth);
+  return { rows, anyThin: rows.some((row) => row.status !== "solid") };
+}
+
+function firstEmptyQuestionIndex(fileId) {
+  return QUESTIONS.findIndex((q) => {
+    if (q.fileId !== fileId) return false;
+    return !fieldFilled((state[q.fileId] || {})[q.key]);
+  });
+}
+
+function openFileHole(fileId) {
+  if (fileId === "voice") {
+    openVoiceLab();
+    return;
+  }
+  const firstOfFile = QUESTIONS.findIndex((q) => q.fileId === fileId);
+  const empty = firstEmptyQuestionIndex(fileId);
+  ui.desk = false;
+  ui.done = false;
+  ui.q = empty >= 0 ? empty : (firstOfFile >= 0 ? firstOfFile : 0);
+  saveUi();
+  draw();
+  const ta = document.getElementById("answer");
+  if (ta) ta.focus();
+}
+
+function packHealthMarkup(rows) {
+  return `
+    <div class="pack-health" role="region" aria-label="Pack health">
+      <p class="claims-kicker">Pack health</p>
+      <ul class="pack-health-list">
+        ${rows.map((row) => {
+          const hole = row.status !== "solid";
+          const inner = `
+            <span class="pack-health-name">${escapeHtml(row.name)}</span>
+            <span class="pack-health-count">${row.filled} of ${row.total}</span>
+            <span class="pack-health-status">${row.status}</span>
+          `;
+          if (hole) {
+            return `<li>
+              <button type="button" class="pack-health-row pack-health-${row.status}" data-pack-file="${row.id}" aria-label="${escapeHtml(row.name)}, ${row.filled} of ${row.total}, ${row.status}. Open the first empty question.">
+                ${inner}
+              </button>
+            </li>`;
+          }
+          return `<li>
+            <div class="pack-health-row pack-health-solid">
+              ${inner}
+            </div>
+          </li>`;
+        }).join("")}
+      </ul>
+    </div>
+  `;
+}
+
 function renderFinish() {
   const root = document.getElementById("finish");
+  const health = packHealth();
+  const headline = health.anyThin ? "Almost — a few holes." : "Your pack is ready.";
+  const lead = health.anyThin
+    ? "Skip is honest, but empty fields teach the next agent nothing. Tap a thin file to fill the first hole. Copy and download still work."
+    : "Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.";
   const blocks = FILES.map((file) => `
     <article class="finish-file">
       <div class="finish-file-head">
@@ -584,9 +679,10 @@ function renderFinish() {
   `).join("");
   root.innerHTML = `
     <p class="progress">Four files · voice from examples</p>
-    <h2 class="question">Your pack is ready.</h2>
-    <p class="hint">Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.</p>
+    <h2 class="question">${headline}</h2>
+    <p class="hint">${lead}</p>
     ${finishWarning()}
+    ${packHealthMarkup(health.rows)}
     <div class="finish-toolbar">
       <div class="row finish-actions finish-primary">
         <button class="btn gold" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
@@ -609,6 +705,9 @@ function renderFinish() {
       const file = FILES.find((f) => f.id === btn.dataset.copyFile);
       if (file) copyText(markdown(file), btn);
     };
+  }
+  for (const btn of root.querySelectorAll("[data-pack-file]")) {
+    btn.onclick = () => openFileHole(btn.dataset.packFile);
   }
   document.getElementById("finish-lab").onclick = openVoiceLab;
   document.getElementById("finish-back").onclick = () => {

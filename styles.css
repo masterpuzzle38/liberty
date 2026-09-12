@@ -290,6 +290,63 @@ textarea { min-height: 88px; resize: vertical; }
   font-size: 16px;
   margin: 0 0 8px;
 }
+.pack-health {
+  margin: 16px 0 4px;
+  padding: 14px 16px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0c1412;
+}
+.pack-health-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pack-health-list li + li {
+  border-top: 1px solid var(--line);
+}
+.pack-health-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  color: var(--foam);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+button.pack-health-row {
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding: 10px 8px;
+}
+button.pack-health-row:hover,
+button.pack-health-row:focus-visible {
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  outline: none;
+}
+.pack-health-name { flex: 1 1 auto; }
+.pack-health-count {
+  color: var(--quiet);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.pack-health-status {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+  min-width: 3.4rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.pack-health-solid .pack-health-status { color: var(--gold); }
+.pack-health-thin .pack-health-status { color: var(--warn); }
+.pack-health-empty .pack-health-status { color: var(--quiet); }
 .finish-actions { margin: 18px 0 8px; }
 .finish-file-head {
   display: flex;
