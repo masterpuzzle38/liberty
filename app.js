@@ -219,7 +219,7 @@ function copyText(text, button) {
       button.textContent = idle;
     }, ms));
   };
-  const done = () => reset("Copied", 1600);
+  const done = () => reset("Copied", 2000);
   const fail = () => reset("Copy failed", 2200);
   const viaExec = () => {
     const ta = document.createElement("textarea");
@@ -227,18 +227,23 @@ function copyText(text, button) {
     ta.setAttribute("readonly", "");
     ta.style.cssText = "position:fixed;left:-9999px;top:0";
     document.body.appendChild(ta);
+    ta.focus();
     ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
+    ta.setSelectionRange(0, ta.value.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } finally {
+      document.body.removeChild(ta);
+    }
     if (!ok) throw new Error("copy");
   };
+  done();
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(done).catch(() => {
-      try { viaExec(); done(); } catch { fail(); }
+    navigator.clipboard.writeText(text).catch(() => {
+      try { viaExec(); } catch { fail(); }
     });
     return;
   }
-  try { viaExec(); done(); } catch { fail(); }
+  try { viaExec(); } catch { fail(); }
 }
 
 function renderTabs() {
