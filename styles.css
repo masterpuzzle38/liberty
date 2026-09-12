@@ -284,11 +284,24 @@ textarea { min-height: 88px; resize: vertical; }
   margin: 0 0 8px;
 }
 .finish-actions { margin: 18px 0 8px; }
+.finish-file-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 10px;
+}
+.finish-file-head h3,
 .finish-file h3 {
   font-weight: 500;
   font-size: 18px;
   color: var(--gold);
-  margin: 28px 0 10px;
+  margin: 0;
+}
+.btn.compact {
+  padding: 8px 14px;
+  min-height: 40px;
+  font-size: 14px;
 }
 .sr-only {
   position: absolute;
@@ -327,6 +340,10 @@ textarea { min-height: 88px; resize: vertical; }
     width: 100%;
     min-height: 52px;
     font-size: 16px;
+  }
+  .finish-file-head .btn.compact {
+    width: auto;
+    min-height: 44px;
   }
   .claims-list li { flex-wrap: wrap; }
   .lab-pile { min-height: 140px; }
