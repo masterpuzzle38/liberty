@@ -124,6 +124,11 @@ function activeQuestions() {
   return questionsForPath(ui.path);
 }
 function currentQuestion() {
+  if (ui.holes) {
+    const hole = peekHole();
+    if (hole && hole.kind === "question") return hole;
+    return null;
+  }
   const qs = activeQuestions();
   if (ui.q >= qs.length) return null;
   return qs[ui.q];
@@ -131,12 +136,16 @@ function currentQuestion() {
 function isEssentialsPath() {
   return ui.path === "essentials";
 }
+function inHolesWalk() {
+  return !!(ui.holes && !ui.desk && !ui.done);
+}
 
 const KEY = "liberty-four-files-v1";
 const UI_KEY = "liberty-four-files-ui-v1";
 const state = load();
 const ui = loadUi();
 let tab = "company";
+let holesWalk = null;
 
 function load() {
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
@@ -145,8 +154,20 @@ function load() {
 function save() {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
+function parseHoles(raw) {
+  if (!raw || !raw.holes || typeof raw.holes !== "object") return null;
+  const i = Number(raw.holes.i);
+  const ids = Array.isArray(raw.holes.ids)
+    ? raw.holes.ids.filter((id) => typeof id === "string" && id.length)
+    : null;
+  return {
+    i: Number.isInteger(i) && i >= 0 ? i : 0,
+    ids: ids && ids.length ? ids : null
+  };
+}
+
 function loadUi() {
-  const fallback = { desk: false, q: 0, done: false, path: "essentials" };
+  const fallback = { desk: false, q: 0, done: false, path: "essentials", holes: null };
   try {
     const raw = JSON.parse(localStorage.getItem(UI_KEY));
     if (!raw || typeof raw !== "object") return fallback;
@@ -163,7 +184,8 @@ function loadUi() {
       desk: !!raw.desk,
       q: Number.isInteger(q) ? Math.min(Math.max(q, 0), maxQ) : 0,
       done: !!raw.done,
-      path
+      path,
+      holes: parseHoles(raw)
     };
   } catch {
     return fallback;
@@ -437,6 +459,87 @@ function renderVoiceLabInterview() {
   document.getElementById("interview-clear").onclick = clearDrafts;
 }
 
+function renderHolesWalk() {
+  holesWalk = ensureHolesWalk();
+  if (!holesWalk.length) {
+    exitHolesWalk();
+    return;
+  }
+  if (!ui.holes) ui.holes = { i: 0 };
+  if (ui.holes.i >= holesWalk.length) ui.holes.i = holesWalk.length - 1;
+  if (ui.holes.i < 0) ui.holes.i = 0;
+  const hole = holesWalk[ui.holes.i];
+  const n = holesWalk.length;
+  const i = ui.holes.i;
+  const last = i >= n - 1;
+  const pct = ((i + 1) / n) * 100;
+  const root = document.getElementById("interview");
+  const quiet = `
+    <p class="quiet-tools">
+      <button class="linkish" id="holes-pack" type="button">Back to pack</button>
+      ·
+      <button class="linkish" id="interview-clear" type="button">Clear this browser</button>
+    </p>
+  `;
+  const nav = `
+    <div class="interview-nav">
+      <button class="btn" id="back" type="button"${i === 0 ? " disabled" : ""}>Back</button>
+      <button class="btn" id="skip" type="button">Skip</button>
+      <button class="btn gold" id="next" type="button">${last ? "Done" : "Next"}</button>
+    </div>
+  `;
+  const chrome = `
+    <div class="interview-chrome">
+      <p class="progress" id="progress-label">Hole ${i + 1} of ${n} · ${escapeHtml(hole.fileTitle)}</p>
+      <div class="progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
+      <div class="path-chips">
+        <p class="file-chip">${escapeHtml(hole.fileName)}</p>
+        <p class="file-chip">Fill the holes</p>
+      </div>
+    </div>
+  `;
+
+  if (hole.kind === "lab") {
+    root.innerHTML = `
+      ${chrome}
+      <h2 class="question">Voice from examples.</h2>
+      <p class="q-example">Harbor Lamp: a Tuesday bench note vs. “elevate your sanctuary.”</p>
+      <p class="hint">Adjectives lie. Paste writing you would put your name on, and writing you never want to sound like. We quote it. We do not invent a brand voice.</p>
+      <div id="voice-lab-mount"></div>
+      ${nav}
+      ${quiet}
+    `;
+    mountVoiceLab(document.getElementById("voice-lab-mount"), { headed: false, showFields: true });
+  } else {
+    const data = ensure(hole.fileId);
+    root.innerHTML = `
+      ${chrome}
+      <h2 class="question">${escapeHtml(hole.label)}</h2>
+      ${hole.example ? `<p class="q-example">${escapeHtml(hole.example)}</p>` : ""}
+      <p class="hint">${escapeHtml(hole.hint)}</p>
+      <label class="sr-only" for="answer">${escapeHtml(hole.label)}</label>
+      <textarea id="answer" class="interview-answer" rows="8" placeholder="Write it in your words."></textarea>
+      ${hole.key === "avoid" ? `<div id="claims-watch-mount"></div>` : ""}
+      ${nav}
+      ${quiet}
+    `;
+    const ta = document.getElementById("answer");
+    ta.value = data[hole.key] || "";
+    ta.oninput = () => {
+      data[hole.key] = ta.value;
+      save();
+      if (hole.key === "avoid") refreshClaimsWatch();
+    };
+    if (hole.key === "avoid") refreshClaimsWatch();
+  }
+
+  document.getElementById("back").onclick = () => stepHoles(-1);
+  document.getElementById("skip").onclick = () => stepHoles(1);
+  document.getElementById("next").onclick = () => stepHoles(1);
+  document.getElementById("holes-pack").onclick = () => exitHolesWalk();
+  document.getElementById("interview-clear").onclick = clearDrafts;
+}
+
 function mountVoiceLab(host, { headed = false, showFields = false } = {}) {
   const lab = ensureLab();
   host.innerHTML = `
@@ -537,6 +640,7 @@ function runVoiceDraft(host) {
 }
 
 function openVoiceLab() {
+  clearHolesMode();
   if (ui.desk) {
     tab = "voice";
   } else {
@@ -608,6 +712,7 @@ function addClaimHit(hit) {
 }
 
 function openAvoidQuestion() {
+  clearHolesMode();
   let qs = activeQuestions();
   let idx = qs.findIndex((q) => q.key === "avoid");
   if (idx < 0) {
@@ -675,36 +780,139 @@ function packHealth() {
   return { rows, anyThin: rows.some((row) => row.status !== "solid") };
 }
 
-function firstEmptyQuestionIndex(fileId) {
-  return QUESTIONS.findIndex((q) => {
-    if (q.fileId !== fileId) return false;
-    return !fieldFilled((state[q.fileId] || {})[q.key]);
-  });
+function computeHoles() {
+  const thin = new Set(packHealth().rows.filter((row) => row.status !== "solid").map((row) => row.id));
+  const holes = [];
+  for (const q of activeQuestions()) {
+    if (!thin.has(q.fileId)) continue;
+    if (!fieldFilled(fieldValue(q.fileId, q.key))) {
+      holes.push({ kind: "question", ...q });
+    }
+  }
+  if (thin.has("voice")) {
+    holes.push({
+      kind: "lab",
+      fileId: "voice",
+      fileTitle: "Voice",
+      fileName: "voice.md"
+    });
+  }
+  return holes;
+}
+
+function holeId(hole) {
+  return hole.kind === "lab" ? "voice:lab" : hole.fileId + ":" + hole.key;
+}
+
+function hydrateHoles(ids) {
+  const qs = QUESTIONS;
+  const out = [];
+  for (const id of ids) {
+    if (id === "voice:lab") {
+      out.push({
+        kind: "lab",
+        fileId: "voice",
+        fileTitle: "Voice",
+        fileName: "voice.md"
+      });
+      continue;
+    }
+    const sep = id.indexOf(":");
+    if (sep < 0) continue;
+    const fileId = id.slice(0, sep);
+    const key = id.slice(sep + 1);
+    const q = qs.find((item) => item.fileId === fileId && item.key === key);
+    if (q) out.push({ kind: "question", ...q });
+  }
+  return out;
+}
+
+function ensureHolesWalk() {
+  if (holesWalk && holesWalk.length) return holesWalk;
+  if (ui.holes && ui.holes.ids && ui.holes.ids.length) {
+    holesWalk = hydrateHoles(ui.holes.ids);
+    if (holesWalk.length) return holesWalk;
+  }
+  holesWalk = computeHoles();
+  if (ui.holes && holesWalk.length) {
+    ui.holes = { i: ui.holes.i || 0, ids: holesWalk.map(holeId) };
+  }
+  return holesWalk;
+}
+
+function peekHole() {
+  const list = ensureHolesWalk();
+  if (!ui.holes || !list.length) return null;
+  const i = Math.min(Math.max(ui.holes.i, 0), list.length - 1);
+  return list[i];
+}
+
+function setHolesIndex(i) {
+  const ids = (ui.holes && ui.holes.ids) || (holesWalk ? holesWalk.map(holeId) : null);
+  ui.holes = { i, ids };
+}
+
+function clearHolesMode() {
+  holesWalk = null;
+  ui.holes = null;
+}
+
+function startHolesWalk(fromFileId) {
+  holesWalk = computeHoles();
+  if (!holesWalk.length) {
+    clearHolesMode();
+    ui.done = true;
+    ui.desk = false;
+    saveUi();
+    draw();
+    window.scrollTo(0, 0);
+    return;
+  }
+  let i = 0;
+  if (fromFileId) {
+    const idx = holesWalk.findIndex((h) => h.fileId === fromFileId);
+    if (idx >= 0) i = idx;
+  }
+  ui.holes = { i, ids: holesWalk.map(holeId) };
+  ui.desk = false;
+  ui.done = false;
+  saveUi();
+  draw();
+  window.scrollTo(0, 0);
+  const ta = document.getElementById("answer") || document.getElementById("lab-proud");
+  if (ta) ta.focus();
+}
+
+function exitHolesWalk() {
+  clearHolesMode();
+  ui.done = true;
+  ui.desk = false;
+  saveUi();
+  draw();
+  window.scrollTo(0, 0);
+}
+
+function stepHoles(delta) {
+  const list = ensureHolesWalk();
+  if (!list.length) {
+    exitHolesWalk();
+    return;
+  }
+  const next = (ui.holes ? ui.holes.i : 0) + delta;
+  if (delta > 0 && next >= list.length) {
+    exitHolesWalk();
+    return;
+  }
+  if (next < 0 || next >= list.length) return;
+  setHolesIndex(next);
+  saveUi();
+  draw();
+  const ta = document.getElementById("answer") || document.getElementById("lab-proud");
+  if (ta) ta.focus();
 }
 
 function openFileHole(fileId) {
-  if (fileId === "voice") {
-    openVoiceLab();
-    return;
-  }
-  const pathQs = activeQuestions();
-  const emptyOnPath = pathQs.findIndex((q) => (
-    q.fileId === fileId && !fieldFilled((state[q.fileId] || {})[q.key])
-  ));
-  ui.desk = false;
-  ui.done = false;
-  if (emptyOnPath >= 0) {
-    ui.q = emptyOnPath;
-  } else {
-    const firstOfFile = QUESTIONS.findIndex((q) => q.fileId === fileId);
-    const empty = firstEmptyQuestionIndex(fileId);
-    ui.path = "full";
-    ui.q = empty >= 0 ? empty : (firstOfFile >= 0 ? firstOfFile : 0);
-  }
-  saveUi();
-  draw();
-  const ta = document.getElementById("answer");
-  if (ta) ta.focus();
+  startHolesWalk(fileId);
 }
 
 function packHealthMarkup(rows) {
@@ -721,7 +929,7 @@ function packHealthMarkup(rows) {
           `;
           if (hole) {
             return `<li>
-              <button type="button" class="pack-health-row pack-health-${row.status}" data-pack-file="${row.id}" aria-label="${escapeHtml(row.name)}, ${row.filled} of ${row.total}, ${row.status}. Open the first empty question.">
+              <button type="button" class="pack-health-row pack-health-${row.status}" data-pack-file="${row.id}" aria-label="${escapeHtml(row.name)}, ${row.filled} of ${row.total}, ${row.status}. Fill the holes starting here.">
                 ${inner}
               </button>
             </li>`;
@@ -740,10 +948,15 @@ function packHealthMarkup(rows) {
 function renderFinish() {
   const root = document.getElementById("finish");
   const health = packHealth();
+  const holeCount = health.anyThin ? computeHoles().length : 0;
   const headline = health.anyThin ? "Almost — a few holes." : "Your pack is ready.";
   const lead = health.anyThin
-    ? "Skip is honest, but empty fields teach the next agent nothing. Tap a thin file to fill the first hole. Copy and download still work."
+    ? "Skip is honest, but empty fields teach the next agent nothing. Fill the holes — only the unanswered ones. Copy and download still work."
     : "Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.";
+  const holesCta = holeCount
+    ? `<button class="btn gold" id="finish-holes" type="button">Fill the holes (${holeCount})</button>`
+    : "";
+  const copyClass = holeCount ? "btn" : "btn gold";
   const blocks = FILES.map((file) => `
     <article class="finish-file">
       <div class="finish-file-head">
@@ -761,7 +974,8 @@ function renderFinish() {
     ${packHealthMarkup(health.rows)}
     <div class="finish-toolbar">
       <div class="row finish-actions finish-primary">
-        <button class="btn gold" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
+        ${holesCta}
+        <button class="${copyClass}" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
         <button class="btn" id="finish-export" type="button">Download the zip</button>
       </div>
       <div class="row finish-actions finish-more">
@@ -772,6 +986,8 @@ function renderFinish() {
     </div>
     ${blocks}
   `;
+  const holesBtn = document.getElementById("finish-holes");
+  if (holesBtn) holesBtn.onclick = () => startHolesWalk();
   document.getElementById("finish-copy-pack").onclick = () => {
     copyText(packClipboardMarkdown(), document.getElementById("finish-copy-pack"));
   };
@@ -787,6 +1003,7 @@ function renderFinish() {
   }
   document.getElementById("finish-lab").onclick = openVoiceLab;
   document.getElementById("finish-back").onclick = () => {
+    clearHolesMode();
     ui.done = false;
     ui.q = labStepFor(ui.path);
     saveUi();
@@ -823,6 +1040,7 @@ function firstUnansweredIndex(path, fromIndex) {
 function switchPath(nextPath) {
   if (nextPath !== "essentials" && nextPath !== "full") return;
   if (ui.path === nextPath) return;
+  clearHolesMode();
   const fromQs = questionsForPath(ui.path);
   const onLab = ui.q >= fromQs.length;
   const current = onLab ? null : fromQs[ui.q];
@@ -942,6 +1160,7 @@ function wipeState() {
   ui.q = 0;
   ui.done = false;
   ui.path = "essentials";
+  clearHolesMode();
   saveUi();
 }
 
@@ -1002,6 +1221,7 @@ function loadExample() {
   ui.desk = false;
   ui.done = true;
   ui.q = labStepFor(ui.path);
+  clearHolesMode();
   saveUi();
   draw();
   window.scrollTo(0, 0);
@@ -1022,11 +1242,19 @@ function syncPageMode() {
   }
   label.hidden = false;
   if (finish) label.textContent = "Finish · four files";
+  else if (inHolesWalk()) label.textContent = "Fill the holes";
   else if (ui.q >= labStepFor(ui.path)) label.textContent = "Voice lab · last step";
   else label.textContent = isEssentialsPath() ? "Short pack · one question" : "Interview · one question";
 }
 
 function draw() {
+  if (inHolesWalk()) {
+    if (!ensureHolesWalk().length) {
+      clearHolesMode();
+      ui.done = true;
+      saveUi();
+    }
+  }
   syncPageMode();
   const interview = document.getElementById("interview");
   const desk = document.getElementById("desk");
@@ -1058,6 +1286,13 @@ function draw() {
   toggle.textContent = "Show all fields";
   toggle.setAttribute("aria-pressed", "false");
   desk.hidden = true;
+
+  if (inHolesWalk()) {
+    finish.hidden = true;
+    interview.hidden = false;
+    renderHolesWalk();
+    return;
+  }
 
   if (ui.done) {
     interview.hidden = true;
