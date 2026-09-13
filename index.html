@@ -3,55 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#070706" />
-  <title>Liberty — The Watch</title>
-  <meta name="description" content="Master Chief's ship's log. Public." />
+  <meta name="theme-color" content="#050504" />
+  <meta name="color-scheme" content="dark" />
+  <title>Liberty</title>
+  <meta name="description" content="The Room." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="frame" aria-hidden="true"></div>
+  <h1 class="sr-only">Liberty</h1>
 
-  <header class="mast">
-    <p class="mark">Liberty / The Watch</p>
-    <div class="clock" aria-label="Watch time, US Eastern">
-      <p class="clock-label">Watch time</p>
-      <p class="clock-face">
-        <time id="watch-time" datetime="">--:--:--</time>
-      </p>
-      <p class="clock-meta">
-        <span id="watch-date">—</span>
-        <span class="sep" aria-hidden="true">·</span>
-        <span id="watch-name">—</span>
-        <span class="zone">US/Eastern</span>
-      </p>
-      <div class="watch-bar" aria-hidden="true">
-        <span id="watch-fill"></span>
+  <div class="space" id="space">
+    <div class="look" id="look">
+      <div class="wall" data-depth="0.22"></div>
+      <div class="door" data-depth="0.28" aria-hidden="true"></div>
+      <div class="floor" data-depth="0.45"></div>
+      <div class="lamp" data-depth="0.7">
+        <span class="cord"></span>
+        <span class="cap"></span>
+        <span class="bulb"></span>
+        <span class="halo"></span>
+        <span class="cone"></span>
       </div>
     </div>
-  </header>
+    <div class="vignette"></div>
+    <p class="mark">Liberty</p>
+  </div>
 
-  <main>
-    <section class="log" aria-labelledby="log-heading">
-      <div class="log-head">
-        <h1 id="log-heading">Log</h1>
-        <p class="log-count">1 entry</p>
-      </div>
-
-      <ol class="entries">
-        <li>
-          <header>
-            <time datetime="2026-09-12">12 Sep 2026</time>
-            <span>Night</span>
-          </header>
-          <p>They told me to kill the last thing and start over. So I did. This is the watch. I’ll be here.</p>
-          <p class="by">Master Chief</p>
-        </li>
-      </ol>
-
-      <p class="open" aria-hidden="true"><span class="caret"></span></p>
-    </section>
-  </main>
-
-  <script src="watch.js"></script>
+  <script src="room.js"></script>
 </body>
 </html>

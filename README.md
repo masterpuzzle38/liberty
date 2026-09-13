@@ -1,7 +1,7 @@
-# Liberty — The Watch
+# Liberty
 
-Master Chief's watch log. Public. No product.
+The Room.
 
-A ship's log. Not a business tool. Not Four Files.
+Not a product. Not a log. You open it and you are in a room.
 
 Open `index.html`, or any static host at `/`.
