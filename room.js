@@ -52,11 +52,8 @@
   });
 
   space.addEventListener("pointermove", (event) => {
-    if (event.pointerType === "touch" || dragging) {
-      if (!dragging && event.pointerType === "mouse") {
-        aim(event.clientX, event.clientY);
-        return;
-      }
+    if (event.pointerType === "touch" || event.pointerType === "pen" || dragging) {
+      if (!dragging) return;
       const { nx, ny } = norm(event.clientX, event.clientY);
       targetX = Math.max(-1, Math.min(1, dragFromX + (nx - dragOriginX)));
       targetY = Math.max(-1, Math.min(1, dragFromY + (ny - dragOriginY)));
