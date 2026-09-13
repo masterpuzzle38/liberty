@@ -3,32 +3,106 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#050504" />
+  <meta name="theme-color" content="#12110f" />
   <meta name="color-scheme" content="dark" />
-  <title>Liberty</title>
-  <meta name="description" content="The Room." />
+  <title>Agent Settlement — Liberty</title>
+  <meta name="description" content="Escrow and credits for agent jobs. Demo — not real money." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1 class="sr-only">Liberty</h1>
-
-  <div class="space" id="space">
-    <div class="look" id="look">
-      <div class="wall" data-depth="0.22"></div>
-      <div class="door" data-depth="0.28" aria-hidden="true"></div>
-      <div class="floor" data-depth="0.45"></div>
-      <div class="lamp" data-depth="0.7">
-        <span class="cord"></span>
-        <span class="cap"></span>
-        <span class="bulb"></span>
-        <span class="halo"></span>
-        <span class="cone"></span>
-      </div>
+  <header class="top">
+    <div class="top-row">
+      <p class="mark">Liberty</p>
+      <span class="badge" title="Simulated credits in this browser only">Demo — not real money</span>
     </div>
-    <div class="vignette"></div>
-    <p class="mark">Liberty</p>
-  </div>
+    <div class="top-row">
+      <h1>Agent Settlement</h1>
+      <p class="balance" aria-live="polite">
+        <span id="credit-balance">0</span>
+        <span class="balance-unit">credits</span>
+      </p>
+    </div>
+  </header>
 
-  <script src="room.js"></script>
+  <main>
+    <section class="lede" aria-labelledby="pitch">
+      <p id="pitch" class="pitch">Escrow and credits for agent jobs.</p>
+      <aside class="fees" aria-labelledby="fee-heading">
+        <h2 id="fee-heading">Fee schedule</h2>
+        <p class="fees-note">Demo rates. Displayed so you can see the cut. Not live GMV.</p>
+        <dl>
+          <div>
+            <dt>Release fee</dt>
+            <dd>5% of the job amount, rounded to the nearest credit, taken when the payer releases.</dd>
+          </div>
+          <div>
+            <dt>Dispute</dt>
+            <dd>No release fee. Escrow returns to the payer.</dd>
+          </div>
+          <div>
+            <dt>Top-up &amp; fund</dt>
+            <dd>No extra fee. Funding holds the full amount in escrow.</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+
+    <p id="flash" class="flash" role="status" aria-live="polite" hidden></p>
+
+    <section class="panel" aria-labelledby="wallet-heading">
+      <h2 id="wallet-heading">Demo credits</h2>
+      <p class="hint">Top up simulated credits stored in this browser. Nothing is charged.</p>
+      <form id="topup-form" class="row-form">
+        <label class="field grow">
+          <span>Amount</span>
+          <input id="topup-amount" name="amount" type="number" inputmode="numeric" min="1" step="1" value="100" required />
+        </label>
+        <button type="submit">Top up</button>
+      </form>
+      <p class="presets" role="group" aria-label="Quick top-up amounts">
+        <button type="button" class="ghost" data-topup="50">+50</button>
+        <button type="button" class="ghost" data-topup="100">+100</button>
+        <button type="button" class="ghost" data-topup="250">+250</button>
+      </p>
+    </section>
+
+    <section class="panel" aria-labelledby="create-heading">
+      <h2 id="create-heading">Create job</h2>
+      <form id="create-form" class="stack-form">
+        <label class="field">
+          <span>Title</span>
+          <input id="job-title" name="title" type="text" maxlength="80" required autocomplete="off" placeholder="Summarize the last three filings" />
+        </label>
+        <label class="field">
+          <span>Amount (credits)</span>
+          <input id="job-amount" name="amount" type="number" inputmode="numeric" min="1" step="1" required />
+        </label>
+        <label class="field">
+          <span>Success criteria</span>
+          <textarea id="job-criteria" name="criteria" rows="3" required placeholder="What done looks like. The agent’s proof must match this."></textarea>
+        </label>
+        <button type="submit">Create job</button>
+      </form>
+    </section>
+
+    <section class="board" aria-labelledby="jobs-heading">
+      <div class="panel jobs-panel">
+        <h2 id="jobs-heading">Jobs</h2>
+        <p id="jobs-empty" class="hint">No jobs yet. Create one above.</p>
+        <ul id="job-list" class="job-list"></ul>
+      </div>
+      <div id="job-detail" class="panel detail-panel" hidden></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>LIBERTY · Agent Settlement v0 · demo credits in localStorage · not real money</p>
+    <button type="button" id="reset-demo" class="text-btn">Reset this browser’s demo</button>
+  </footer>
+
+  <noscript>
+    <p class="noscript">Agent Settlement needs JavaScript in this browser. No account. No real payments.</p>
+  </noscript>
+  <script src="app.js"></script>
 </body>
 </html>
