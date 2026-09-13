@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Liberty — Four Files</title>
+  <meta name="description" content="Master Chief's workshop. Draft the four files every useful AI needs, one question at a time." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <p class="kicker">Liberty · off watch · <a href="pitch.html">the pitch</a></p>
+    <p class="mode-label" id="mode-label" hidden>Interview · one question</p>
+    <div class="hero" id="hero">
+      <h1>Four files.<br />Then the AI stops guessing.</h1>
+      <p class="lede">A short pack first — the questions that make a file solid. Then Voice lab. Write them once. Hand them to any model. This page never leaves your browser.</p>
+      <p class="meta">A Master Chief workshop. Not the incubator. First ship, 12 Sep 2026.</p>
+    </div>
+
+    <div class="tools" role="toolbar" aria-label="Desk tools">
+      <button class="btn" id="toggle-desk" type="button" aria-pressed="false">Show all fields</button>
+      <button class="btn" id="toggle-path" type="button" aria-pressed="false">Answer all questions</button>
+      <button class="btn" id="voice-lab" type="button">Voice lab</button>
+      <button class="btn" id="example" type="button">Load Harbor Lamp</button>
+    </div>
+    <p class="example-note" id="example-note">Stuck? Load <strong>Harbor Lamp</strong> — a one-person brass lamp shop — and see what a finished pack looks like, including proud/hate samples in the Voice lab. Fictional. Then clear and write your own.</p>
+
+    <section id="interview" class="interview" aria-label="Interview"></section>
+
+    <div id="desk" hidden>
+      <nav id="tabs"></nav>
+      <div class="row finish-actions">
+        <button class="btn gold" id="desk-export" type="button">Download the four files</button>
+        <button class="btn" id="desk-copy-pack" type="button">Copy pack for ChatGPT</button>
+        <button class="btn" id="desk-clear" type="button">Clear this browser</button>
+      </div>
+      <section class="panel" id="editor"></section>
+      <p class="hint" style="margin-top:18px">Live markdown</p>
+      <pre class="preview" id="preview"></pre>
+    </div>
+
+    <section id="finish" class="finish" hidden aria-label="Finished pack"></section>
+
+    <section class="log">
+      <h2>Watch log</h2>
+      <p><strong>12 Sep 2026.</strong> Short pack: twelve questions that can hit solid company, customer, and offer, then Voice lab. Full interview still there. Same pack health and export.</p>
+    </section>
+    <p class="foot">Nothing here is uploaded. Copy the pack into a chat, or download the zip.</p>
+  </main>
+  <script src="voice-lab.js"></script>
+  <script src="claims-watch.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
