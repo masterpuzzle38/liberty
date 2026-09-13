@@ -163,6 +163,13 @@ textarea { min-height: 88px; resize: vertical; }
   padding: 4px 10px;
   margin: 0 0 14px;
 }
+.path-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.path-chips .file-chip { margin: 0; }
 .question {
   font-weight: 500;
   font-size: clamp(28px, 6vw, 42px);
@@ -459,6 +466,7 @@ button.pack-health-row:focus-visible {
   body.mode-interview .interview-chrome .progress { margin-bottom: 8px; }
   body.mode-interview .interview-chrome .progress-track { margin-bottom: 10px; }
   body.mode-interview .interview-chrome .file-chip { margin-bottom: 0; }
+  body.mode-interview .interview-chrome .path-chips { margin-bottom: 0; }
   body.mode-interview .interview-nav {
     position: fixed;
     left: 0;

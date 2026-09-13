@@ -99,8 +99,38 @@ const QUESTIONS = FILES.filter((file) => file.id !== "voice").flatMap((file) =>
     label
   }))
 );
-const LAB_STEP = QUESTIONS.length;
-const INTERVIEW_LEN = LAB_STEP + 1;
+
+// Highest-leverage fields: enough to hit solid on company (3/5) + offer (4/7)
+// and solid on customer (4/8). Voice lab stays the last step on both paths.
+const ESSENTIAL_KEYS = {
+  company: ["sells", "serves", "different"],
+  customer: ["icp", "pains", "language", "quotes"],
+  offer: ["packages", "proof", "promises", "avoid"]
+};
+
+function isEssentialQuestion(q) {
+  return (ESSENTIAL_KEYS[q.fileId] || []).includes(q.key);
+}
+function questionsForPath(path) {
+  return path === "essentials" ? QUESTIONS.filter(isEssentialQuestion) : QUESTIONS;
+}
+function labStepFor(path) {
+  return questionsForPath(path).length;
+}
+function interviewLenFor(path) {
+  return labStepFor(path) + 1;
+}
+function activeQuestions() {
+  return questionsForPath(ui.path);
+}
+function currentQuestion() {
+  const qs = activeQuestions();
+  if (ui.q >= qs.length) return null;
+  return qs[ui.q];
+}
+function isEssentialsPath() {
+  return ui.path === "essentials";
+}
 
 const KEY = "liberty-four-files-v1";
 const UI_KEY = "liberty-four-files-ui-v1";
@@ -116,15 +146,24 @@ function save() {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
 function loadUi() {
-  const fallback = { desk: false, q: 0, done: false };
+  const fallback = { desk: false, q: 0, done: false, path: "essentials" };
   try {
     const raw = JSON.parse(localStorage.getItem(UI_KEY));
     if (!raw || typeof raw !== "object") return fallback;
     const q = Number(raw.q);
+    const knownPath = raw.path === "full" || raw.path === "essentials";
+    const hasProgress = !!raw.done || (Number.isInteger(q) && q > 0);
+    // New visitors: Short pack. Returning drafts without a path key stay on
+    // Full so a saved question index still maps to the same field.
+    const path = knownPath
+      ? raw.path
+      : (hasProgress || hasAnswers() ? "full" : "essentials");
+    const maxQ = labStepFor(path);
     return {
       desk: !!raw.desk,
-      q: Number.isInteger(q) ? Math.min(Math.max(q, 0), LAB_STEP) : 0,
-      done: !!raw.done
+      q: Number.isInteger(q) ? Math.min(Math.max(q, 0), maxQ) : 0,
+      done: !!raw.done,
+      path
     };
   } catch {
     return fallback;
@@ -303,21 +342,34 @@ function preview() {
   document.getElementById("preview").textContent = markdown(file);
 }
 
+function pathSwitchLabel() {
+  return isEssentialsPath() ? "Answer all questions" : "Use the short pack";
+}
+
+function bindPathSwitch(id) {
+  const el = document.getElementById(id);
+  if (el) el.onclick = () => switchPath(isEssentialsPath() ? "full" : "essentials");
+}
+
 function renderInterview() {
-  if (ui.q >= LAB_STEP) {
+  const qs = activeQuestions();
+  if (ui.q >= qs.length) {
     renderVoiceLabInterview();
     return;
   }
-  const q = QUESTIONS[ui.q];
+  const q = qs[ui.q];
   const data = ensure(q.fileId);
-  const n = INTERVIEW_LEN;
+  const n = interviewLenFor(ui.path);
   const pct = ((ui.q + 1) / n) * 100;
   const root = document.getElementById("interview");
   root.innerHTML = `
     <div class="interview-chrome">
       <p class="progress" id="progress-label">Question ${ui.q + 1} of ${n} · ${q.fileTitle}</p>
       <div class="progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
-      <p class="file-chip">${q.fileName}</p>
+      <div class="path-chips">
+        <p class="file-chip">${q.fileName}</p>
+        <p class="file-chip">${isEssentialsPath() ? "Short pack" : "Full interview"}</p>
+      </div>
     </div>
     <h2 class="question">${q.label}</h2>
     ${q.example ? `<p class="q-example">${escapeHtml(q.example)}</p>` : ""}
@@ -332,6 +384,8 @@ function renderInterview() {
     </div>
     <p class="quiet-tools">
       <button class="linkish" id="jump-lab" type="button">Voice lab</button>
+      ·
+      <button class="linkish" id="switch-path" type="button">${pathSwitchLabel()}</button>
       ·
       <button class="linkish" id="interview-clear" type="button">Clear this browser</button>
     </p>
@@ -348,6 +402,7 @@ function renderInterview() {
   document.getElementById("skip").onclick = () => step(1);
   document.getElementById("next").onclick = () => step(1);
   document.getElementById("jump-lab").onclick = openVoiceLab;
+  bindPathSwitch("switch-path");
   document.getElementById("interview-clear").onclick = clearDrafts;
 }
 
@@ -368,12 +423,17 @@ function renderVoiceLabInterview() {
       <button class="btn" id="skip" type="button">Skip and finish</button>
       <button class="btn gold" id="next" type="button">Finish</button>
     </div>
-    <p class="quiet-tools"><button class="linkish" id="interview-clear" type="button">Clear this browser</button></p>
+    <p class="quiet-tools">
+      <button class="linkish" id="switch-path" type="button">${pathSwitchLabel()}</button>
+      ·
+      <button class="linkish" id="interview-clear" type="button">Clear this browser</button>
+    </p>
   `;
   mountVoiceLab(document.getElementById("voice-lab-mount"), { headed: false, showFields: true });
   document.getElementById("back").onclick = () => step(-1);
   document.getElementById("skip").onclick = () => step(1);
   document.getElementById("next").onclick = () => step(1);
+  bindPathSwitch("switch-path");
   document.getElementById("interview-clear").onclick = clearDrafts;
 }
 
@@ -481,7 +541,7 @@ function openVoiceLab() {
     tab = "voice";
   } else {
     ui.done = false;
-    ui.q = LAB_STEP;
+    ui.q = labStepFor(ui.path);
   }
   saveUi();
   draw();
@@ -537,7 +597,8 @@ function addClaimHit(hit) {
   data.avoid = api.addClaimLine(data.avoid, hit);
   save();
   const interviewTa = document.getElementById("answer");
-  if (interviewTa && QUESTIONS[ui.q] && QUESTIONS[ui.q].key === "avoid") {
+  const live = currentQuestion();
+  if (interviewTa && live && live.key === "avoid") {
     interviewTa.value = data.avoid;
   }
   const deskTa = document.querySelector('textarea[data-file-id="offer"][data-field-key="avoid"]');
@@ -547,7 +608,13 @@ function addClaimHit(hit) {
 }
 
 function openAvoidQuestion() {
-  const idx = QUESTIONS.findIndex((q) => q.key === "avoid");
+  let qs = activeQuestions();
+  let idx = qs.findIndex((q) => q.key === "avoid");
+  if (idx < 0) {
+    ui.path = "full";
+    qs = QUESTIONS;
+    idx = qs.findIndex((q) => q.key === "avoid");
+  }
   ui.desk = false;
   ui.done = false;
   ui.q = idx >= 0 ? idx : 0;
@@ -620,11 +687,20 @@ function openFileHole(fileId) {
     openVoiceLab();
     return;
   }
-  const firstOfFile = QUESTIONS.findIndex((q) => q.fileId === fileId);
-  const empty = firstEmptyQuestionIndex(fileId);
+  const pathQs = activeQuestions();
+  const emptyOnPath = pathQs.findIndex((q) => (
+    q.fileId === fileId && !fieldFilled((state[q.fileId] || {})[q.key])
+  ));
   ui.desk = false;
   ui.done = false;
-  ui.q = empty >= 0 ? empty : (firstOfFile >= 0 ? firstOfFile : 0);
+  if (emptyOnPath >= 0) {
+    ui.q = emptyOnPath;
+  } else {
+    const firstOfFile = QUESTIONS.findIndex((q) => q.fileId === fileId);
+    const empty = firstEmptyQuestionIndex(fileId);
+    ui.path = "full";
+    ui.q = empty >= 0 ? empty : (firstOfFile >= 0 ? firstOfFile : 0);
+  }
   saveUi();
   draw();
   const ta = document.getElementById("answer");
@@ -712,7 +788,7 @@ function renderFinish() {
   document.getElementById("finish-lab").onclick = openVoiceLab;
   document.getElementById("finish-back").onclick = () => {
     ui.done = false;
-    ui.q = LAB_STEP;
+    ui.q = labStepFor(ui.path);
     saveUi();
     draw();
   };
@@ -731,16 +807,76 @@ function escapeHtml(s) {
   }[ch]));
 }
 
+function fieldValue(fileId, key) {
+  return (state[fileId] || {})[key];
+}
+
+function firstUnansweredIndex(path, fromIndex) {
+  const qs = questionsForPath(path);
+  const start = Math.max(0, fromIndex || 0);
+  for (let i = start; i < qs.length; i++) {
+    if (!fieldFilled(fieldValue(qs[i].fileId, qs[i].key))) return i;
+  }
+  return qs.length;
+}
+
+function switchPath(nextPath) {
+  if (nextPath !== "essentials" && nextPath !== "full") return;
+  if (ui.path === nextPath) return;
+  const fromQs = questionsForPath(ui.path);
+  const onLab = ui.q >= fromQs.length;
+  const current = onLab ? null : fromQs[ui.q];
+  ui.path = nextPath;
+  const toQs = questionsForPath(nextPath);
+
+  if (onLab) {
+    ui.done = false;
+    ui.q = toQs.length;
+  } else if (ui.done) {
+    ui.done = false;
+    ui.q = firstUnansweredIndex(nextPath, 0);
+  } else if (current) {
+    const exact = toQs.findIndex((q) => q.fileId === current.fileId && q.key === current.key);
+    if (exact >= 0) {
+      ui.q = fieldFilled(fieldValue(current.fileId, current.key))
+        ? firstUnansweredIndex(nextPath, exact)
+        : exact;
+    } else {
+      const fullIdx = QUESTIONS.findIndex((q) => q.fileId === current.fileId && q.key === current.key);
+      let landed = -1;
+      for (let i = 0; i < toQs.length; i++) {
+        const fi = QUESTIONS.findIndex((q) => q.fileId === toQs[i].fileId && q.key === toQs[i].key);
+        if (fi >= fullIdx && !fieldFilled(fieldValue(toQs[i].fileId, toQs[i].key))) {
+          landed = i;
+          break;
+        }
+      }
+      ui.q = landed >= 0 ? landed : firstUnansweredIndex(nextPath, 0);
+    }
+    ui.done = false;
+  } else {
+    ui.q = firstUnansweredIndex(nextPath, 0);
+    ui.done = false;
+  }
+
+  saveUi();
+  draw();
+  const ta = document.getElementById("answer") || document.getElementById("lab-proud");
+  if (ta) ta.focus();
+  window.scrollTo(0, 0);
+}
+
 function step(delta) {
+  const lab = labStepFor(ui.path);
   const next = ui.q + delta;
-  if (delta > 0 && ui.q >= LAB_STEP) {
+  if (delta > 0 && ui.q >= lab) {
     ui.done = true;
     saveUi();
     draw();
     window.scrollTo(0, 0);
     return;
   }
-  if (next < 0 || next > LAB_STEP) return;
+  if (next < 0 || next > lab) return;
   ui.q = next;
   ui.done = false;
   saveUi();
@@ -805,6 +941,7 @@ function wipeState() {
   for (const k of Object.keys(state)) delete state[k];
   ui.q = 0;
   ui.done = false;
+  ui.path = "essentials";
   saveUi();
 }
 
@@ -864,7 +1001,7 @@ function loadExample() {
   save();
   ui.desk = false;
   ui.done = true;
-  ui.q = LAB_STEP;
+  ui.q = labStepFor(ui.path);
   saveUi();
   draw();
   window.scrollTo(0, 0);
@@ -885,8 +1022,8 @@ function syncPageMode() {
   }
   label.hidden = false;
   if (finish) label.textContent = "Finish · four files";
-  else if (ui.q >= LAB_STEP) label.textContent = "Voice lab · last step";
-  else label.textContent = "Interview · one question";
+  else if (ui.q >= labStepFor(ui.path)) label.textContent = "Voice lab · last step";
+  else label.textContent = isEssentialsPath() ? "Short pack · one question" : "Interview · one question";
 }
 
 function draw() {
@@ -895,7 +1032,14 @@ function draw() {
   const desk = document.getElementById("desk");
   const finish = document.getElementById("finish");
   const toggle = document.getElementById("toggle-desk");
+  const pathBtn = document.getElementById("toggle-path");
   const note = document.getElementById("example-note");
+
+  if (pathBtn) {
+    pathBtn.hidden = !!ui.desk;
+    pathBtn.textContent = isEssentialsPath() ? "Answer all questions" : "Short pack";
+    pathBtn.setAttribute("aria-pressed", isEssentialsPath() ? "false" : "true");
+  }
 
   if (ui.desk) {
     interview.hidden = true;
@@ -931,6 +1075,9 @@ document.getElementById("toggle-desk").onclick = () => {
   ui.desk = !ui.desk;
   saveUi();
   draw();
+};
+document.getElementById("toggle-path").onclick = () => {
+  switchPath(isEssentialsPath() ? "full" : "essentials");
 };
 document.getElementById("example").onclick = loadExample;
 document.getElementById("voice-lab").onclick = openVoiceLab;
