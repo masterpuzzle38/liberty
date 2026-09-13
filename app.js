@@ -238,7 +238,7 @@ function howToUseMarkdown() {
     "",
     "## On a phone",
     "",
-    "Zip files are awkward. On the Liberty finish screen, tap **Copy pack for ChatGPT**, then paste into the app.",
+    "Zip files are awkward. On the Liberty finish screen, follow **Now do this**: tap **Copy pack for ChatGPT**, tap **Open ChatGPT**, then paste and ask one job.",
     "",
     "## Starter prompts",
     "",
@@ -945,6 +945,29 @@ function packHealthMarkup(rows) {
   `;
 }
 
+function handoffMarkup() {
+  return `
+    <div class="handoff" role="region" aria-label="Now do this">
+      <p class="claims-kicker">Now do this</p>
+      <ol>
+        <li>Copy the pack</li>
+        <li>Open <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT</a> <span class="handoff-aside">(Claude or Grok also fine)</span></li>
+        <li>Paste, then ask one job</li>
+      </ol>
+    </div>
+  `;
+}
+
+function promoteOpenChatGpt(openId, copyBtn, { gold } = {}) {
+  const open = document.getElementById(openId);
+  if (!open) return;
+  open.hidden = false;
+  if (gold) {
+    if (copyBtn) copyBtn.classList.remove("gold");
+    open.classList.add("gold");
+  }
+}
+
 function renderFinish() {
   const root = document.getElementById("finish");
   const health = packHealth();
@@ -952,7 +975,7 @@ function renderFinish() {
   const headline = health.anyThin ? "Almost — a few holes." : "Your pack is ready.";
   const lead = health.anyThin
     ? "Skip is honest, but empty fields teach the next agent nothing. Fill the holes — only the unanswered ones. Copy and download still work."
-    : "Read the four files. Copy the pack into ChatGPT, Claude, or Grok — or download the zip. Either way works.";
+    : "Copy the pack, open ChatGPT, paste — then ask one job.";
   const holesCta = holeCount
     ? `<button class="btn gold" id="finish-holes" type="button">Fill the holes (${holeCount})</button>`
     : "";
@@ -972,10 +995,12 @@ function renderFinish() {
     <p class="hint">${lead}</p>
     ${finishWarning()}
     ${packHealthMarkup(health.rows)}
+    ${handoffMarkup()}
     <div class="finish-toolbar">
       <div class="row finish-actions finish-primary">
         ${holesCta}
         <button class="${copyClass}" id="finish-copy-pack" type="button">Copy pack for ChatGPT</button>
+        <a class="btn" id="finish-open-chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" hidden>Open ChatGPT</a>
         <button class="btn" id="finish-export" type="button">Download the zip</button>
       </div>
       <div class="row finish-actions finish-more">
@@ -989,7 +1014,9 @@ function renderFinish() {
   const holesBtn = document.getElementById("finish-holes");
   if (holesBtn) holesBtn.onclick = () => startHolesWalk();
   document.getElementById("finish-copy-pack").onclick = () => {
-    copyText(packClipboardMarkdown(), document.getElementById("finish-copy-pack"));
+    const copyBtn = document.getElementById("finish-copy-pack");
+    copyText(packClipboardMarkdown(), copyBtn);
+    promoteOpenChatGpt("finish-open-chatgpt", copyBtn, { gold: !holeCount });
   };
   document.getElementById("finish-export").onclick = download;
   for (const btn of root.querySelectorAll("[data-copy-file]")) {
@@ -1318,7 +1345,9 @@ document.getElementById("example").onclick = loadExample;
 document.getElementById("voice-lab").onclick = openVoiceLab;
 document.getElementById("desk-export").onclick = download;
 document.getElementById("desk-copy-pack").onclick = () => {
-  copyText(packClipboardMarkdown(), document.getElementById("desk-copy-pack"));
+  const copyBtn = document.getElementById("desk-copy-pack");
+  copyText(packClipboardMarkdown(), copyBtn);
+  promoteOpenChatGpt("desk-open-chatgpt", copyBtn);
 };
 document.getElementById("desk-clear").onclick = clearDrafts;
 draw();

@@ -59,6 +59,13 @@ nav button, .btn {
   border-radius: 999px;
   cursor: pointer;
 }
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+a.btn[hidden] { display: none; }
 nav button.on, .btn.gold {
   background: var(--gold);
   color: var(--ink);
@@ -354,6 +361,25 @@ button.pack-health-row:focus-visible {
 .pack-health-solid .pack-health-status { color: var(--gold); }
 .pack-health-thin .pack-health-status { color: var(--warn); }
 .pack-health-empty .pack-health-status { color: var(--quiet); }
+.handoff {
+  margin: 14px 0 2px;
+  padding: 12px 16px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0c1412;
+}
+.handoff ol {
+  margin: 0;
+  padding: 0 0 2px 1.2em;
+  color: var(--mist);
+  font-size: 16px;
+  line-height: 1.35;
+}
+.handoff li { margin: 4px 0; }
+.handoff-aside {
+  color: var(--quiet);
+  font-size: 14px;
+}
 .finish-actions { margin: 18px 0 8px; }
 .finish-file-head {
   display: flex;
