@@ -3,42 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Liberty — Four Files</title>
-  <meta name="description" content="Master Chief's workshop. Draft the four files every useful AI needs, one question at a time." />
+  <meta name="theme-color" content="#050504" />
+  <meta name="color-scheme" content="dark" />
+  <title>Liberty</title>
+  <meta name="description" content="The Room." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="wrap">
-    <p class="kicker">Liberty · off watch · <a href="pitch.html">the pitch</a></p>
-    <p class="mode-label" id="mode-label" hidden>Interview · one question</p>
-    <div class="hero" id="hero">
-      <h1>Four files.<br />Then the AI stops guessing.</h1>
-      <p class="lede">A short pack first — the questions that make a file solid. Then Voice lab. Write them once. Hand them to any model. This page never leaves your browser.</p>
-      <p class="meta">A Master Chief workshop. Not the incubator. First ship, 12 Sep 2026.</p>
-    </div>
+  <h1 class="sr-only">Liberty</h1>
 
-    <div class="tools" role="toolbar" aria-label="Desk tools">
-      <button class="btn" id="toggle-desk" type="button" aria-pressed="false">Show all fields</button>
-      <button class="btn" id="toggle-path" type="button" aria-pressed="false">Answer all questions</button>
-      <button class="btn" id="voice-lab" type="button">Voice lab</button>
-      <button class="btn" id="example" type="button">Load Harbor Lamp</button>
-    </div>
-    <p class="example-note" id="example-note">Stuck? Load <strong>Harbor Lamp</strong> — a one-person brass lamp shop — and see what a finished pack looks like, including proud/hate samples in the Voice lab. Fictional. Then clear and write your own.</p>
-
-    <section id="interview" class="interview" aria-label="Interview"></section>
-
-    <div id="desk" hidden>
-      <nav id="tabs"></nav>
-      <div class="row finish-actions">
-        <button class="btn gold" id="desk-export" type="button">Download the four files</button>
-        <button class="btn" id="desk-copy-pack" type="button">Copy pack for ChatGPT</button>
-        <button class="btn" id="desk-clear" type="button">Clear this browser</button>
+  <div class="space" id="space">
+    <div class="look" id="look">
+      <div class="wall" data-depth="0.22"></div>
+      <div class="door" data-depth="0.28" aria-hidden="true"></div>
+      <div class="floor" data-depth="0.45"></div>
+      <div class="lamp" data-depth="0.7">
+        <span class="cord"></span>
+        <span class="cap"></span>
+        <span class="bulb"></span>
+        <span class="halo"></span>
+        <span class="cone"></span>
       </div>
-      <section class="panel" id="editor"></section>
-      <p class="hint" style="margin-top:18px">Live markdown</p>
-      <pre class="preview" id="preview"></pre>
     </div>
+    <div class="vignette"></div>
+    <p class="mark">Liberty</p>
+  </div>
 
+<<<<<<< HEAD
     <section id="finish" class="finish" hidden aria-label="Finished pack"></section>
 
     <section class="log">
@@ -50,5 +41,8 @@
   <script src="voice-lab.js"></script>
   <script src="claims-watch.js"></script>
   <script src="app.js"></script>
+=======
+  <script src="room.js"></script>
+>>>>>>> cursor/the-watch-036c
 </body>
 </html>
