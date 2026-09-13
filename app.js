@@ -157,7 +157,13 @@ function save() {
 function parseHoles(raw) {
   if (!raw || !raw.holes || typeof raw.holes !== "object") return null;
   const i = Number(raw.holes.i);
-  return { i: Number.isInteger(i) && i >= 0 ? i : 0 };
+  const ids = Array.isArray(raw.holes.ids)
+    ? raw.holes.ids.filter((id) => typeof id === "string" && id.length)
+    : null;
+  return {
+    i: Number.isInteger(i) && i >= 0 ? i : 0,
+    ids: ids && ids.length ? ids : null
+  };
 }
 
 function loadUi() {
@@ -454,7 +460,7 @@ function renderVoiceLabInterview() {
 }
 
 function renderHolesWalk() {
-  if (!holesWalk) holesWalk = computeHoles();
+  holesWalk = ensureHolesWalk();
   if (!holesWalk.length) {
     exitHolesWalk();
     return;
@@ -794,11 +800,56 @@ function computeHoles() {
   return holes;
 }
 
+function holeId(hole) {
+  return hole.kind === "lab" ? "voice:lab" : hole.fileId + ":" + hole.key;
+}
+
+function hydrateHoles(ids) {
+  const qs = QUESTIONS;
+  const out = [];
+  for (const id of ids) {
+    if (id === "voice:lab") {
+      out.push({
+        kind: "lab",
+        fileId: "voice",
+        fileTitle: "Voice",
+        fileName: "voice.md"
+      });
+      continue;
+    }
+    const sep = id.indexOf(":");
+    if (sep < 0) continue;
+    const fileId = id.slice(0, sep);
+    const key = id.slice(sep + 1);
+    const q = qs.find((item) => item.fileId === fileId && item.key === key);
+    if (q) out.push({ kind: "question", ...q });
+  }
+  return out;
+}
+
+function ensureHolesWalk() {
+  if (holesWalk && holesWalk.length) return holesWalk;
+  if (ui.holes && ui.holes.ids && ui.holes.ids.length) {
+    holesWalk = hydrateHoles(ui.holes.ids);
+    if (holesWalk.length) return holesWalk;
+  }
+  holesWalk = computeHoles();
+  if (ui.holes && holesWalk.length) {
+    ui.holes = { i: ui.holes.i || 0, ids: holesWalk.map(holeId) };
+  }
+  return holesWalk;
+}
+
 function peekHole() {
-  const list = holesWalk || computeHoles();
+  const list = ensureHolesWalk();
   if (!ui.holes || !list.length) return null;
   const i = Math.min(Math.max(ui.holes.i, 0), list.length - 1);
   return list[i];
+}
+
+function setHolesIndex(i) {
+  const ids = (ui.holes && ui.holes.ids) || (holesWalk ? holesWalk.map(holeId) : null);
+  ui.holes = { i, ids };
 }
 
 function clearHolesMode() {
@@ -822,7 +873,7 @@ function startHolesWalk(fromFileId) {
     const idx = holesWalk.findIndex((h) => h.fileId === fromFileId);
     if (idx >= 0) i = idx;
   }
-  ui.holes = { i };
+  ui.holes = { i, ids: holesWalk.map(holeId) };
   ui.desk = false;
   ui.done = false;
   saveUi();
@@ -842,7 +893,7 @@ function exitHolesWalk() {
 }
 
 function stepHoles(delta) {
-  const list = holesWalk || computeHoles();
+  const list = ensureHolesWalk();
   if (!list.length) {
     exitHolesWalk();
     return;
@@ -853,7 +904,7 @@ function stepHoles(delta) {
     return;
   }
   if (next < 0 || next >= list.length) return;
-  ui.holes = { i: next };
+  setHolesIndex(next);
   saveUi();
   draw();
   const ta = document.getElementById("answer") || document.getElementById("lab-proud");
@@ -1198,8 +1249,7 @@ function syncPageMode() {
 
 function draw() {
   if (inHolesWalk()) {
-    if (!holesWalk) holesWalk = computeHoles();
-    if (!holesWalk.length) {
+    if (!ensureHolesWalk().length) {
       clearHolesMode();
       ui.done = true;
       saveUi();
