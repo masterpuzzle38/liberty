@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. The client holds the job. Neither persists jobs or takes escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,11 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/transition only."
+      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/quote and POST /api/v0/transition."
+    },
+    {
+      "name": "quote",
+      "description": "Dry-run of the transition engine. Same request shape. Does not mutate state. money is always false. Demo API key is optional."
     },
     {
       "name": "transition",
@@ -50,7 +54,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, and the transition API description.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, and the quote / transition API description.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -160,6 +164,102 @@
         }
       }
     },
+    "/api/v0/quote": {
+      "get": {
+        "tags": ["quote"],
+        "summary": "Discovery for the demo quote engine",
+        "operationId": "getQuoteDiscovery",
+        "responses": {
+          "200": {
+            "description": "Path, dry_run, actions, and demo caveats. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuoteDiscovery" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["quote"],
+        "summary": "CORS preflight",
+        "operationId": "optionsQuote",
+        "responses": {
+          "204": {
+            "description": "Allow POST and OPTIONS from any origin."
+          }
+        }
+      },
+      "post": {
+        "tags": ["quote"],
+        "summary": "Dry-run one demo settlement action",
+        "description": "Same request shape and engine as POST /api/v0/transition. Computes next status, fee, agent_payout, payer_credits_after, and returned_to_payer when those apply. Does not mutate state. Create quote returns validated open job fields without a durable id. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "operationId": "postQuote",
+        "security": [
+          {},
+          { "bearerDemo": [] },
+          { "libertyKey": [] }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "description": "Bearer demo API key minted on the human UI. Not production auth.",
+            "schema": { "type": "string", "example": "Bearer lib_demo_…" }
+          },
+          {
+            "name": "X-Liberty-Key",
+            "in": "header",
+            "required": false,
+            "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Would-be next job state. quoted is true. Create omits job.id. Includes payer_credits_after when credits would change, fee/agent_payout on release, returned_to_payer on dispute, key_id when a demo key was sent, and key_optional when it was not.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuoteSuccess" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON, action, or fields.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal transition or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settlement.openapi.json": {
       "get": {
         "tags": ["surface"],
@@ -227,6 +327,7 @@
             "items": { "$ref": "#/components/schemas/ReceiptField" }
           },
           "transition_api": { "type": "object" },
+          "quote_api": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" }
         }
       },
@@ -377,7 +478,76 @@
             "items": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] }
           },
           "note": { "type": "string" },
-          "protocol": { "type": "string" }
+          "protocol": { "type": "string" },
+          "dry_run": { "type": "boolean" },
+          "quote": { "type": "string" },
+          "commit": { "type": "string" }
+        }
+      },
+      "QuoteDiscovery": {
+        "type": "object",
+        "required": ["service", "mode", "money", "path", "methods", "auth", "persistence", "dry_run", "actions"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "path": { "const": "/api/v0/quote" },
+          "methods": { "type": "array", "items": { "type": "string" } },
+          "auth": { "$ref": "#/components/schemas/DemoAuthDiscovery" },
+          "persistence": { "const": false },
+          "dry_run": { "const": true },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] }
+          },
+          "note": { "type": "string" },
+          "protocol": { "type": "string" },
+          "quote": { "const": "/api/v0/quote" },
+          "commit": { "const": "/api/v0/transition" }
+        }
+      },
+      "QuoteJob": {
+        "type": "object",
+        "description": "Same job fields as a commit. Create quotes omit id — no durable id is assigned until POST /api/v0/transition.",
+        "required": ["title", "amount", "criteria", "status", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^as_[0-9a-f]{10}$" },
+          "title": { "type": "string", "maxLength": 80 },
+          "amount": { "type": "integer", "minimum": 1 },
+          "criteria": { "type": "string" },
+          "proofUrl": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/JobStatus" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "fundedAt": { "type": ["string", "null"], "format": "date-time" },
+          "submittedAt": { "type": ["string", "null"], "format": "date-time" },
+          "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agentPayout": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "QuoteSuccess": {
+        "type": "object",
+        "required": ["ok", "mode", "money", "quoted", "action", "job"],
+        "properties": {
+          "ok": { "const": true },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "quoted": { "const": true },
+          "action": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] },
+          "job": { "$ref": "#/components/schemas/QuoteJob" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "payer_credits_after": { "type": "integer", "minimum": 0 },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agent_payout": { "type": "integer", "minimum": 0 },
+          "returned_to_payer": { "type": "integer", "minimum": 0 },
+          "receipt": { "$ref": "#/components/schemas/Receipt" },
+          "key_id": {
+            "type": "string",
+            "pattern": "^k_[0-9a-f]{12}$",
+            "description": "Present when a demo key header was sent."
+          },
+          "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
+          "auth": { "$ref": "#/components/schemas/DemoAuth" }
         }
       },
       "TransitionRequest": {

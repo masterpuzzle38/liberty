@@ -266,12 +266,13 @@ function receiptFromJob(job) {
   };
 }
 
-function discovery() {
+function discovery(kind) {
+  const quote = kind === "quote";
   return {
     service: "liberty-agent-settlement",
     mode: "demo",
     money: false,
-    path: "/api/v0/transition",
+    path: quote ? "/api/v0/quote" : "/api/v0/transition",
     methods: ["POST", "OPTIONS"],
     auth: {
       required: false,
@@ -281,14 +282,29 @@ function discovery() {
       missing: "key_optional",
     },
     persistence: false,
+    dry_run: quote,
     actions: ACTIONS,
-    note: "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    note: quote
+      ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+      : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     protocol: "/api/settlement.json",
+    quote: "/api/v0/quote",
+    commit: "/api/v0/transition",
   };
+}
+
+function decorateQuote(result) {
+  if (result.status !== 200) return result;
+  const body = { ...result.body, quoted: true };
+  if (Number.isInteger(body.payer_credits)) {
+    body.payer_credits_after = body.payer_credits;
+  }
+  return { status: result.status, body };
 }
 
 function transition(input, options) {
   const opts = options || {};
+  const dryRun = Boolean(opts.dryRun);
   const now = opts.now || (() => new Date().toISOString());
   const idFactory = opts.makeId || makeId;
 
@@ -314,7 +330,6 @@ function transition(input, options) {
     if (criteria.error) return criteria.error;
 
     const job = {
-      id: idFactory(),
       title: title.value,
       amount: amount.value,
       criteria: criteria.value,
@@ -327,7 +342,9 @@ function transition(input, options) {
       fee: 0,
       agentPayout: 0,
     };
-    return ok({ action, job });
+    if (!dryRun) job.id = idFactory();
+    const created = ok({ action, job });
+    return dryRun ? decorateQuote(created) : created;
   }
 
   const parsedJob = readJob(input.job);
@@ -349,11 +366,12 @@ function transition(input, options) {
     }
     job.status = "funded";
     job.fundedAt = stamp;
-    return ok({
+    const funded = ok({
       action,
       job,
       payer_credits: credits.value - job.amount,
     });
+    return dryRun ? decorateQuote(funded) : funded;
   }
 
   if (action === "submit") {
@@ -364,7 +382,8 @@ function transition(input, options) {
     job.proofUrl = proof.value;
     job.status = "submitted";
     job.submittedAt = stamp;
-    return ok({ action, job });
+    const submitted = ok({ action, job });
+    return dryRun ? decorateQuote(submitted) : submitted;
   }
 
   if (action === "release") {
@@ -372,13 +391,14 @@ function transition(input, options) {
     job.agentPayout = job.amount - job.fee;
     job.status = "released";
     job.resolvedAt = stamp;
-    return ok({
+    const released = ok({
       action,
       job,
       fee: job.fee,
       agent_payout: job.agentPayout,
       receipt: receiptFromJob(job),
     });
+    return dryRun ? decorateQuote(released) : released;
   }
 
   const credits = readCredits(firstDefined(input.payer_credits, input.payerCredits), "payer_credits", false);
@@ -398,12 +418,69 @@ function transition(input, options) {
   if (credits.value !== undefined) {
     body.payer_credits = credits.value + job.amount;
   }
-  return ok(body);
+  const disputed = ok(body);
+  return dryRun ? decorateQuote(disputed) : disputed;
 }
 
-function handleHttp({ method, body, headers }) {
+function quote(input, options) {
+  return transition(input, { ...(options || {}), dryRun: true });
+}
+
+function parseBody(raw) {
+  if (raw == null || raw === "") return {};
+  if (Buffer.isBuffer(raw)) {
+    const text = raw.toString("utf8").trim();
+    if (!text) return {};
+    return JSON.parse(text);
+  }
+  if (typeof raw === "string") {
+    const text = raw.trim();
+    if (!text) return {};
+    return JSON.parse(text);
+  }
+  if (typeof raw === "object") return raw;
+  const error = new Error("Body must be JSON.");
+  error.code = "invalid_json";
+  throw error;
+}
+
+function createVercelHandler({ dryRun } = {}) {
+  return async function handler(req, res) {
+    let body;
+    try {
+      body = parseBody(req.body);
+    } catch {
+      const headers = corsHeaders();
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
+      }
+      return res.status(400).json(applyDemoAuth({
+        ok: false,
+        mode: "demo",
+        money: false,
+        error: "invalid_json",
+        message: "Body must be JSON.",
+      }, req.headers));
+    }
+
+    const result = handleHttp({
+      method: req.method,
+      body,
+      headers: req.headers,
+      dryRun: Boolean(dryRun),
+    });
+    for (const [key, value] of Object.entries(result.headers)) {
+      res.setHeader(key, value);
+    }
+    if (result.body == null) return res.status(result.status).end();
+    return res.status(result.status).json(result.body);
+  };
+}
+
+function handleHttp({ method, body, headers, dryRun }) {
   const cors = corsHeaders();
   const verb = (method || "").toUpperCase();
+  const quoteMode = Boolean(dryRun);
 
   if (verb === "OPTIONS") {
     return { status: 204, headers: cors, body: null };
@@ -413,7 +490,7 @@ function handleHttp({ method, body, headers }) {
     return {
       status: 200,
       headers: { ...cors, "Content-Type": "application/json" },
-      body: discovery(),
+      body: discovery(quoteMode ? "quote" : "transition"),
     };
   }
 
@@ -432,7 +509,7 @@ function handleHttp({ method, body, headers }) {
     };
   }
 
-  const result = transition(body);
+  const result = transition(body, { dryRun: quoteMode });
   return {
     status: result.status,
     headers: { ...cors, "Content-Type": "application/json" },
@@ -448,9 +525,12 @@ module.exports = {
   STATUSES,
   applyDemoAuth,
   corsHeaders,
+  createVercelHandler,
   discovery,
   handleHttp,
   keyIdFromSecret,
+  parseBody,
+  quote,
   readDemoAuth,
   receiptFromJob,
   releaseFee,

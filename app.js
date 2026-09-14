@@ -3,7 +3,9 @@
   const KEY_STORAGE = "liberty.agent-settlement.demo-key.v0";
   const KEY_REVEAL = "liberty.agent-settlement.demo-key.reveal";
   const TRANSITION_URL = "/api/v0/transition";
+  const QUOTE_URL = "/api/v0/quote";
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
+  const QUOTE_ACTIONS = ["fund", "release", "dispute"];
 
   const els = {
     balance: document.getElementById("credit-balance"),
@@ -113,6 +115,7 @@
 
   let state = load();
   let inflight = false;
+  let pendingQuote = null;
 
   function selectedId() {
     const match = location.hash.match(/^#job\/([a-z0-9_]+)/i);
@@ -120,6 +123,7 @@
   }
 
   function selectJob(id) {
+    if (!pendingQuote || pendingQuote.jobId !== id) pendingQuote = null;
     if (id) location.hash = `#job/${id}`;
     else if (location.hash) history.replaceState(null, "", location.pathname + location.search);
     render();
@@ -263,7 +267,7 @@
     save(state);
   }
 
-  async function postTransition(payload) {
+  async function postEngine(url, payload, failLabel) {
     if (inflight) return null;
     inflight = true;
     document.body.classList.add("pending");
@@ -271,7 +275,7 @@
       const headers = { "Content-Type": "application/json" };
       const demoKey = loadDemoKey();
       if (demoKey) headers.Authorization = `Bearer ${demoKey}`;
-      const res = await fetch(TRANSITION_URL, {
+      const res = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
@@ -284,7 +288,7 @@
         return null;
       }
       if (!res.ok || !data || data.ok !== true) {
-        flash((data && data.message) || "Transition failed.", true);
+        flash((data && data.message) || failLabel, true);
         return null;
       }
       return data;
@@ -297,9 +301,82 @@
     }
   }
 
+  function postTransition(payload) {
+    return postEngine(TRANSITION_URL, payload, "Transition failed.");
+  }
+
+  function postQuote(payload) {
+    return postEngine(QUOTE_URL, payload, "Quote failed.");
+  }
+
+  function moneyActionPayload(action, job) {
+    if (action === "fund") return { action, job, payer_credits: state.credits };
+    if (action === "submit") return { action, job };
+    if (action === "release") return { action, job };
+    if (action === "dispute") return { action, job, payer_credits: state.credits };
+    return { action, job };
+  }
+
+  function quoteImpactLine(action, data) {
+    if (action === "fund") {
+      return `Hold ${data.job.amount} credits. Fee 0. Payer credits after: ${data.payer_credits_after}.`;
+    }
+    if (action === "release") {
+      return `Fee ${data.fee}. Agent payout ${data.agent_payout}. Payer credits stay ${state.credits}.`;
+    }
+    if (action === "dispute") {
+      const after = Number.isFinite(data.payer_credits_after)
+        ? ` Payer credits after: ${data.payer_credits_after}.`
+        : "";
+      return `Returned to payer: ${data.returned_to_payer}. Fee 0.${after}`;
+    }
+    return `Next status: ${data.job.status}.`;
+  }
+
+  function quotePreviewHtml(quote) {
+    const data = quote.data;
+    const next = data.job && data.job.status ? data.job.status : quote.action;
+    return `
+      <aside class="quote-preview" aria-live="polite">
+        <p class="quote-kicker">Demo quote — not real money</p>
+        <p class="quote-impact">${escapeHtml(quoteImpactLine(quote.action, data))}</p>
+        <p class="hint">Next status: ${escapeHtml(next)}. Nothing is committed until you confirm.</p>
+      </aside>
+      <div class="action-row">
+        <button type="button" data-action="confirm-quote"${quote.action === "dispute" ? " class=\"warn\"" : ""}>Confirm ${escapeHtml(quote.action)}</button>
+        <button type="button" class="secondary" data-action="cancel-quote">Cancel</button>
+      </div>
+    `;
+  }
+
+  async function requestQuote(action, id) {
+    const job = findJob(id);
+    if (!job) return;
+    const data = await postQuote(moneyActionPayload(action, job));
+    if (!data) return;
+    pendingQuote = { jobId: id, action, data };
+    render();
+  }
+
+  async function confirmQuotedAction() {
+    if (!pendingQuote) return;
+    const { action, jobId } = pendingQuote;
+    pendingQuote = null;
+    if (action === "fund") return fundJob(jobId);
+    if (action === "release") return releaseJob(jobId);
+    if (action === "dispute") return disputeJob(jobId);
+  }
+
+  function cancelQuote() {
+    pendingQuote = null;
+    flash("");
+    render();
+  }
+
   function topUp(amount) {
     state.credits += amount;
     save(state);
+    pendingQuote = null;
     flash(`Added ${amount} demo credits. Not real money.`);
     render();
   }
@@ -421,11 +498,13 @@
     }
 
     const actions = [];
-    if (job.status === "open") {
+    const showingQuote = pendingQuote && pendingQuote.jobId === job.id && QUOTE_ACTIONS.includes(pendingQuote.action);
+    if (showingQuote) {
+      actions.push(quotePreviewHtml(pendingQuote));
+    } else if (job.status === "open") {
       const canFund = state.credits >= job.amount;
       actions.push(`<button type="button" data-action="fund" ${canFund ? "" : "disabled"}>${canFund ? `Fund ${job.amount} credits` : "Need more credits to fund"}</button>`);
-    }
-    if (job.status === "funded") {
+    } else if (job.status === "funded") {
       actions.push(`
         <form id="proof-form" class="stack-form">
           <label class="field">
@@ -435,8 +514,7 @@
           <button type="submit">Submit proof</button>
         </form>
       `);
-    }
-    if (job.status === "submitted") {
+    } else if (job.status === "submitted") {
       actions.push(`
         <div class="action-row">
           <button type="button" data-action="release">Release (5% fee)</button>
@@ -587,9 +665,18 @@
     const job = findJob(selectedId());
     if (!job) return;
     const action = button.dataset.action;
-    if (action === "fund") fundJob(job.id);
-    if (action === "release") releaseJob(job.id);
-    if (action === "dispute") disputeJob(job.id);
+    if (action === "fund" || action === "release" || action === "dispute") {
+      requestQuote(action, job.id);
+      return;
+    }
+    if (action === "confirm-quote") {
+      confirmQuotedAction();
+      return;
+    }
+    if (action === "cancel-quote") {
+      cancelQuote();
+      return;
+    }
     if (action === "copy-handoff" || action === "copy-handoff-code") {
       const built = handoffHref(job);
       if (!built.ok) return flash(built.message || "Could not encode this job.", true);
@@ -657,6 +744,7 @@
   els.reset?.addEventListener("click", () => {
     if (!confirm("Clear all demo credits and jobs in this browser?")) return;
     state = emptyState();
+    pendingQuote = null;
     localStorage.removeItem(STORAGE_KEY);
     flash("Demo reset. The demo API key was left in place — revoke it separately if you want.");
     selectJob(null);
