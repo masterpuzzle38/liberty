@@ -153,6 +153,42 @@ test("accepts snake_case job fields and payerCredits alias", () => {
   assert.equal(result.body.job.createdAt, NOW);
 });
 
+test("Vercel handler uses Node req/res and keeps money false", async () => {
+  const handler = require("../api/v0/transition");
+  const res = {
+    headers: {},
+    statusCode: 200,
+    body: undefined,
+    setHeader(key, value) {
+      this.headers[key] = value;
+      return this;
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.body = payload;
+      return this;
+    },
+    end() {
+      return this;
+    },
+  };
+  await handler(
+    {
+      method: "POST",
+      body: { action: "create", title: "Handler", amount: 8, criteria: "Works" },
+    },
+    res,
+  );
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.ok, true);
+  assert.equal(res.body.money, false);
+  assert.equal(res.body.job.status, "open");
+  assert.equal(res.headers["Access-Control-Allow-Origin"], "*");
+});
+
 test("HTTP wrapper: OPTIONS, GET discovery, POST, and 405", () => {
   const options = handleHttp({ method: "OPTIONS", body: null });
   assert.equal(options.status, 204);
