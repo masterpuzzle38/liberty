@@ -89,7 +89,15 @@
     <section class="board" aria-labelledby="jobs-heading">
       <div class="panel jobs-panel">
         <h2 id="jobs-heading">Jobs</h2>
-        <p id="jobs-empty" class="hint">No jobs yet. Create one above.</p>
+        <form id="handoff-form" class="stack-form handoff-form">
+          <label class="field">
+            <span>Open a handoff</span>
+            <input id="handoff-input" name="handoff" type="text" autocomplete="off" spellcheck="false" placeholder="Paste a handoff link or h1. code" />
+          </label>
+          <button type="submit" class="secondary">Load job</button>
+        </form>
+        <p class="hint">Loads a job snapshot into this browser so the other party can continue. Credits stay here. Liberty does not store the job.</p>
+        <p id="jobs-empty" class="hint">No jobs yet. Create one above, or load a handoff.</p>
         <ul id="job-list" class="job-list"></ul>
       </div>
       <div id="job-detail" class="panel detail-panel" hidden></div>
@@ -116,10 +124,10 @@
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page stores credits and jobs in localStorage, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or take custody. Not a live escrow service. Not real money. Not production auth.</p>
+      <p class="hint">Demo only. This page stores credits and jobs in localStorage, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
-        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key</li>
+        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface</li>
         <li><a href="/SETTLEMENT.md"><code>/SETTLEMENT.md</code></a> — markdown for humans</li>
@@ -129,13 +137,14 @@
   </main>
 
   <footer class="foot">
-    <p>LIBERTY · Agent Settlement v0 · demo credits and demo key in localStorage · not real money</p>
+    <p>LIBERTY · Agent Settlement v0 · demo credits and demo key in localStorage · jobs shareable by handoff link · not real money</p>
     <button type="button" id="reset-demo" class="text-btn">Reset this browser’s demo</button>
   </footer>
 
   <noscript>
     <p class="noscript">Agent Settlement needs JavaScript in this browser. No account. No real payments.</p>
   </noscript>
+  <script src="job-handoff.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

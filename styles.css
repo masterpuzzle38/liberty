@@ -347,10 +347,22 @@ body.pending textarea {
 .detail-meta dt { font-weight: 650; color: var(--ink); }
 .detail-meta dd { margin: 0 0 0.55rem; }
 
+.handoff-form {
+  margin-bottom: 0.75rem;
+}
+
+.handoff-share,
 .receipt {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
+}
+
+.handoff-share h3,
+.receipt h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 650;
 }
 
 .receipt pre {

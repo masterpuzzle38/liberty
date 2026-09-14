@@ -9,7 +9,7 @@
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits and jobs live in this browser only.",
+    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
     "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
     "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account."
   },
@@ -19,7 +19,20 @@
     "transition": "/api/v0/transition",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
-    "llms": "/llms.txt"
+    "llms": "/llms.txt",
+    "handoff": "/#handoff/<token>"
+  },
+  "handoff": {
+    "mode": "client",
+    "persistence": false,
+    "money": false,
+    "encoding": "h1. + base64url of compact JSON (short keys) of the current job",
+    "prefix": "h1.",
+    "hash": "#handoff/<token>",
+    "query": "?handoff=<token>",
+    "includes": ["job"],
+    "excludes": ["credits", "demo_api_key"],
+    "note": "Share a job snapshot so another browser can continue the next legal action via POST /api/v0/transition. Credits and the demo API key stay in each browser. Copy a fresh link after each action. Liberty does not store the job."
   },
   "transition_api": {
     "path": "/api/v0/transition",
@@ -165,6 +178,7 @@
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0 and POSTs the five actions to /api/v0/transition.",
+    "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits and the demo API key are not in the payload. Liberty does not persist the snapshot.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
 }
