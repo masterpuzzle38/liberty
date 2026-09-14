@@ -160,7 +160,7 @@ test("protocol files describe client-held handoff and stay valid JSON", () => {
   const fs = require("node:fs");
   const path = require("node:path");
   const root = path.join(__dirname, "..");
-  const settlement = JSON.parse(fs.readFileSync(path.join(root, "api/settlement.json"), "utf8"));
+  const settlement = JSON.parse(fs.readFileSync(path.join(root, "api/_lib/settlement.json"), "utf8"));
   const openapi = JSON.parse(fs.readFileSync(path.join(root, "settlement.openapi.json"), "utf8"));
   assert.equal(settlement.money, false);
   assert.equal(settlement.handoff.persistence, false);
