@@ -4,8 +4,8 @@ Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The huma
 
 Machine-readable copies:
 
-- [`/api/health.json`](api/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
-- [`/api/settlement.json`](api/settlement.json) — states, fees, job and receipt fields
+- [`/api/health.json`](api/_lib/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
+- [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1
 - [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)

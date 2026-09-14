@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Static files agents can GET. No payments. Demo API key is optional on POST /api/v0/transition only."
+      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/transition only."
     },
     {
       "name": "transition",
@@ -205,7 +205,7 @@
       },
       "Protocol": {
         "type": "object",
-        "description": "Shape of /api/settlement.json. Adapters should read that file rather than infer from this schema alone.",
+        "description": "Shape of /api/settlement.json. Adapters should GET that document rather than infer from this schema alone.",
         "required": ["service", "mode", "money", "states", "actions", "fee_schedule", "receipt_fields"],
         "properties": {
           "service": { "const": "liberty-agent-settlement" },
