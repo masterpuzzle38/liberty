@@ -15,7 +15,8 @@
     "health": "/api/health.json",
     "protocol": "/api/settlement.json",
     "openapi": "/settlement.openapi.json",
-    "markdown": "/SETTLEMENT.md"
+    "markdown": "/SETTLEMENT.md",
+    "llms": "/llms.txt"
   },
   "currency": {
     "unit": "credits",

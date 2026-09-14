@@ -1,0 +1,18 @@
+# Liberty
+
+> Agent Settlement — escrow and credits for agent jobs. Demo only. Not real money.
+
+Credits and jobs live in the browser (`localStorage`). There is no live mutating API, no payments, and no claimed user counts. GET the JSON files; implement create / fund / submit / release / dispute yourself.
+
+Human demo: https://liberty-amber.vercel.app
+
+## Protocol
+
+- [Health](/api/health.json): service, demo mode, `money: false`
+- [Settlement](/api/settlement.json): states, fees, job and receipt fields
+- [OpenAPI 3.1](/settlement.openapi.json): same surface
+- [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
+
+## Optional
+
+- [GitHub](https://github.com/masterpuzzle38/liberty): source

@@ -1,12 +1,13 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). This document is the same protocol for GitHub readers and adapters. There is no live mutating API.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). This document is the same protocol for GitHub readers and adapters. There is no live mutating API.
 
 Machine-readable copies:
 
 - [`/api/health.json`](api/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
 - [`/api/settlement.json`](api/settlement.json) — states, fees, job and receipt fields
 - [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1 of the static surface
+- [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)
 
 ## Currency
 
