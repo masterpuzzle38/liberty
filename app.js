@@ -481,6 +481,10 @@
         <h3>Share handoff</h3>
         <p class="hint">Copy a link or compact code for another browser. Encodes this job only — not credits, not the demo API key. Copy a fresh one after each action. Liberty does not store the job.</p>
         <p class="hint">${escapeHtml(nextHint)}</p>
+        <label class="field">
+          <span>Handoff link</span>
+          <input id="handoff-link" class="apikey-value" type="text" readonly autocomplete="off" spellcheck="false" />
+        </label>
         <div class="action-row">
           <button type="button" class="secondary" data-action="copy-handoff">Copy handoff link</button>
           <button type="button" class="ghost" data-action="copy-handoff-code">Copy compact code</button>
@@ -496,6 +500,12 @@
 
     const receiptPre = els.detail.querySelector("#receipt-md");
     if (receiptPre) receiptPre.textContent = receiptMarkdown(job);
+
+    const linkInput = els.detail.querySelector("#handoff-link");
+    if (linkInput) {
+      const built = handoffHref(job);
+      linkInput.value = built.ok ? built.href : "";
+    }
 
     const proofForm = els.detail.querySelector("#proof-form");
     if (proofForm) {
