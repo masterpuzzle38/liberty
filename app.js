@@ -1,5 +1,7 @@
 (() => {
   const STORAGE_KEY = "liberty.agent-settlement.v0";
+  const KEY_STORAGE = "liberty.agent-settlement.demo-key.v0";
+  const KEY_REVEAL = "liberty.agent-settlement.demo-key.reveal";
   const TRANSITION_URL = "/api/v0/transition";
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 
@@ -13,6 +15,14 @@
     jobsEmpty: document.getElementById("jobs-empty"),
     detail: document.getElementById("job-detail"),
     reset: document.getElementById("reset-demo"),
+    keyEmpty: document.getElementById("apikey-empty"),
+    keyLive: document.getElementById("apikey-live"),
+    keyValue: document.getElementById("apikey-value"),
+    keyOnce: document.getElementById("apikey-once"),
+    keyLabel: document.getElementById("apikey-label"),
+    mintKey: document.getElementById("mint-key"),
+    copyKey: document.getElementById("copy-key"),
+    revokeKey: document.getElementById("revoke-key"),
   };
 
   function emptyState() {
@@ -43,6 +53,58 @@
 
   function save(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadDemoKey() {
+    try {
+      const raw = localStorage.getItem(KEY_STORAGE);
+      if (!raw) return "";
+      const data = JSON.parse(raw);
+      if (data && typeof data.key === "string" && data.key.trim()) return data.key.trim();
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  function saveDemoKey(key) {
+    if (!key) {
+      localStorage.removeItem(KEY_STORAGE);
+      sessionStorage.removeItem(KEY_REVEAL);
+      return;
+    }
+    localStorage.setItem(KEY_STORAGE, JSON.stringify({
+      key,
+      mintedAt: new Date().toISOString(),
+    }));
+  }
+
+  function mintDemoKey() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return `lib_demo_${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function maskKey(key) {
+    if (!key || key.length < 16) return "lib_demo_…";
+    return `${key.slice(0, 12)}…${key.slice(-4)}`;
+  }
+
+  function revealKeyThisVisit() {
+    try {
+      return sessionStorage.getItem(KEY_REVEAL) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function setRevealKeyThisVisit(on) {
+    try {
+      if (on) sessionStorage.setItem(KEY_REVEAL, "1");
+      else sessionStorage.removeItem(KEY_REVEAL);
+    } catch {
+      /* ignore */
+    }
   }
 
   let state = load();
@@ -99,7 +161,7 @@
     const fee = job.status === "released" ? job.fee : 0;
     const payout = job.status === "released" ? job.agentPayout : 0;
     const refund = job.status === "disputed" ? job.amount : 0;
-    return [
+    const lines = [
       "# Agent Settlement receipt",
       "",
       "Demo — not real money. Credits were simulated in a browser.",
@@ -117,15 +179,22 @@
       `- Funded: ${job.fundedAt || "—"}`,
       `- Submitted: ${job.submittedAt || "—"}`,
       `- Resolved: ${job.resolvedAt || "—"}`,
-      "",
-    ].join("\n");
+    ];
+    if (job.receiptKeyId) lines.push(`- Demo key_id: ${job.receiptKeyId}`);
+    lines.push("");
+    return lines.join("\n");
   }
 
   function applyResult(data) {
     if (data.job) {
-      const idx = state.jobs.findIndex((job) => job.id === data.job.id);
-      if (idx === -1) state.jobs.unshift(data.job);
-      else state.jobs[idx] = data.job;
+      const existing = state.jobs.find((job) => job.id === data.job.id);
+      const receiptKeyId = data.key_id || (existing && existing.receiptKeyId);
+      const nextJob = receiptKeyId
+        ? { ...data.job, receiptKeyId }
+        : data.job;
+      const idx = state.jobs.findIndex((job) => job.id === nextJob.id);
+      if (idx === -1) state.jobs.unshift(nextJob);
+      else state.jobs[idx] = nextJob;
     }
     if (Number.isFinite(data.payer_credits)) {
       state.credits = Math.max(0, Math.floor(data.payer_credits));
@@ -138,9 +207,12 @@
     inflight = true;
     document.body.classList.add("pending");
     try {
+      const headers = { "Content-Type": "application/json" };
+      const demoKey = loadDemoKey();
+      if (demoKey) headers.Authorization = `Bearer ${demoKey}`;
       const res = await fetch(TRANSITION_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
       let data = null;
@@ -360,10 +432,25 @@
     }
   }
 
+  function renderKey() {
+    const key = loadDemoKey();
+    const showFull = Boolean(key) && revealKeyThisVisit();
+    if (els.keyEmpty) els.keyEmpty.hidden = Boolean(key);
+    if (els.keyLive) els.keyLive.hidden = !key;
+    if (els.keyOnce) els.keyOnce.hidden = !showFull;
+    if (els.keyLabel) {
+      els.keyLabel.textContent = showFull ? "Your demo key (copy now)" : "Your demo key (prefix only)";
+    }
+    if (els.keyValue) {
+      els.keyValue.value = key ? (showFull ? key : maskKey(key)) : "";
+    }
+  }
+
   function render() {
     renderBalance();
     renderList();
     renderDetail();
+    renderKey();
   }
 
   els.topupForm?.addEventListener("submit", (event) => {
@@ -430,11 +517,39 @@
     }
   });
 
+  els.mintKey?.addEventListener("click", () => {
+    const key = mintDemoKey();
+    saveDemoKey(key);
+    setRevealKeyThisVisit(true);
+    flash("Demo key minted in this browser. Not production auth. Not real money.");
+    renderKey();
+  });
+
+  els.copyKey?.addEventListener("click", async () => {
+    const key = loadDemoKey();
+    if (!key) return;
+    try {
+      await navigator.clipboard.writeText(key);
+      setRevealKeyThisVisit(false);
+      flash("Demo key copied. Send Authorization: Bearer <key> or X-Liberty-Key.");
+      renderKey();
+    } catch {
+      flash("Could not copy. Select the key field instead.", true);
+    }
+  });
+
+  els.revokeKey?.addEventListener("click", () => {
+    if (!confirm("Revoke the demo key stored in this browser? Adapters using it will still work — this is not real auth.")) return;
+    saveDemoKey("");
+    flash("Demo key revoked in this browser.");
+    renderKey();
+  });
+
   els.reset?.addEventListener("click", () => {
     if (!confirm("Clear all demo credits and jobs in this browser?")) return;
     state = emptyState();
     localStorage.removeItem(STORAGE_KEY);
-    flash("Demo reset.");
+    flash("Demo reset. The demo API key was left in place — revoke it separately if you want.");
     selectJob(null);
   });
 

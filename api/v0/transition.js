@@ -1,6 +1,6 @@
 "use strict";
 
-const { handleHttp } = require("../_lib/settlement-transition");
+const { applyDemoAuth, corsHeaders, handleHttp } = require("../_lib/settlement-transition");
 
 function parseBody(raw) {
   if (raw == null || raw === "") return {};
@@ -25,19 +25,20 @@ module.exports = async function handler(req, res) {
   try {
     body = parseBody(req.body);
   } catch {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    return res.status(400).json({
+    const headers = corsHeaders();
+    for (const [key, value] of Object.entries(headers)) {
+      res.setHeader(key, value);
+    }
+    return res.status(400).json(applyDemoAuth({
       ok: false,
       mode: "demo",
       money: false,
       error: "invalid_json",
       message: "Body must be JSON.",
-    });
+    }, req.headers));
   }
 
-  const result = handleHttp({ method: req.method, body });
+  const result = handleHttp({ method: req.method, body, headers: req.headers });
   for (const [key, value] of Object.entries(result.headers)) {
     res.setHeader(key, value);
   }

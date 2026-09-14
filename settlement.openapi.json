@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. Credits are simulated. Not real money. No API key on this slice.",
+    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,11 +16,11 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Static files agents can GET. No authentication. No payments."
+      "description": "Static files agents can GET. No payments. Demo API key is optional on POST /api/v0/transition only."
     },
     {
       "name": "transition",
-      "description": "Stateless demo engine. Client holds state. money is always false."
+      "description": "Stateless demo engine. Client holds state. money is always false. Demo API key is optional."
     }
   ],
   "paths": {
@@ -93,8 +93,29 @@
       "post": {
         "tags": ["transition"],
         "summary": "Apply one demo settlement action",
-        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. No API key. Not live escrow custody.",
+        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postTransition",
+        "security": [
+          {},
+          { "bearerDemo": [] },
+          { "libertyKey": [] }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "description": "Bearer demo API key minted on the human UI. Not production auth.",
+            "schema": { "type": "string", "example": "Bearer lib_demo_…" }
+          },
+          {
+            "name": "X-Liberty-Key",
+            "in": "header",
+            "required": false,
+            "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
+            "schema": { "type": "string" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -105,7 +126,7 @@
         },
         "responses": {
           "200": {
-            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout on release, and receipt on release or dispute.",
+            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout on release, receipt on release or dispute, key_id when a demo key was sent, and key_optional when it was not.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TransitionSuccess" }
@@ -158,6 +179,19 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerDemo": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Optional demo API key minted on the human UI (localStorage only). Not production auth. Not an account."
+      },
+      "libertyKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Liberty-Key",
+        "description": "Optional demo API key. Same secret as Bearer. Preferred when both headers are sent."
+      }
+    },
     "schemas": {
       "Health": {
         "type": "object",
@@ -281,7 +315,12 @@
           "created": { "type": "string", "format": "date-time" },
           "funded": { "type": ["string", "null"], "format": "date-time" },
           "submitted": { "type": ["string", "null"], "format": "date-time" },
-          "resolved": { "type": ["string", "null"], "format": "date-time" }
+          "resolved": { "type": ["string", "null"], "format": "date-time" },
+          "key_id": {
+            "type": "string",
+            "pattern": "^k_[0-9a-f]{12}$",
+            "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+          }
         }
       },
       "ReceiptField": {
@@ -303,7 +342,7 @@
           "money": { "const": false },
           "path": { "const": "/api/v0/transition" },
           "methods": { "type": "array", "items": { "type": "string" } },
-          "auth": { "const": false },
+          "auth": { "$ref": "#/components/schemas/DemoAuthDiscovery" },
           "persistence": { "const": false },
           "actions": {
             "type": "array",
@@ -382,7 +421,35 @@
           "fee": { "type": "integer", "minimum": 0 },
           "agent_payout": { "type": "integer", "minimum": 0 },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
-          "receipt": { "$ref": "#/components/schemas/Receipt" }
+          "receipt": { "$ref": "#/components/schemas/Receipt" },
+          "key_id": {
+            "type": "string",
+            "pattern": "^k_[0-9a-f]{12}$",
+            "description": "Present when a demo key header was sent."
+          },
+          "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
+          "auth": { "$ref": "#/components/schemas/DemoAuth" }
+        }
+      },
+      "DemoAuth": {
+        "type": "object",
+        "required": ["required", "mode", "status"],
+        "properties": {
+          "required": { "const": false },
+          "mode": { "const": "demo" },
+          "status": { "type": "string", "enum": ["accepted", "key_optional"] },
+          "key_id": { "type": "string", "pattern": "^k_[0-9a-f]{12}$" }
+        }
+      },
+      "DemoAuthDiscovery": {
+        "type": "object",
+        "required": ["required", "mode", "headers", "missing"],
+        "properties": {
+          "required": { "const": false },
+          "mode": { "const": "demo" },
+          "headers": { "type": "array", "items": { "type": "string" } },
+          "key_id": { "type": "string" },
+          "missing": { "const": "key_optional" }
         }
       },
       "TransitionError": {
@@ -392,6 +459,9 @@
           "ok": { "const": false },
           "mode": { "const": "demo" },
           "money": { "const": false },
+          "key_id": { "type": "string", "pattern": "^k_[0-9a-f]{12}$" },
+          "key_optional": { "type": "boolean" },
+          "auth": { "$ref": "#/components/schemas/DemoAuth" },
           "error": {
             "type": "string",
             "enum": [

@@ -3,8 +3,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  CORS_ALLOW_HEADERS,
   JOB_ID_PATTERN,
   handleHttp,
+  keyIdFromSecret,
   releaseFee,
   transition,
 } = require("../api/_lib/settlement-transition");
@@ -186,7 +188,9 @@ test("Vercel handler uses Node req/res and keeps money false", async () => {
   assert.equal(res.body.ok, true);
   assert.equal(res.body.money, false);
   assert.equal(res.body.job.status, "open");
+  assert.equal(res.body.key_optional, true);
   assert.equal(res.headers["Access-Control-Allow-Origin"], "*");
+  assert.equal(res.headers["Access-Control-Allow-Headers"], CORS_ALLOW_HEADERS);
 });
 
 test("HTTP wrapper: OPTIONS, GET discovery, POST, and 405", () => {
@@ -194,13 +198,16 @@ test("HTTP wrapper: OPTIONS, GET discovery, POST, and 405", () => {
   assert.equal(options.status, 204);
   assert.equal(options.headers["Access-Control-Allow-Origin"], "*");
   assert.equal(options.headers["Access-Control-Allow-Methods"], "POST, OPTIONS");
+  assert.equal(options.headers["Access-Control-Allow-Headers"], CORS_ALLOW_HEADERS);
   assert.equal(options.body, null);
 
   const get = handleHttp({ method: "GET", body: null });
   assert.equal(get.status, 200);
   assert.equal(get.body.money, false);
   assert.equal(get.body.persistence, false);
-  assert.equal(get.body.auth, false);
+  assert.equal(get.body.auth.required, false);
+  assert.equal(get.body.auth.mode, "demo");
+  assert.equal(get.body.auth.missing, "key_optional");
   assert.deepEqual(get.body.actions, ["create", "fund", "submit", "release", "dispute"]);
 
   const posted = handleHttp({
@@ -209,9 +216,90 @@ test("HTTP wrapper: OPTIONS, GET discovery, POST, and 405", () => {
   });
   assert.equal(posted.status, 200);
   assert.equal(posted.body.job.status, "open");
+  assert.equal(posted.body.key_optional, true);
+  assert.equal(posted.body.auth.status, "key_optional");
+  assert.equal(posted.body.money, false);
   assert.equal(posted.headers["Access-Control-Allow-Origin"], "*");
 
   const put = handleHttp({ method: "PUT", body: {} });
   assert.equal(put.status, 405);
   assert.equal(put.body.money, false);
+  assert.equal(put.body.key_optional, true);
+});
+
+test("optional demo key echoes key_id hash prefix and never the raw secret", () => {
+  const secret = "lib_demo_aaaabbbbccccddddeeeeffff00001111";
+  const expected = keyIdFromSecret(secret);
+  assert.match(expected, /^k_[0-9a-f]{12}$/);
+  assert.equal(keyIdFromSecret(secret), expected);
+
+  const bearer = handleHttp({
+    method: "POST",
+    headers: { Authorization: `Bearer ${secret}` },
+    body: { action: "create", title: "Keyed", amount: 3, criteria: "C" },
+  });
+  assert.equal(bearer.status, 200);
+  assert.equal(bearer.body.money, false);
+  assert.equal(bearer.body.key_id, expected);
+  assert.equal(bearer.body.auth.status, "accepted");
+  assert.equal(bearer.body.auth.key_id, expected);
+  assert.equal(bearer.body.key_optional, undefined);
+  assert.equal(JSON.stringify(bearer.body).includes(secret), false);
+
+  const header = handleHttp({
+    method: "POST",
+    headers: { "X-Liberty-Key": secret },
+    body: { action: "create", title: "Keyed", amount: 3, criteria: "C" },
+  });
+  assert.equal(header.body.key_id, expected);
+
+  const both = handleHttp({
+    method: "POST",
+    headers: {
+      authorization: "Bearer other-demo-key",
+      "x-liberty-key": secret,
+    },
+    body: { action: "create", title: "Keyed", amount: 3, criteria: "C" },
+  });
+  assert.equal(both.body.key_id, expected);
+  assert.notEqual(both.body.key_id, keyIdFromSecret("other-demo-key"));
+
+  const open = createJob();
+  const funded = step("fund", { job: open, payer_credits: 100 }).body.job;
+  const submitted = step("submit", { job: funded, proof_url: "https://example.com/proof" }).body.job;
+  const released = handleHttp({
+    method: "POST",
+    headers: { authorization: `Bearer ${secret}` },
+    body: { action: "release", job: submitted },
+  });
+  assert.equal(released.body.receipt.key_id, expected);
+  assert.equal(released.body.key_id, expected);
+  assert.equal(JSON.stringify(released.body).includes(secret), false);
+
+  const missing = handleHttp({
+    method: "POST",
+    headers: { authorization: "Basic not-a-demo-key" },
+    body: { action: "create", title: "No key", amount: 2, criteria: "C" },
+  });
+  assert.equal(missing.body.key_optional, true);
+  assert.equal(missing.body.key_id, undefined);
+});
+
+test("protocol files describe optional demo keys and stay valid JSON", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const root = path.join(__dirname, "..");
+  const settlement = JSON.parse(fs.readFileSync(path.join(root, "api/settlement.json"), "utf8"));
+  const openapi = JSON.parse(fs.readFileSync(path.join(root, "settlement.openapi.json"), "utf8"));
+  const vercel = JSON.parse(fs.readFileSync(path.join(root, "vercel.json"), "utf8"));
+  assert.equal(settlement.money, false);
+  assert.equal(settlement.transition_api.auth, "optional");
+  assert.ok(settlement.adapter_notes.some((note) => note.includes("key_optional")));
+  assert.ok(openapi.components.securitySchemes.bearerDemo);
+  assert.ok(openapi.components.securitySchemes.libertyKey);
+  const transitionHeaders = vercel.headers.find((row) => row.source === "/api/v0/transition");
+  assert.equal(
+    transitionHeaders.headers.find((h) => h.key === "Access-Control-Allow-Headers").value,
+    CORS_ALLOW_HEADERS,
+  );
 });
