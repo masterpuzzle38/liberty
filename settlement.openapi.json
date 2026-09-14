@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -226,7 +226,35 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/ReceiptField" }
           },
-          "transition_api": { "type": "object" }
+          "transition_api": { "type": "object" },
+          "handoff": { "$ref": "#/components/schemas/HandoffProtocol" }
+        }
+      },
+      "HandoffProtocol": {
+        "type": "object",
+        "description": "Client-held job snapshot. Not a server endpoint.",
+        "properties": {
+          "mode": { "const": "client" },
+          "persistence": { "const": false },
+          "money": { "const": false },
+          "encoding": { "type": "string" },
+          "prefix": { "const": "h1." },
+          "hash": { "const": "#handoff/<token>" },
+          "query": { "const": "?handoff=<token>" }
+        }
+      },
+      "JobHandoff": {
+        "type": "object",
+        "description": "Decoded handoff payload before base64url. Compact job keys are expanded by the client.",
+        "required": ["v", "job"],
+        "properties": {
+          "v": { "const": 1 },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "next": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["fund", "submit", "release", "dispute"] },
+            "description": "Next legal actions for this snapshot. Empty when the job is terminal."
+          }
         }
       },
       "JobStatus": {

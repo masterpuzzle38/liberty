@@ -23,7 +23,11 @@
     mintKey: document.getElementById("mint-key"),
     copyKey: document.getElementById("copy-key"),
     revokeKey: document.getElementById("revoke-key"),
+    handoffForm: document.getElementById("handoff-form"),
+    handoffInput: document.getElementById("handoff-input"),
   };
+
+  const handoff = window.LibertyJobHandoff;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -123,6 +127,63 @@
 
   function findJob(id) {
     return state.jobs.find((job) => job.id === id) || null;
+  }
+
+  function upsertJob(job) {
+    const parsed = handoff && handoff.readJob ? handoff.readJob(job) : { ok: false };
+    if (!parsed.ok) return null;
+    const next = parsed.job;
+    const idx = state.jobs.findIndex((item) => item.id === next.id);
+    if (idx === -1) state.jobs.unshift(next);
+    else {
+      const existing = state.jobs[idx];
+      state.jobs[idx] = existing.receiptKeyId
+        ? { ...next, receiptKeyId: existing.receiptKeyId }
+        : next;
+    }
+    save(state);
+    return next;
+  }
+
+  function handoffHref(job) {
+    if (!handoff) return { ok: false, message: "Handoff helper failed to load." };
+    return handoff.buildHandoffHref(job, location.origin + location.pathname);
+  }
+
+  function applyHandoffInput(raw, { fromLink } = {}) {
+    if (!handoff) {
+      flash("Handoff helper failed to load.", true);
+      return null;
+    }
+    const decoded = handoff.decodeHandoffInput(raw);
+    if (!decoded.ok) {
+      flash(decoded.message || "Could not read that handoff.", true);
+      return null;
+    }
+    const job = upsertJob(decoded.job);
+    if (!job) {
+      flash("That handoff job is not valid.", true);
+      return null;
+    }
+    const next = decoded.next && decoded.next.length
+      ? ` Next: ${decoded.next.join(" / ")}.`
+      : " This job is already terminal.";
+    const source = fromLink ? "handoff link" : "handoff";
+    flash(`Loaded ${job.id} (${job.status}) from a ${source}.${next} Credits stay in this browser. Demo only.`);
+    return job;
+  }
+
+  function consumeHandoffFromLocation() {
+    if (!handoff) return false;
+    const token = handoff.readLocationHandoff(location);
+    if (!token) return false;
+    const job = applyHandoffInput(token, { fromLink: true });
+    if (job) {
+      history.replaceState(null, "", `${location.pathname}#job/${job.id}`);
+      return true;
+    }
+    history.replaceState(null, "", location.pathname);
+    return true;
   }
 
   function flash(message, isError) {
@@ -395,6 +456,11 @@
         </div>`
       : "";
 
+    const next = handoff ? handoff.nextActions(job.status) : [];
+    const nextHint = next.length
+      ? `The other party can ${next.join(" or ")} from this snapshot.`
+      : "Terminal snapshot — share to show the receipt.";
+
     els.detail.hidden = false;
     els.detail.innerHTML = `
       <h2>${escapeHtml(job.title)}</h2>
@@ -411,6 +477,15 @@
         <dt>Resolved</dt><dd>${escapeHtml(formatWhen(job.resolvedAt))}</dd>
       </dl>
       ${actions.join("")}
+      <div class="handoff-share">
+        <h3>Share handoff</h3>
+        <p class="hint">Copy a link or compact code for another browser. Encodes this job only — not credits, not the demo API key. Copy a fresh one after each action. Liberty does not store the job.</p>
+        <p class="hint">${escapeHtml(nextHint)}</p>
+        <div class="action-row">
+          <button type="button" class="secondary" data-action="copy-handoff">Copy handoff link</button>
+          <button type="button" class="ghost" data-action="copy-handoff-code">Copy compact code</button>
+        </div>
+      </div>
       ${receipt}
     `;
 
@@ -487,6 +562,15 @@
     if (button) selectJob(button.dataset.jobId);
   });
 
+  els.handoffForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const raw = els.handoffInput ? els.handoffInput.value : "";
+    const job = applyHandoffInput(raw);
+    if (!job) return;
+    if (els.handoffInput) els.handoffInput.value = "";
+    selectJob(job.id);
+  });
+
   els.detail?.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -496,6 +580,21 @@
     if (action === "fund") fundJob(job.id);
     if (action === "release") releaseJob(job.id);
     if (action === "dispute") disputeJob(job.id);
+    if (action === "copy-handoff" || action === "copy-handoff-code") {
+      const built = handoffHref(job);
+      if (!built.ok) return flash(built.message || "Could not encode this job.", true);
+      const text = action === "copy-handoff" ? built.href : built.token;
+      try {
+        await navigator.clipboard.writeText(text);
+        flash(action === "copy-handoff"
+          ? "Handoff link copied. The other browser loads this job snapshot."
+          : "Compact handoff code copied.");
+      } catch {
+        if (els.handoffInput) els.handoffInput.value = text;
+        flash("Could not copy. The handoff is in Open a handoff — copy it from there.", true);
+      }
+      return;
+    }
     if (action === "copy") {
       const text = receiptMarkdown(job);
       try {
@@ -553,6 +652,13 @@
     selectJob(null);
   });
 
-  window.addEventListener("hashchange", render);
+  window.addEventListener("hashchange", () => {
+    if (handoff && handoff.readLocationHandoff(location)) {
+      consumeHandoffFromLocation();
+    }
+    render();
+  });
+
+  consumeHandoffFromLocation();
   render();
 })();

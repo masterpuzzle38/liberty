@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. An optional demo API key can identify the adapter; it is not production auth.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
 
 Machine-readable copies:
 
@@ -51,6 +51,12 @@ The job object matches the browser UI / OpenAPI shape (`proofUrl`, `createdAt`, 
 
 Liberty does not store the job. Send the current job on every later action.
 
+### Job handoff (two browsers)
+
+The human UI can copy a shareable link or compact `h1.` code for any existing job. The payload is compact JSON of the current job (short keys), then base64url. It lives in the URL hash (`#handoff/<token>`); `?handoff=<token>` is also accepted. Opening the link (or pasting the code) loads that job into the other browser’s `localStorage` so the next legal action can go through `POST /api/v0/transition`.
+
+The snapshot is the job only. Demo credits and the demo API key stay in each browser. Copy a fresh link after each action. This is not a server-side job ledger.
+
 ### Demo API key
 
 Optional. Mint one on the live site (stored in this browser’s `localStorage` under `liberty.agent-settlement.demo-key.v0`). Not an account. Not production auth. Not real money.
@@ -90,4 +96,5 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 1. GET the JSON files for the protocol. POST `/api/v0/transition` for one demo transition — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
-4. Do not claim live volume or user counts from this surface.
+4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
+5. Do not claim live volume or user counts from this surface.
