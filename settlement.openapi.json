@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Static, machine-readable description of the Agent Settlement demo. These paths are fetchable JSON, not a live mutating API. The human UI on `/` uses localStorage. Credits are simulated. Not real money.",
+    "description": "Agent Settlement demo. GET paths are static protocol files. POST /api/v0/transition is a stateless demo engine: the client holds the job; Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. Credits are simulated. Not real money. No API key on this slice.",
     "license": {
       "name": "See repository"
     }
@@ -17,6 +17,10 @@
     {
       "name": "surface",
       "description": "Static files agents can GET. No authentication. No payments."
+    },
+    {
+      "name": "transition",
+      "description": "Stateless demo engine. Client holds state. money is always false."
     }
   ],
   "paths": {
@@ -46,7 +50,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, and receipt fields for adapters.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, and the transition API description.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -60,6 +64,81 @@
         }
       }
     },
+    "/api/v0/transition": {
+      "get": {
+        "tags": ["transition"],
+        "summary": "Discovery for the demo transition engine",
+        "operationId": "getTransitionDiscovery",
+        "responses": {
+          "200": {
+            "description": "Path, actions, and demo caveats. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionDiscovery" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["transition"],
+        "summary": "CORS preflight",
+        "operationId": "optionsTransition",
+        "responses": {
+          "204": {
+            "description": "Allow POST and OPTIONS from any origin."
+          }
+        }
+      },
+      "post": {
+        "tags": ["transition"],
+        "summary": "Apply one demo settlement action",
+        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. No API key. Not live escrow custody.",
+        "operationId": "postTransition",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout on release, and receipt on release or dispute.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionSuccess" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON, action, or fields.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal transition or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settlement.openapi.json": {
       "get": {
         "tags": ["surface"],
@@ -67,7 +146,7 @@
         "operationId": "getOpenApi",
         "responses": {
           "200": {
-            "description": "OpenAPI 3.1 description of the static surface and object shapes.",
+            "description": "OpenAPI 3.1 description of the static surface, transition API, and object shapes.",
             "content": {
               "application/json": {
                 "schema": { "type": "object" }
@@ -112,7 +191,8 @@
           "receipt_fields": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/ReceiptField" }
-          }
+          },
+          "transition_api": { "type": "object" }
         }
       },
       "JobStatus": {
@@ -171,6 +251,39 @@
           "agentPayout": { "type": "integer", "minimum": 0 }
         }
       },
+      "Receipt": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "title",
+          "status",
+          "amount",
+          "release_fee",
+          "agent_payout",
+          "returned_to_payer",
+          "success_criteria",
+          "proof",
+          "created",
+          "funded",
+          "submitted",
+          "resolved"
+        ],
+        "properties": {
+          "job_id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/JobStatus" },
+          "amount": { "type": "integer" },
+          "release_fee": { "type": "integer" },
+          "agent_payout": { "type": "integer" },
+          "returned_to_payer": { "type": "integer" },
+          "success_criteria": { "type": "string" },
+          "proof": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "funded": { "type": ["string", "null"], "format": "date-time" },
+          "submitted": { "type": ["string", "null"], "format": "date-time" },
+          "resolved": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
       "ReceiptField": {
         "type": "object",
         "required": ["id", "source"],
@@ -179,6 +292,129 @@
           "source": { "type": "string" },
           "unit": { "type": "string" },
           "rate": { "type": "string" }
+        }
+      },
+      "TransitionDiscovery": {
+        "type": "object",
+        "required": ["service", "mode", "money", "path", "methods", "auth", "persistence", "actions"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "path": { "const": "/api/v0/transition" },
+          "methods": { "type": "array", "items": { "type": "string" } },
+          "auth": { "const": false },
+          "persistence": { "const": false },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] }
+          },
+          "note": { "type": "string" },
+          "protocol": { "type": "string" }
+        }
+      },
+      "TransitionRequest": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/CreateRequest" },
+          { "$ref": "#/components/schemas/FundRequest" },
+          { "$ref": "#/components/schemas/SubmitRequest" },
+          { "$ref": "#/components/schemas/ReleaseRequest" },
+          { "$ref": "#/components/schemas/DisputeRequest" }
+        ]
+      },
+      "CreateRequest": {
+        "type": "object",
+        "required": ["action", "title", "amount", "criteria"],
+        "properties": {
+          "action": { "const": "create" },
+          "title": { "type": "string", "maxLength": 80 },
+          "amount": { "type": "integer", "minimum": 1 },
+          "criteria": { "type": "string" }
+        }
+      },
+      "FundRequest": {
+        "type": "object",
+        "required": ["action", "job", "payer_credits"],
+        "properties": {
+          "action": { "const": "fund" },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "payerCredits": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "SubmitRequest": {
+        "type": "object",
+        "required": ["action", "job", "proof_url"],
+        "properties": {
+          "action": { "const": "submit" },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "proof_url": { "type": "string" },
+          "proofUrl": { "type": "string" }
+        }
+      },
+      "ReleaseRequest": {
+        "type": "object",
+        "required": ["action", "job"],
+        "properties": {
+          "action": { "const": "release" },
+          "job": { "$ref": "#/components/schemas/Job" }
+        }
+      },
+      "DisputeRequest": {
+        "type": "object",
+        "required": ["action", "job"],
+        "properties": {
+          "action": { "const": "dispute" },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "payer_credits": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "TransitionSuccess": {
+        "type": "object",
+        "required": ["ok", "mode", "money", "action", "job"],
+        "properties": {
+          "ok": { "const": true },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "action": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agent_payout": { "type": "integer", "minimum": 0 },
+          "returned_to_payer": { "type": "integer", "minimum": 0 },
+          "receipt": { "$ref": "#/components/schemas/Receipt" }
+        }
+      },
+      "TransitionError": {
+        "type": "object",
+        "required": ["ok", "mode", "money", "error", "message"],
+        "properties": {
+          "ok": { "const": false },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_json",
+              "invalid_action",
+              "missing_field",
+              "invalid_field",
+              "illegal_transition",
+              "insufficient_credits",
+              "method_not_allowed"
+            ]
+          },
+          "message": { "type": "string" },
+          "action": { "type": "string" },
+          "field": { "type": "string" },
+          "from": { "type": "string" },
+          "expected": { "type": "string" },
+          "needed": { "type": "integer" },
+          "payer_credits": { "type": "integer" },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
         }
       }
     }

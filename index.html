@@ -97,10 +97,11 @@
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page’s localStorage UI is the human path. The JSON describes the protocol for adapters — it is not a live escrow service and not real money.</p>
+      <p class="hint">Demo only. This page’s localStorage UI is the human path. Adapters can <code>POST /api/v0/transition</code> for the next job state and fee math. Clients still hold the job — Liberty does not persist or take custody. Not a live escrow service. Not real money. No API key on this demo slice (keys come later).</p>
       <ul>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields</li>
+        <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (not live escrow)</li>
         <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface</li>
         <li><a href="/SETTLEMENT.md"><code>/SETTLEMENT.md</code></a> — markdown for humans</li>
         <li><a href="/llms.txt"><code>/llms.txt</code></a> — short pointer (llms.txt convention)</li>

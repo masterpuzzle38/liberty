@@ -4,7 +4,7 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol so adapters can implement it. It is not a live mutating API and does not move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/transition is a stateless demo engine: it returns the next job state and fee math. It does not persist jobs, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
@@ -14,9 +14,48 @@
   "surfaces": {
     "health": "/api/health.json",
     "protocol": "/api/settlement.json",
+    "transition": "/api/v0/transition",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt"
+  },
+  "transition_api": {
+    "path": "/api/v0/transition",
+    "method": "POST",
+    "cors": ["POST", "OPTIONS"],
+    "auth": false,
+    "auth_note": "No API key on this demo slice. Keys come later.",
+    "persistence": false,
+    "money": false,
+    "mode": "demo",
+    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout on release, and a receipt on release or dispute. Not live escrow custody.",
+    "job_object": {
+      "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout)",
+      "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl"]
+    },
+    "requests": [
+      {
+        "action": "create",
+        "body": ["action", "title", "amount", "criteria"]
+      },
+      {
+        "action": "fund",
+        "body": ["action", "job", "payer_credits"]
+      },
+      {
+        "action": "submit",
+        "body": ["action", "job", "proof_url"]
+      },
+      {
+        "action": "release",
+        "body": ["action", "job"]
+      },
+      {
+        "action": "dispute",
+        "body": ["action", "job"],
+        "optional": ["payer_credits"]
+      }
+    ]
   },
   "currency": {
     "unit": "credits",
@@ -59,28 +98,28 @@
       "id": "fund",
       "from": "open",
       "to": "funded",
-      "requires": ["job_id", "payer_credits >= amount"],
+      "requires": ["job", "payer_credits >= amount"],
       "effect": "Deducts amount from payer credits and holds it in escrow."
     },
     {
       "id": "submit",
       "from": "funded",
       "to": "submitted",
-      "requires": ["job_id", "proof_url"],
+      "requires": ["job", "proof_url"],
       "effect": "Attaches proof the payer can check. Escrow stays held."
     },
     {
       "id": "release",
       "from": "submitted",
       "to": "released",
-      "requires": ["job_id"],
+      "requires": ["job"],
       "effect": "Computes fee and agent_payout. Escrow is not returned to the payer. Terminal."
     },
     {
       "id": "dispute",
       "from": "submitted",
       "to": "disputed",
-      "requires": ["job_id"],
+      "requires": ["job"],
       "effect": "Returns the full amount to the payer. fee=0, agent_payout=0. Terminal."
     }
   ],
@@ -118,8 +157,9 @@
     { "id": "resolved", "source": "job.resolvedAt" }
   ],
   "adapter_notes": [
-    "This demo has no POST/PATCH endpoints. Do not treat these URLs as a live escrow service.",
-    "Implement create, fund, submit, release, and dispute against this state machine and fee schedule.",
+    "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
+    "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
+    "No API key is required on this demo slice. Keys come later.",
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
