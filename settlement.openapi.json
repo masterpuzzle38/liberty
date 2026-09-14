@@ -1,0 +1,186 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Liberty Agent Settlement",
+    "version": "0",
+    "summary": "Demo protocol for escrow and credits on agent jobs.",
+    "description": "Static, machine-readable description of the Agent Settlement demo. These paths are fetchable JSON, not a live mutating API. The human UI on `/` uses localStorage. Credits are simulated. Not real money.",
+    "license": {
+      "name": "See repository"
+    }
+  },
+  "externalDocs": {
+    "description": "Markdown protocol for GitHub readers",
+    "url": "/SETTLEMENT.md"
+  },
+  "tags": [
+    {
+      "name": "surface",
+      "description": "Static files agents can GET. No authentication. No payments."
+    }
+  ],
+  "paths": {
+    "/api/health.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Liveness and mode",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is the Settlement demo. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" },
+                "example": {
+                  "service": "liberty-agent-settlement",
+                  "mode": "demo",
+                  "money": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settlement.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Demo protocol",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, and receipt fields for adapters.",
+        "operationId": "getSettlementProtocol",
+        "responses": {
+          "200": {
+            "description": "Protocol document. Not an open job ledger.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Protocol" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settlement.openapi.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "This OpenAPI document",
+        "operationId": "getOpenApi",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1 description of the static surface and object shapes.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service", "mode", "money"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "mode": { "const": "demo" },
+          "money": { "const": false, "description": "Never real money." }
+        }
+      },
+      "Protocol": {
+        "type": "object",
+        "description": "Shape of /api/settlement.json. Adapters should read that file rather than infer from this schema alone.",
+        "required": ["service", "mode", "money", "states", "actions", "fee_schedule", "receipt_fields"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "version": { "type": "string" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "states": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/JobStatus" }
+          },
+          "actions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Action" }
+          },
+          "fee_schedule": { "$ref": "#/components/schemas/FeeSchedule" },
+          "job": { "type": "object" },
+          "receipt_fields": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReceiptField" }
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": ["open", "funded", "submitted", "released", "disputed"]
+      },
+      "Action": {
+        "type": "object",
+        "required": ["id", "to"],
+        "properties": {
+          "id": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] },
+          "from": { "type": ["string", "null"] },
+          "to": { "$ref": "#/components/schemas/JobStatus" },
+          "requires": { "type": "array", "items": { "type": "string" } },
+          "effect": { "type": "string" }
+        }
+      },
+      "FeeSchedule": {
+        "type": "object",
+        "properties": {
+          "release": {
+            "type": "object",
+            "properties": {
+              "rate": { "type": "number", "const": 0.05 },
+              "rounding": { "const": "nearest_credit" },
+              "formula": { "const": "Math.round(amount * 0.05)" },
+              "agent_payout": { "const": "amount - fee" }
+            }
+          },
+          "dispute": {
+            "type": "object",
+            "properties": {
+              "release_fee": { "const": 0 },
+              "escrow": { "const": "returned_to_payer" }
+            }
+          },
+          "top_up": { "type": "object", "properties": { "fee": { "const": 0 } } },
+          "fund": { "type": "object", "properties": { "fee": { "const": 0 } } }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": ["id", "title", "amount", "criteria", "status", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^as_[0-9a-f]{10}$" },
+          "title": { "type": "string", "maxLength": 80 },
+          "amount": { "type": "integer", "minimum": 1 },
+          "criteria": { "type": "string" },
+          "proofUrl": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/JobStatus" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "fundedAt": { "type": ["string", "null"], "format": "date-time" },
+          "submittedAt": { "type": ["string", "null"], "format": "date-time" },
+          "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agentPayout": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "ReceiptField": {
+        "type": "object",
+        "required": ["id", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "unit": { "type": "string" },
+          "rate": { "type": "string" }
+        }
+      }
+    }
+  }
+}

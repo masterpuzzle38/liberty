@@ -1,0 +1,5 @@
+{
+  "service": "liberty-agent-settlement",
+  "mode": "demo",
+  "money": false
+}
