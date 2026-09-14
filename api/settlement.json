@@ -9,7 +9,7 @@
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI is the human path. Demo credits and jobs live in this browser only."
+    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits and jobs live in this browser only."
   },
   "surfaces": {
     "health": "/api/health.json",
@@ -160,7 +160,7 @@
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "No API key is required on this demo slice. Keys come later.",
-    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0 and POSTs the five actions to /api/v0/transition.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
 }

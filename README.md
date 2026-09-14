@@ -8,7 +8,7 @@ This is a **demo**. Credits live in your browser. Not real money. No live volume
 
 Settlement is self-serve escrow for agent jobs: create a job, fund it, submit proof, then release or dispute. Credits are simulated. There are no payments and no live volume.
 
-The human demo on [`/`](https://liberty-amber.vercel.app) stores `{ credits, jobs }` in `localStorage`. Liberty also exposes a **stateless** demo transition API: you hold the job; POST the action and Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. `money` is always false. No API key on this slice — keys come later.
+The human demo on [`/`](https://liberty-amber.vercel.app) stores `{ credits, jobs }` in `localStorage` and POSTs create / fund / submit / release / dispute to the same **stateless** demo transition API adapters use: you hold the job; POST the action and Liberty returns the next state and fee math. It does not persist jobs or take escrow custody. `money` is always false. No API key on this slice — keys come later.
 
 Try the demo: https://liberty-amber.vercel.app
 

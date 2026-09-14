@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "liberty.agent-settlement.v0";
-  const FEE_RATE = 0.05;
+  const TRANSITION_URL = "/api/v0/transition";
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 
   const els = {
@@ -14,20 +14,6 @@
     detail: document.getElementById("job-detail"),
     reset: document.getElementById("reset-demo"),
   };
-
-  function nowIso() {
-    return new Date().toISOString();
-  }
-
-  function makeId() {
-    const bytes = new Uint8Array(5);
-    crypto.getRandomValues(bytes);
-    return `as_${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  function releaseFee(amount) {
-    return Math.round(amount * FEE_RATE);
-  }
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -60,6 +46,7 @@
   }
 
   let state = load();
+  let inflight = false;
 
   function selectedId() {
     const match = location.hash.match(/^#job\/([a-z0-9_]+)/i);
@@ -134,6 +121,49 @@
     ].join("\n");
   }
 
+  function applyResult(data) {
+    if (data.job) {
+      const idx = state.jobs.findIndex((job) => job.id === data.job.id);
+      if (idx === -1) state.jobs.unshift(data.job);
+      else state.jobs[idx] = data.job;
+    }
+    if (Number.isFinite(data.payer_credits)) {
+      state.credits = Math.max(0, Math.floor(data.payer_credits));
+    }
+    save(state);
+  }
+
+  async function postTransition(payload) {
+    if (inflight) return null;
+    inflight = true;
+    document.body.classList.add("pending");
+    try {
+      const res = await fetch(TRANSITION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        flash("Settlement engine returned an unreadable response.", true);
+        return null;
+      }
+      if (!res.ok || !data || data.ok !== true) {
+        flash((data && data.message) || "Transition failed.", true);
+        return null;
+      }
+      return data;
+    } catch {
+      flash("Could not reach the settlement engine. Try again.", true);
+      return null;
+    } finally {
+      inflight = false;
+      document.body.classList.remove("pending");
+    }
+  }
+
   function topUp(amount) {
     state.credits += amount;
     save(state);
@@ -141,76 +171,64 @@
     render();
   }
 
-  function createJob({ title, amount, criteria }) {
-    const job = {
-      id: makeId(),
-      title: title.trim(),
-      amount,
-      criteria: criteria.trim(),
-      proofUrl: "",
-      status: "open",
-      createdAt: nowIso(),
-      fundedAt: null,
-      submittedAt: null,
-      resolvedAt: null,
-      fee: 0,
-      agentPayout: 0,
-    };
-    state.jobs.unshift(job);
-    save(state);
-    flash(`Job ${job.id} created. Fund it to hold ${job.amount} credits in escrow.`);
-    selectJob(job.id);
+  async function createJob({ title, amount, criteria }) {
+    const data = await postTransition({ action: "create", title, amount, criteria });
+    if (!data) return false;
+    applyResult(data);
+    flash(`Job ${data.job.id} created. Fund it to hold ${data.job.amount} credits in escrow.`);
+    selectJob(data.job.id);
+    return true;
   }
 
-  function fundJob(id) {
+  async function fundJob(id) {
     const job = findJob(id);
-    if (!job || job.status !== "open") return flash("This job cannot be funded.", true);
-    if (state.credits < job.amount) {
-      return flash(`Need ${job.amount} credits to fund. Balance is ${state.credits}. Top up first.`, true);
-    }
-    state.credits -= job.amount;
-    job.status = "funded";
-    job.fundedAt = nowIso();
-    save(state);
-    flash(`${job.amount} credits held in escrow for ${job.id}.`);
+    if (!job) return;
+    const data = await postTransition({
+      action: "fund",
+      job,
+      payer_credits: state.credits,
+    });
+    if (!data) return;
+    applyResult(data);
+    flash(`${data.job.amount} credits held in escrow for ${data.job.id}.`);
     render();
   }
 
-  function submitProof(id, proofUrl) {
+  async function submitProof(id, proofUrl) {
     const job = findJob(id);
-    if (!job || job.status !== "funded") return flash("Proof can be submitted after the job is funded.", true);
-    const url = proofUrl.trim();
-    if (!url) return flash("Add a proof URL (or a note the payer can check).", true);
-    job.proofUrl = url;
-    job.status = "submitted";
-    job.submittedAt = nowIso();
-    save(state);
+    if (!job) return;
+    const data = await postTransition({
+      action: "submit",
+      job,
+      proof_url: proofUrl,
+    });
+    if (!data) return;
+    applyResult(data);
     flash("Proof submitted. Payer can release or dispute.");
     render();
   }
 
-  function releaseJob(id) {
+  async function releaseJob(id) {
     const job = findJob(id);
-    if (!job || job.status !== "submitted") return flash("Release is only available after proof is submitted.", true);
-    job.fee = releaseFee(job.amount);
-    job.agentPayout = job.amount - job.fee;
-    job.status = "released";
-    job.resolvedAt = nowIso();
-    save(state);
-    flash(`Released. Agent payout ${job.agentPayout} credits. Fee ${job.fee} credits. Demo only.`);
+    if (!job) return;
+    const data = await postTransition({ action: "release", job });
+    if (!data) return;
+    applyResult(data);
+    flash(`Released. Agent payout ${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Demo only.`);
     render();
   }
 
-  function disputeJob(id) {
+  async function disputeJob(id) {
     const job = findJob(id);
-    if (!job || job.status !== "submitted") return flash("Dispute is only available after proof is submitted.", true);
-    state.credits += job.amount;
-    job.fee = 0;
-    job.agentPayout = 0;
-    job.status = "disputed";
-    job.resolvedAt = nowIso();
-    save(state);
-    flash(`Disputed. ${job.amount} credits returned to the payer. No release fee.`);
+    if (!job) return;
+    const data = await postTransition({
+      action: "dispute",
+      job,
+      payer_credits: state.credits,
+    });
+    if (!data) return;
+    applyResult(data);
+    flash(`Disputed. ${data.job.amount} credits returned to the payer. No release fee.`);
     render();
   }
 
@@ -255,6 +273,11 @@
       .replaceAll('"', "&quot;");
   }
 
+  function feeScheduleLabel(job) {
+    if (job.status === "released") return `${job.fee} credits`;
+    return "5% of amount, rounded on release";
+  }
+
   function renderDetail() {
     if (!els.detail) return;
     const job = findJob(selectedId());
@@ -264,7 +287,6 @@
       return;
     }
 
-    const feePreview = releaseFee(job.amount);
     const actions = [];
     if (job.status === "open") {
       const canFund = state.credits >= job.amount;
@@ -284,7 +306,7 @@
     if (job.status === "submitted") {
       actions.push(`
         <div class="action-row">
-          <button type="button" data-action="release">Release (${job.amount - feePreview} to agent, ${feePreview} fee)</button>
+          <button type="button" data-action="release">Release (5% fee)</button>
           <button type="button" class="warn" data-action="dispute">Dispute (return ${job.amount})</button>
         </div>
       `);
@@ -308,7 +330,7 @@
       <p><span class="status ${job.status}">${job.status}</span> · <code>${escapeHtml(job.id)}</code></p>
       <dl class="detail-meta">
         <dt>Amount</dt><dd>${job.amount} credits</dd>
-        <dt>Release fee if released</dt><dd>${feePreview} credits (5%)</dd>
+        <dt>Release fee if released</dt><dd>${escapeHtml(feeScheduleLabel(job))}</dd>
         <dt>Success criteria</dt><dd></dd>
         <dt>Proof</dt><dd></dd>
         <dt>Created</dt><dd>${escapeHtml(formatWhen(job.createdAt))}</dd>
@@ -361,7 +383,7 @@
     });
   });
 
-  els.createForm?.addEventListener("submit", (event) => {
+  els.createForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = document.getElementById("job-title")?.value || "";
     const amount = parseCredits(document.getElementById("job-amount")?.value);
@@ -369,8 +391,8 @@
     if (!title.trim()) return flash("Add a job title.", true);
     if (!amount) return flash("Amount must be a whole number of credits.", true);
     if (!criteria.trim()) return flash("Add success criteria so proof can be judged.", true);
-    createJob({ title, amount, criteria });
-    els.createForm.reset();
+    const created = await createJob({ title, amount, criteria });
+    if (created) els.createForm.reset();
   });
 
   els.jobList?.addEventListener("click", (event) => {

@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Adapters can `POST /api/v0/transition` for the next job state and fee math. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. No API key on this slice; keys come later.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. No API key on this slice; keys come later.
 
 Machine-readable copies:
 
@@ -75,6 +75,6 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 
 ## Adapter notes
 
-1. GET the JSON files for the protocol. POST `/api/v0/transition` for one demo transition. This is not live escrow custody.
+1. GET the JSON files for the protocol. POST `/api/v0/transition` for one demo transition — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Do not claim live volume or user counts from this surface.
