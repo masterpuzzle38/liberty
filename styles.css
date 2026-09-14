@@ -123,6 +123,16 @@ h1 {
   font-size: 0.92rem;
 }
 
+.apikey-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84rem;
+  letter-spacing: 0.01em;
+}
+
+.apikey-once {
+  color: var(--warn);
+}
+
 .for-agents ul {
   margin: 0;
   padding-left: 1.15rem;

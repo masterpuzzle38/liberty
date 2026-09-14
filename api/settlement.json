@@ -9,7 +9,9 @@
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits and jobs live in this browser only."
+    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits and jobs live in this browser only.",
+    "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
+    "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account."
   },
   "surfaces": {
     "health": "/api/health.json",
@@ -23,8 +25,9 @@
     "path": "/api/v0/transition",
     "method": "POST",
     "cors": ["POST", "OPTIONS"],
-    "auth": false,
-    "auth_note": "No API key on this demo slice. Keys come later.",
+    "auth": "optional",
+    "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
+    "auth_note": "Optional demo API key. Mint on the human UI (localStorage only). If sent, response and receipt include key_id (SHA-256 hex prefix, k_ + 12 chars). Raw key is never stored server-side. If omitted, the engine still works and notes key_optional. Not production auth. Not real money.",
     "persistence": false,
     "money": false,
     "mode": "demo",
@@ -154,12 +157,13 @@
     { "id": "created", "source": "job.createdAt" },
     { "id": "funded", "source": "job.fundedAt" },
     { "id": "submitted", "source": "job.submittedAt" },
-    { "id": "resolved", "source": "job.resolvedAt" }
+    { "id": "resolved", "source": "job.resolvedAt" },
+    { "id": "key_id", "source": "sha256(demo_key) prefix when Authorization or X-Liberty-Key is sent", "optional": true }
   ],
   "adapter_notes": [
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
-    "No API key is required on this demo slice. Keys come later.",
+    "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0 and POSTs the five actions to /api/v0/transition.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]

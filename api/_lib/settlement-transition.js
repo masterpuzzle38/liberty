@@ -28,14 +28,73 @@ function firstDefined(...values) {
   return undefined;
 }
 
+const CORS_ALLOW_HEADERS = "Content-Type, Authorization, X-Liberty-Key";
+const KEY_ID_HEX_LEN = 12;
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": CORS_ALLOW_HEADERS,
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
   };
+}
+
+function headerValue(headers, name) {
+  if (!headers || typeof headers !== "object") return "";
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (String(key).toLowerCase() !== target) continue;
+    const raw = Array.isArray(value) ? value[0] : value;
+    return typeof raw === "string" ? raw.trim() : "";
+  }
+  return "";
+}
+
+function readRawDemoKey(headers) {
+  const explicit = headerValue(headers, "x-liberty-key");
+  if (explicit) return explicit;
+  const authorization = headerValue(headers, "authorization");
+  const match = authorization.match(/^Bearer\s+(\S+)/i);
+  return match ? match[1] : "";
+}
+
+function keyIdFromSecret(secret) {
+  const digest = crypto.createHash("sha256").update(secret, "utf8").digest("hex");
+  return `k_${digest.slice(0, KEY_ID_HEX_LEN)}`;
+}
+
+function readDemoAuth(headers) {
+  const secret = readRawDemoKey(headers);
+  if (!secret) {
+    return {
+      required: false,
+      mode: "demo",
+      status: "key_optional",
+    };
+  }
+  return {
+    required: false,
+    mode: "demo",
+    status: "accepted",
+    key_id: keyIdFromSecret(secret),
+  };
+}
+
+function applyDemoAuth(body, headers) {
+  if (!body || typeof body !== "object") return body;
+  const auth = readDemoAuth(headers);
+  const next = { ...body, auth };
+  if (auth.key_id) {
+    next.key_id = auth.key_id;
+    if (body.receipt && typeof body.receipt === "object") {
+      next.receipt = { ...body.receipt, key_id: auth.key_id };
+    }
+  } else {
+    next.key_optional = true;
+  }
+  return next;
 }
 
 function fail(status, error, message, extra) {
@@ -214,10 +273,16 @@ function discovery() {
     money: false,
     path: "/api/v0/transition",
     methods: ["POST", "OPTIONS"],
-    auth: false,
+    auth: {
+      required: false,
+      mode: "demo",
+      headers: ["Authorization: Bearer <key>", "X-Liberty-Key"],
+      key_id: "sha256 hex prefix (k_ + 12 chars). Raw key is never stored.",
+      missing: "key_optional",
+    },
     persistence: false,
     actions: ACTIONS,
-    note: "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. No API key on this slice; keys come later.",
+    note: "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     protocol: "/api/settlement.json",
   };
 }
@@ -336,18 +401,18 @@ function transition(input, options) {
   return ok(body);
 }
 
-function handleHttp({ method, body }) {
-  const headers = corsHeaders();
+function handleHttp({ method, body, headers }) {
+  const cors = corsHeaders();
   const verb = (method || "").toUpperCase();
 
   if (verb === "OPTIONS") {
-    return { status: 204, headers, body: null };
+    return { status: 204, headers: cors, body: null };
   }
 
   if (verb === "GET") {
     return {
       status: 200,
-      headers: { ...headers, "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
       body: discovery(),
     };
   }
@@ -355,30 +420,38 @@ function handleHttp({ method, body }) {
   if (verb !== "POST") {
     return {
       status: 405,
-      headers: { ...headers, "Allow": "POST, OPTIONS, GET", "Content-Type": "application/json" },
-      body: fail(
-        405,
-        "method_not_allowed",
-        "POST JSON to this path. GET the protocol at /api/settlement.json.",
-      ).body,
+      headers: { ...cors, Allow: "POST, OPTIONS, GET", "Content-Type": "application/json" },
+      body: applyDemoAuth(
+        fail(
+          405,
+          "method_not_allowed",
+          "POST JSON to this path. GET the protocol at /api/settlement.json.",
+        ).body,
+        headers,
+      ),
     };
   }
 
   const result = transition(body);
   return {
     status: result.status,
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: result.body,
+    headers: { ...cors, "Content-Type": "application/json" },
+    body: applyDemoAuth(result.body, headers),
   };
 }
 
 module.exports = {
   ACTIONS,
+  CORS_ALLOW_HEADERS,
   FEE_RATE,
   JOB_ID_PATTERN,
   STATUSES,
+  applyDemoAuth,
+  corsHeaders,
   discovery,
   handleHttp,
+  keyIdFromSecret,
+  readDemoAuth,
   receiptFromJob,
   releaseFee,
   transition,

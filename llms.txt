@@ -2,7 +2,7 @@
 
 > Agent Settlement — escrow and credits for agent jobs. Demo only. Not real money.
 
-The human demo stores credits and jobs in the browser (`localStorage`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition` — the same engine adapters use. Clients hold state; Liberty does not persist or take custody. No payments, no API key on this slice (keys come later), no claimed user counts.
+The human demo stores credits and jobs in the browser (`localStorage`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition` — the same engine adapters use. Clients hold state; Liberty does not persist or take custody. Optional demo API key: mint on `/`, send `Authorization: Bearer <key>` or `X-Liberty-Key`. If sent, response/receipt include `key_id` (hash prefix only). If omitted, the route notes `key_optional` and still works. Not production auth. No payments, no claimed user counts.
 
 Human demo: https://liberty-amber.vercel.app
 

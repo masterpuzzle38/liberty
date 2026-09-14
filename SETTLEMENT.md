@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. No API key on this slice; keys come later.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. An optional demo API key can identify the adapter; it is not production auth.
 
 Machine-readable copies:
 
@@ -37,7 +37,7 @@ Credits are integers ≥ 1. Simulated. `money` is always false.
 
 ## `POST /api/v0/transition`
 
-JSON body. CORS is open for `POST` and `OPTIONS`. No API key. Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
+JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Authorization: Bearer <key>` or `X-Liberty-Key`). Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
 
 | `action` | Send | Receive |
 | --- | --- | --- |
@@ -50,6 +50,17 @@ JSON body. CORS is open for `POST` and `OPTIONS`. No API key. Illegal transition
 The job object matches the browser UI / OpenAPI shape (`proofUrl`, `createdAt`, `agentPayout`). Snake_case aliases (`proof_url`, `created_at`, `agent_payout`, `payerCredits`) are accepted on input.
 
 Liberty does not store the job. Send the current job on every later action.
+
+### Demo API key
+
+Optional. Mint one on the live site (stored in this browser’s `localStorage` under `liberty.agent-settlement.demo-key.v0`). Not an account. Not production auth. Not real money.
+
+Send either header:
+
+- `Authorization: Bearer lib_demo_…`
+- `X-Liberty-Key: lib_demo_…`
+
+If a key is sent, the JSON response includes `key_id` (`k_` + first 12 hex chars of SHA-256). Terminal receipts include the same `key_id`. The raw key is never stored server-side. If the header is omitted, the engine still works and the response notes `key_optional` / `mode: demo`.
 
 ## Job fields
 
@@ -72,9 +83,11 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 - Release fee (5%), agent payout, returned to payer
 - Success criteria, proof
 - Created, funded, submitted, resolved timestamps
+- `key_id` when a demo key header was sent (hash prefix only)
 
 ## Adapter notes
 
 1. GET the JSON files for the protocol. POST `/api/v0/transition` for one demo transition — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
-3. Do not claim live volume or user counts from this surface.
+3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
+4. Do not claim live volume or user counts from this surface.
