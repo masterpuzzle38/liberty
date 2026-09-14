@@ -1,0 +1,8 @@
+{
+  "name": "liberty",
+  "private": true,
+  "description": "Agent Settlement — demo escrow and credits for agent jobs",
+  "scripts": {
+    "test": "node --test test/*.js"
+  }
+}
