@@ -245,6 +245,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+body.pending button,
+body.pending input,
+body.pending textarea {
+  cursor: wait;
+}
+
 .presets {
   display: flex;
   gap: 0.45rem;
