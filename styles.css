@@ -123,6 +123,21 @@ h1 {
   font-size: 0.92rem;
 }
 
+.for-agents ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.for-agents a {
+  color: var(--accent);
+}
+
+.for-agents code {
+  font-size: 0.88rem;
+}
+
 .fees dl {
   margin: 0;
   display: grid;

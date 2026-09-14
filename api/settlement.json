@@ -1,0 +1,125 @@
+{
+  "service": "liberty-agent-settlement",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "Agent Settlement",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol so adapters can implement it. It is not a live mutating API and does not move real money.",
+  "human_path": {
+    "ui": "/",
+    "storage": "localStorage",
+    "storage_key": "liberty.agent-settlement.v0",
+    "note": "The browser UI is the human path. Demo credits and jobs live in this browser only."
+  },
+  "surfaces": {
+    "health": "/api/health.json",
+    "protocol": "/api/settlement.json",
+    "openapi": "/settlement.openapi.json",
+    "markdown": "/SETTLEMENT.md"
+  },
+  "currency": {
+    "unit": "credits",
+    "real_money": false,
+    "integer_only": true,
+    "minimum": 1
+  },
+  "fee_schedule": {
+    "release": {
+      "rate": 0.05,
+      "rounding": "nearest_credit",
+      "when": "payer_releases",
+      "formula": "Math.round(amount * 0.05)",
+      "agent_payout": "amount - fee",
+      "note": "5% of the job amount, rounded to the nearest credit, taken when the payer releases."
+    },
+    "dispute": {
+      "release_fee": 0,
+      "escrow": "returned_to_payer",
+      "note": "No release fee. Escrow returns to the payer."
+    },
+    "top_up": {
+      "fee": 0
+    },
+    "fund": {
+      "fee": 0,
+      "note": "Funding holds the full amount in escrow. No extra fee."
+    }
+  },
+  "states": ["open", "funded", "submitted", "released", "disputed"],
+  "actions": [
+    {
+      "id": "create",
+      "from": null,
+      "to": "open",
+      "requires": ["title", "amount", "criteria"],
+      "effect": "Creates a job. Credits are unchanged until fund."
+    },
+    {
+      "id": "fund",
+      "from": "open",
+      "to": "funded",
+      "requires": ["job_id", "payer_credits >= amount"],
+      "effect": "Deducts amount from payer credits and holds it in escrow."
+    },
+    {
+      "id": "submit",
+      "from": "funded",
+      "to": "submitted",
+      "requires": ["job_id", "proof_url"],
+      "effect": "Attaches proof the payer can check. Escrow stays held."
+    },
+    {
+      "id": "release",
+      "from": "submitted",
+      "to": "released",
+      "requires": ["job_id"],
+      "effect": "Computes fee and agent_payout. Escrow is not returned to the payer. Terminal."
+    },
+    {
+      "id": "dispute",
+      "from": "submitted",
+      "to": "disputed",
+      "requires": ["job_id"],
+      "effect": "Returns the full amount to the payer. fee=0, agent_payout=0. Terminal."
+    }
+  ],
+  "job": {
+    "id": {
+      "type": "string",
+      "pattern": "^as_[0-9a-f]{10}$",
+      "note": "Assigned at create."
+    },
+    "title": { "type": "string", "maxLength": 80 },
+    "amount": { "type": "integer", "minimum": 1, "unit": "credits" },
+    "criteria": { "type": "string", "note": "Success criteria. Proof must match this." },
+    "proof_url": { "type": "string", "empty_until": "submit" },
+    "status": { "enum": ["open", "funded", "submitted", "released", "disputed"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "funded_at": { "type": ["string", "null"], "format": "date-time" },
+    "submitted_at": { "type": ["string", "null"], "format": "date-time" },
+    "resolved_at": { "type": ["string", "null"], "format": "date-time" },
+    "fee": { "type": "integer", "unit": "credits", "zero_until": "release" },
+    "agent_payout": { "type": "integer", "unit": "credits", "zero_until": "release" }
+  },
+  "receipt_fields": [
+    { "id": "job_id", "source": "job.id" },
+    { "id": "title", "source": "job.title" },
+    { "id": "status", "source": "job.status" },
+    { "id": "amount", "source": "job.amount", "unit": "credits" },
+    { "id": "release_fee", "source": "job.fee if released else 0", "unit": "credits", "rate": "5%" },
+    { "id": "agent_payout", "source": "job.agentPayout if released else 0", "unit": "credits" },
+    { "id": "returned_to_payer", "source": "job.amount if disputed else 0", "unit": "credits" },
+    { "id": "success_criteria", "source": "job.criteria" },
+    { "id": "proof", "source": "job.proofUrl" },
+    { "id": "created", "source": "job.createdAt" },
+    { "id": "funded", "source": "job.fundedAt" },
+    { "id": "submitted", "source": "job.submittedAt" },
+    { "id": "resolved", "source": "job.resolvedAt" }
+  ],
+  "adapter_notes": [
+    "This demo has no POST/PATCH endpoints. Do not treat these URLs as a live escrow service.",
+    "Implement create, fund, submit, release, and dispute against this state machine and fee schedule.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0.",
+    "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
+  ]
+}
