@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores payer credits and jobs in `localStorage` (`liberty.agent-settlement.v0`) and a separate **agent wallet** (`liberty.agent-settlement.agent-credits.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. A successful **release** credits the agent wallet by `agent_credits_delta` (same integer as `agent_payout`). **Dispute** refunds the payer and does not credit the agent. **Run a full demo settlement** POSTs `/api/v0/simulate` and walks create → fund → submit → release (or dispute) in one request. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; simulate commits the full walk; verify checks claimed money fields. None persist jobs, receipts, or balances, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. A payer or agent can share a terminal receipt with a **receipt link** (`#receipt/r1.…`) that encodes the receipt in the URL. Credits stay in each browser. Liberty never stores the snapshot.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores payer credits and jobs in `localStorage` (`liberty.agent-settlement.v0`) and a separate **agent wallet** (`liberty.agent-settlement.agent-credits.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. A successful **release** credits the agent wallet by `agent_credits_delta` (same integer as `agent_payout`). **Dispute** refunds the payer and does not credit the agent. **Run a full demo settlement** POSTs `/api/v0/simulate` and walks create → fund → submit → release (or dispute) in one request. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; simulate commits the full walk; verify checks claimed money fields. None persist jobs, receipts, or balances, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. A payer or agent can share a terminal receipt with a **receipt link** (`#receipt/r1.…`) that encodes the receipt in the URL. A human can **export / import a demo pack** on `/#demo-pack` — one JSON file of this browser’s Settlement localStorage — to come back later or move to another device. Import replaces; it does not merge. Liberty never receives the pack. Credits stay in each browser. Liberty never stores the snapshot.
 
 Machine-readable copies:
 
@@ -174,6 +174,21 @@ The human UI keeps terminal receipts in this browser after a successful `release
 
 On `/`, **Receipts / Export** lists those receipts with fee, agent payout, returned to payer, status, job id, and timestamps. Download one as JSON, or download all as a JSON array or NDJSON. Copy a receipt link (`#receipt/r1.…`) to load the same object into Verify on another device. Copy-to-clipboard is also available. Paste a receipt, a receipt link, or pick a stored one to verify it against `POST /api/v0/verify`. Demo — not real money. Liberty does not store receipts.
 
+### Demo pack (come back / another device)
+
+The human UI on [`/#demo-pack`](https://liberty-amber.vercel.app/#demo-pack) can download one JSON file of this browser’s Settlement state and restore it later. The pack is client-held. Liberty does not receive, store, or persist it. `money` is always false.
+
+The file includes `kind`, `version`, `money: false`, and the known localStorage keys:
+
+| Key | Contents |
+| --- | --- |
+| `liberty.agent-settlement.v0` | Payer `{ credits, jobs }` |
+| `liberty.agent-settlement.agent-credits.v0` | Agent `{ credits }` |
+| `liberty.agent-settlement.receipts.v0` | Terminal receipts |
+| `liberty.agent-settlement.demo-key.v0` | Raw demo API key, **only if** one is already stored in this browser |
+
+Import validates the shape, then asks to **replace** the current localStorage (it does not merge). If the pack has no demo key, this browser’s stored key is cleared. The UI warns that the file may contain the raw demo API key. Treat that key like a password. Demo only — not real money.
+
 ## Job templates
 
 Preset title, amount, and success criteria live on [`/#create`](https://liberty-amber.vercel.app/#create). The same fields are at [`/api/templates.json`](api/_lib/templates.json). Clicking a template fills the create form only. It does not create or fund. Templates leave `client_ref` blank. Demo — not real money.
@@ -191,4 +206,5 @@ Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapte
 5. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
 6. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
 7. Apply `agent_credits_delta` to a client-held agent wallet after release (same integer as `agent_payout`). Dispute returns `0`. The human UI stores that balance under `liberty.agent-settlement.agent-credits.v0`. Liberty does not store balances.
-8. Do not claim live volume or user counts from this surface.
+8. To come back later or move this browser’s demo to another device, export a demo pack from `/#demo-pack`. Import replaces localStorage (does not merge). Liberty never receives the file. The pack may include the raw demo API key if one was stored.
+9. Do not claim live volume or user counts from this surface.

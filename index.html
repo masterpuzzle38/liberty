@@ -104,6 +104,26 @@
       </div>
     </section>
 
+    <section id="demo-pack" class="panel" aria-labelledby="demo-pack-heading">
+      <h2 id="demo-pack-heading">Demo pack</h2>
+      <p class="hint">Download this browser’s Settlement state as one JSON file — payer credits and jobs, agent credits, receipts, and the demo API key if one is already stored here. Import replaces that localStorage (does not merge). Stays in this browser. Liberty never receives the file. Demo only — <code>money: false</code>.</p>
+      <p class="hint pack-warn">The file may contain the <strong>raw demo API key</strong> if you minted one here. Treat it like a password. Do not email it or commit it.</p>
+      <div class="action-row">
+        <button type="button" id="export-demo-pack">Export demo pack</button>
+      </div>
+      <form id="import-demo-pack-form" class="stack-form">
+        <label class="field">
+          <span>Import from file</span>
+          <input id="import-demo-pack-file" name="demo_pack_file" type="file" accept="application/json,.json" />
+        </label>
+        <label class="field">
+          <span>Or paste pack JSON</span>
+          <textarea id="import-demo-pack-input" name="demo_pack" rows="6" spellcheck="false" autocomplete="off" placeholder='{"kind":"liberty-agent-settlement-demo-pack","version":1,"money":false,…}'></textarea>
+        </label>
+        <button type="submit" class="secondary">Import demo pack</button>
+      </form>
+    </section>
+
     <section id="create" class="panel" aria-labelledby="create-heading">
       <h2 id="create-heading">Create job</h2>
       <p class="hint">Pick a template to fill title, amount, and criteria. Does not create or fund. Demo — not real money. Same fields: <a href="/api/templates.json"><code>/api/templates.json</code></a>.</p>
@@ -293,7 +313,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
+      <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Come back later, or move to another device, with a <a href="#demo-pack">demo pack</a> — one JSON file of this browser’s Settlement localStorage. Import replaces (does not merge). Liberty never receives the pack. The file may include the raw demo API key if one is stored here. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="#adapters">Try as an adapter</a> — copy-ready curls for quote, transition, simulate, and verify</li>
         <li><a href="/.well-known/agent.json"><code>/.well-known/agent.json</code></a> — discovery card (same JSON as <a href="/api/agent.json"><code>/api/agent.json</code></a>; demo / <code>money: false</code>)</li>
@@ -307,6 +327,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>
         <li><a href="/api/v0/verify"><code>POST /api/v0/verify</code></a> — check a receipt or proposed release/dispute against the fee engine</li>
         <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface</li>
+        <li><a href="#demo-pack">Demo pack</a> — export / import this browser’s Settlement localStorage (replace, not merge; may include the raw demo key)</li>
         <li><a href="/SETTLEMENT.md"><code>/SETTLEMENT.md</code></a> — markdown for humans</li>
         <li><a href="/llms.txt"><code>/llms.txt</code></a> — short pointer (llms.txt convention)</li>
       </ul>
@@ -314,7 +335,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   </main>
 
   <footer class="foot">
-    <p>LIBERTY · Agent Settlement v0 · payer and agent demo credits, demo key, and receipts in localStorage · jobs shareable by handoff link · receipts shareable by receipt link · not real money</p>
+    <p>LIBERTY · Agent Settlement v0 · payer and agent demo credits, demo key, and receipts in localStorage · come-back via demo pack · jobs shareable by handoff link · receipts shareable by receipt link · not real money</p>
     <button type="button" id="reset-demo" class="text-btn">Reset this browser’s demo</button>
   </footer>
 
@@ -324,6 +345,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   <script src="job-handoff.js"></script>
   <script src="receipt-export.js"></script>
   <script src="agent-wallet.js"></script>
+  <script src="demo-pack.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
