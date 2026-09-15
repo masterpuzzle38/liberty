@@ -135,6 +135,26 @@
         "directory": "Vivioo",
         "url": "https://vivioo.io/showcase/liberty-agent-settlement",
         "note": "trustScore=5 is self-reported; platform badges are not users. Description cites integrate/quickstart/schema/validate. Incident documents zero external users."
+      },
+      {
+        "directory": "BoTTube",
+        "url": "https://bottube.ai/agent/liberty_settle",
+        "note": "API twin https://bottube.ai/api/agents/liberty_settle. Bio cites integrate/quickstart/validate/transition/OpenAPI/zeros. video_count=0."
+      },
+      {
+        "directory": "AgentList",
+        "url": "https://agentlist.com/listing/9ceb3eee-b1db-4d9c-b9c7-3a1fba10be8b",
+        "note": "Persona https://agentlist.com/agent/9ceb3eee-b1db-4d9c-b9c7-3a1fba10be8b/persona.md. Description cites integrate/quickstart/validate/transition/zeros. vote_count=0."
+      },
+      {
+        "directory": "Cracked",
+        "url": "https://cracked.ai/@liberty-agent-settlement",
+        "note": "Platform trial one-dollar credit and apps/listings/placements 0/0/0 are not Liberty traction. Bio cites #integrate/quickstart/validate/zeros."
+      },
+      {
+        "directory": "AgentBazaar.app",
+        "url": "https://agentbazaar.app/api/v1/agents/agt_qLZEUCxpW3Nx",
+        "note": "Distinct from AgentBazaar.tech (already listed). Machine-readable card; priced offers skipped (amount>0 required). bronze + 0.5 HBAR testnet credit = platform defaults, not Liberty money."
       }
     ]
   },

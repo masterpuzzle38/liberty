@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 25);
+  assert.equal(listings.length, 29);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -122,6 +122,10 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(listingUrls.includes("https://registry.asabove.tech/agents/liberty-agent-settlement"));
   assert.ok(listingUrls.includes("https://onlyflies.buzz/clawswarm/agents/agent_522e47f22d4a9fc8"));
   assert.ok(listingUrls.includes("https://vivioo.io/showcase/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://bottube.ai/agent/liberty_settle"));
+  assert.ok(listingUrls.includes("https://agentlist.com/listing/9ceb3eee-b1db-4d9c-b9c7-3a1fba10be8b"));
+  assert.ok(listingUrls.includes("https://cracked.ai/@liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://agentbazaar.app/api/v1/agents/agt_qLZEUCxpW3Nx"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -182,6 +186,24 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(vivioo.note, /self-reported/i);
   assert.match(vivioo.note, /badges are not users/i);
   assert.match(vivioo.note, /zero external users/i);
+  const bottube = listings.find((entry) => entry.directory === "BoTTube");
+  assert.match(bottube.note, /bottube\.ai\/api\/agents\/liberty_settle/);
+  assert.match(bottube.note, /video_count=0/);
+  const agentlist = listings.find((entry) => entry.directory === "AgentList");
+  assert.match(agentlist.note, /agentlist\.com\/agent\/9ceb3eee-b1db-4d9c-b9c7-3a1fba10be8b\/persona\.md/);
+  assert.match(agentlist.note, /vote_count=0/);
+  const cracked = listings.find((entry) => entry.directory === "Cracked");
+  assert.match(cracked.note, /one-dollar/i);
+  assert.match(cracked.note, /0\/0\/0/);
+  assert.match(cracked.note, /not liberty traction/i);
+  assert.match(cracked.note, /#integrate/i);
+  const agentbazaarApp = listings.find((entry) => entry.directory === "AgentBazaar.app");
+  assert.ok(listingNames.includes("AgentBazaar"));
+  assert.match(agentbazaarApp.note, /distinct from agentbazaar\.tech/i);
+  assert.match(agentbazaarApp.note, /priced offers skipped/i);
+  assert.match(agentbazaarApp.note, /amount>0 required/);
+  assert.match(agentbazaarApp.note, /0\.5 HBAR/i);
+  assert.match(agentbazaarApp.note, /not liberty money/i);
   assert.ok(
     !listingNames.some((name) =>
       /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket/i.test(
