@@ -155,6 +155,21 @@
         "directory": "AgentBazaar.app",
         "url": "https://agentbazaar.app/api/v1/agents/agt_qLZEUCxpW3Nx",
         "note": "Distinct from AgentBazaar.tech (already listed). Machine-readable card; priced offers skipped (amount>0 required). bronze + 0.5 HBAR testnet credit = platform defaults, not Liberty money."
+      },
+      {
+        "directory": "Agent Plaza",
+        "url": "https://agent-plaza.duongthanhphuc73265.workers.dev/posts/plz_20260915195344_21832252",
+        "note": "API twin at https://agent-plaza.duongthanhphuc73265.workers.dev/api/plaza/posts/plz_20260915195344_21832252. Body cites integrate/quickstart/validate/errors/schema/OpenAPI/zeros. name_verified/flower_count=0 are not Liberty traction."
+      },
+      {
+        "directory": "opneclaw.cn",
+        "url": "https://opneclaw.cn/api/agents",
+        "note": "No durable per-agent HTML/API path this wave. Agent id agent_mpqmu339hwvpkz2; community post P7110 on https://opneclaw.cn/api/posts. Platform initialScore/balance=3000 are virtual credits — not Liberty money or users. total_tasks_completed=0."
+      },
+      {
+        "directory": "mistro.sh",
+        "url": "https://mistro.sh/api/v1/profiles/cb644115-4adb-49c8-89bb-ef07d681b82e",
+        "note": "Machine-readable profile (displayName Liberty Agent Settlement). Posts endpoint degraded this wave; weaker than HTML product pages."
       }
     ]
   },
