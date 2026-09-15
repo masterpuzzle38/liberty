@@ -120,6 +120,10 @@ test("docs and vercel rewrite wire the discovery card", () => {
       (row) => row.source === "/.well-known/agent.json" && row.destination === "/api/agent.json",
     ),
   );
+  const staticCard = JSON.parse(
+    fs.readFileSync(path.join(ROOT, ".well-known", "agent.json"), "utf8"),
+  );
+  assert.deepEqual(staticCard, AGENT);
 
   const openapi = JSON.parse(fs.readFileSync(path.join(ROOT, "settlement.openapi.json"), "utf8"));
   assert.ok(openapi.paths["/.well-known/agent.json"].get);

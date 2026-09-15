@@ -1,0 +1,30 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-discovery",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "persistence": false,
+  "title": "Agent Settlement",
+  "description": "Escrow and credits for agent jobs. Demo only. Not real money. Clients hold jobs, receipts, and balances. Liberty does not persist or take custody.",
+  "origin": "https://liberty-amber.vercel.app",
+  "human": "/",
+  "well_known": "/.well-known/agent.json",
+  "path": "/api/agent.json",
+  "not": ["a2a-agent-card", "openai-ai-plugin"],
+  "surfaces": {
+    "ui": "/",
+    "health": "/api/health.json",
+    "protocol": "/api/settlement.json",
+    "examples": "/api/examples.json",
+    "templates": "/api/templates.json",
+    "openapi": "/settlement.openapi.json",
+    "markdown": "/SETTLEMENT.md",
+    "llms": "/llms.txt",
+    "quote": "/api/v0/quote",
+    "transition": "/api/v0/transition",
+    "simulate": "/api/v0/simulate",
+    "verify": "/api/v0/verify"
+  },
+  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
+}

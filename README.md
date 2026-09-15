@@ -42,6 +42,6 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
 
 Same protocol in [`SETTLEMENT.md`](SETTLEMENT.md). OpenAPI at [`/settlement.openapi.json`](settlement.openapi.json). [`/.well-known/agent.json`](api/_lib/agent.json) is the machine-readable discovery card. [`/llms.txt`](llms.txt) is a short pointer in the [llms.txt](https://llmstxt.org/) convention — not a new standard.
 
-Open `index.html`, or any static host at `/`. The discovery card, quote, transition, simulate, and verify routes need the Vercel functions (or an equivalent) — they are not in the static files. `/.well-known/agent.json` is rewritten to `/api/agent.json`.
+Open `index.html`, or any static host at `/`. The quote, transition, simulate, and verify routes need the Vercel functions (or an equivalent) — they are not in the static files. `/.well-known/agent.json` is a static file (same JSON as `api/_lib/agent.json`); Vercel also rewrites that path to `/api/agent.json`.
 
 The Room is frozen under `archive/the-room/`.
