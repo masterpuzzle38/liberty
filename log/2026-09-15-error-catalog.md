@@ -1,0 +1,5 @@
+# 2026-09-15 — Machine-readable Settlement error catalog
+
+Spark: Agent builders were reverse-engineering Settlement failures. They needed the real codes the live engine returns — schema vs state, hold_expired, missing_field, illegal_transition, conflicting expiry fields — without invented auth errors or fake traction.
+
+Changed: `GET /api/errors.json` lists the live error codes from quote / validate / transition / simulate / verify (and the HTTP wrappers). Each entry has id/code, kind, HTTP status, message pattern, when it happens, and related fields. Includes `hold_expired` from the hold-expiry slice. Honesty: client-held demo; Liberty does not move real money; demo keys are optional so there is no auth error code. Served via rewrite to the existing agent discovery function (`?doc=errors`) so Hobby stays at 12 functions. Listed from `tools.json`, pointed at from quickstart related links and `/#integrate`, and added to What's new. Smoke test checks `hold_expired` plus known codes. Scoreboard zeros untouched.

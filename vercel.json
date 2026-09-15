@@ -27,6 +27,10 @@
       "destination": "/api/agent.json?doc=transition-schema"
     },
     {
+      "source": "/api/errors.json",
+      "destination": "/api/agent.json?doc=errors"
+    },
+    {
       "source": "/api/v0/validate",
       "destination": "/api/v0/quote?validate=1"
     }

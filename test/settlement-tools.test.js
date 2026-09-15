@@ -121,6 +121,7 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     "agent",
     "openapi",
     "transition_schema",
+    "errors",
   ]);
   for (const row of TOOLS.discovery) {
     assert.equal(row.method, "GET");
