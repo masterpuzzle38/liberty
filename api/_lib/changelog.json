@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "tools",
+      "title": "Machine-readable adapter tools list",
+      "href": "/api/tools.json"
+    },
+    {
+      "date": "2026-09-15",
       "id": "activity",
       "title": "Client-held Settlement activity log",
       "href": "/#activity"
@@ -76,12 +82,6 @@
       "id": "client-ref",
       "title": "Optional client_ref on create",
       "href": "/#create"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "terminal-notes",
-      "title": "Terminal receipt notes",
-      "href": "/"
     }
   ]
 }

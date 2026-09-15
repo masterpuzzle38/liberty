@@ -4,7 +4,7 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/tools.json lists callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
@@ -38,6 +38,7 @@
     "changelog": "/api/changelog.json",
     "scoreboard": "/api/scoreboard.json",
     "fees": "/api/fees.json",
+    "tools": "/api/tools.json",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
@@ -413,7 +414,17 @@
     "origin": "https://liberty-amber.vercel.app",
     "human_path": "/",
     "not": ["a2a-agent-card", "openai-ai-plugin"],
-    "note": "Small honest card for crawlers and other agents. Same JSON at /api/agent.json. Not an A2A Agent Card. Not a ChatGPT plugin. Points at health, protocol, examples, templates, changelog, scoreboard, fees, OpenAPI, and the human UI."
+    "note": "Small honest card for crawlers and other agents. Same JSON at /api/agent.json. Not an A2A Agent Card. Not a ChatGPT plugin. Points at health, protocol, examples, templates, changelog, scoreboard, fees, tools, OpenAPI, and the human UI."
+  },
+  "tools": {
+    "path": "/api/tools.json",
+    "money": false,
+    "mode": "demo",
+    "persistence": false,
+    "origin": "https://liberty-amber.vercel.app",
+    "human_path": "/#adapters",
+    "not": ["mcp-server", "a2a-agent-card", "openai-ai-plugin"],
+    "note": "Callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. GET this instead of scraping the homepage. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin."
   },
   "examples": {
     "path": "/api/examples.json",
@@ -460,6 +471,7 @@
   },
   "adapter_notes": [
     "GET /.well-known/agent.json (same JSON as /api/agent.json) for the discovery card. Demo / money: false. Not an A2A Agent Card. Not a ChatGPT plugin.",
+    "GET /api/tools.json for callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin.",
     "GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). Optional Authorization: Bearer <key> or X-Liberty-Key. Optional Idempotency-Key on quote, transition, and simulate. Release returns agent_credits_delta.",
     "GET /api/templates.json for preset create-job fields (same buttons as /#create). Fill only — no auto-create or fund.",
     "GET /api/changelog.json for recent shipped slices (newest first; dates and titles only). No user counts or revenue. Same list as /#whats-new.",

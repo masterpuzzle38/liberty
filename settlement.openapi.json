@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. /#ledger reads those stored receipts for this-browser running totals and a CSV download — not a server ledger. /#activity appends local demo actions in this browser — Liberty never receives that log. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). GET /api/tools.json lists callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. /#ledger reads those stored receipts for this-browser running totals and a CSV download — not a server ledger. /#activity appends local demo actions in this browser — Liberty never receives that log. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, /api/scoreboard.json for honest zeros, and /api/fees.json for the demo fee schedule. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, /api/scoreboard.json for honest zeros, /api/fees.json for the demo fee schedule, and /api/tools.json for callable Settlement surfaces. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -196,6 +196,24 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Fees" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Adapter tools / capability list",
+        "description": "Callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. mode is demo. money is always false. persistence is false. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin. GET this instead of scraping the homepage.",
+        "operationId": "getAdapterTools",
+        "responses": {
+          "200": {
+            "description": "Capability list. Demo only. Not an MCP server. Not real money.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Tools" }
               }
             }
           }
@@ -683,6 +701,7 @@
               "changelog": { "const": "/api/changelog.json" },
               "scoreboard": { "const": "/api/scoreboard.json" },
               "fees": { "const": "/api/fees.json" },
+              "tools": { "const": "/api/tools.json" },
               "openapi": { "const": "/settlement.openapi.json" },
               "markdown": { "const": "/SETTLEMENT.md" },
               "llms": { "const": "/llms.txt" },
@@ -730,6 +749,7 @@
           "changelog": { "type": "object" },
           "scoreboard": { "type": "object" },
           "fees": { "type": "object" },
+          "tools": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
@@ -936,6 +956,62 @@
           "requires": { "type": "array", "items": { "type": "string" } },
           "optional": { "type": "array", "items": { "type": "string" } },
           "effect": { "type": "string" }
+        }
+      },
+      "Tools": {
+        "type": "object",
+        "description": "Shape of /api/tools.json. Callable Settlement surfaces plus read-only discovery URLs. Not an MCP server.",
+        "required": ["service", "kind", "mode", "money", "persistence", "path", "tools", "discovery"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "kind": { "const": "liberty-agent-settlement-tools" },
+          "version": { "type": "string" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "persistence": { "const": false },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "path": { "const": "/api/tools.json" },
+          "human": { "const": "/#adapters" },
+          "origin": { "const": "https://liberty-amber.vercel.app" },
+          "not": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["mcp-server", "a2a-agent-card", "openai-ai-plugin"] }
+          },
+          "note": { "type": "string" },
+          "tools": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "object",
+              "required": ["id", "method", "path", "purpose"],
+              "properties": {
+                "id": { "type": "string", "enum": ["quote", "transition", "simulate", "verify"] },
+                "method": { "const": "POST" },
+                "path": { "type": "string" },
+                "purpose": { "type": "string" },
+                "body": { "type": "array", "items": { "type": "string" } },
+                "optional": { "type": "array", "items": { "type": "string" } },
+                "actions": { "type": "array", "items": { "type": "object" } },
+                "bodies": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          },
+          "discovery": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["id", "method", "path", "purpose"],
+              "properties": {
+                "id": { "type": "string" },
+                "method": { "const": "GET" },
+                "path": { "type": "string" },
+                "alias": { "type": "string" },
+                "purpose": { "type": "string" }
+              }
+            }
+          }
         }
       },
       "Fees": {
