@@ -13,6 +13,7 @@
   <link rel="alternate" type="application/json" href="/api/changelog.json" title="What's new" />
   <link rel="alternate" type="application/json" href="/api/scoreboard.json" title="Scoreboard" />
   <link rel="alternate" type="application/json" href="/api/fees.json" title="Fee schedule" />
+  <link rel="alternate" type="application/json" href="/api/tools.json" title="Adapter tools" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -372,6 +373,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/changelog.json"><code>/api/changelog.json</code></a> — recent shipped slices (newest first; same list as <a href="#whats-new">/#whats-new</a>)</li>
         <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Same facts as <a href="#scoreboard">/#scoreboard</a></li>
         <li><a href="/api/fees.json"><code>/api/fees.json</code></a> — demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Same facts as <a href="#fees">/#fees</a></li>
+        <li><a href="/api/tools.json"><code>/api/tools.json</code></a> — callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

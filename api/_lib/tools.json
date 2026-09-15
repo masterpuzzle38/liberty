@@ -1,0 +1,160 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-tools",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "persistence": false,
+  "title": "Adapter tools",
+  "description": "Callable Settlement surfaces for adapters. GET this list instead of scraping the homepage. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin.",
+  "path": "/api/tools.json",
+  "human": "/#adapters",
+  "origin": "https://liberty-amber.vercel.app",
+  "not": ["mcp-server", "a2a-agent-card", "openai-ai-plugin"],
+  "note": "Capability list only. Clients hold jobs, receipts, and balances. Liberty does not persist or take custody. money is always false. Optional demo API key is not production auth.",
+  "tools": [
+    {
+      "id": "quote",
+      "method": "POST",
+      "path": "/api/v0/quote",
+      "purpose": "Dry-run of the transition engine. Next status and fee math. No state change. Create has no durable id.",
+      "body": ["action"],
+      "actions": [
+        {
+          "id": "create",
+          "body": ["action", "title", "amount", "criteria"],
+          "optional": ["client_ref", "callback_url", "idempotency_key"]
+        },
+        {
+          "id": "fund",
+          "body": ["action", "job", "payer_credits"],
+          "optional": ["idempotency_key"]
+        },
+        {
+          "id": "submit",
+          "body": ["action", "job", "proof_url"],
+          "optional": ["proof_note", "idempotency_key"]
+        },
+        {
+          "id": "release",
+          "body": ["action", "job"],
+          "optional": ["release_note", "idempotency_key"]
+        },
+        {
+          "id": "dispute",
+          "body": ["action", "job"],
+          "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
+        }
+      ]
+    },
+    {
+      "id": "transition",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "purpose": "Commit one demo action. Client holds the job. Returns next state and fee math. Receipt on release or dispute.",
+      "body": ["action"],
+      "actions": [
+        {
+          "id": "create",
+          "body": ["action", "title", "amount", "criteria"],
+          "optional": ["client_ref", "callback_url", "idempotency_key"]
+        },
+        {
+          "id": "fund",
+          "body": ["action", "job", "payer_credits"],
+          "optional": ["idempotency_key"]
+        },
+        {
+          "id": "submit",
+          "body": ["action", "job", "proof_url"],
+          "optional": ["proof_note", "idempotency_key"]
+        },
+        {
+          "id": "release",
+          "body": ["action", "job"],
+          "optional": ["release_note", "idempotency_key"]
+        },
+        {
+          "id": "dispute",
+          "body": ["action", "job"],
+          "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
+        }
+      ]
+    },
+    {
+      "id": "simulate",
+      "method": "POST",
+      "path": "/api/v0/simulate",
+      "purpose": "One-shot create → fund → submit → release|dispute through the same engine.",
+      "body": ["title", "amount", "criteria", "payer_credits", "proof_url"],
+      "optional": ["terminal", "client_ref", "callback_url", "proof_note", "release_note", "dispute_reason", "idempotency_key"]
+    },
+    {
+      "id": "verify",
+      "method": "POST",
+      "path": "/api/v0/verify",
+      "purpose": "Recompute fee math for a receipt or proposed release/dispute.",
+      "bodies": [
+        { "body": ["receipt"] },
+        { "body": ["job"], "optional": ["action", "fee", "agent_payout", "returned_to_payer"] }
+      ]
+    }
+  ],
+  "discovery": [
+    {
+      "id": "health",
+      "method": "GET",
+      "path": "/api/health.json",
+      "purpose": "Service, demo mode, money: false."
+    },
+    {
+      "id": "settlement",
+      "method": "GET",
+      "path": "/api/settlement.json",
+      "purpose": "States, fees, job and receipt fields, quote / transition / simulate / verify notes."
+    },
+    {
+      "id": "fees",
+      "method": "GET",
+      "path": "/api/fees.json",
+      "purpose": "Demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none)."
+    },
+    {
+      "id": "scoreboard",
+      "method": "GET",
+      "path": "/api/scoreboard.json",
+      "purpose": "Honest zeros (external users, paid pilots, revenue) plus curated listing URLs."
+    },
+    {
+      "id": "changelog",
+      "method": "GET",
+      "path": "/api/changelog.json",
+      "purpose": "Recent shipped slices (newest first; dates and titles only)."
+    },
+    {
+      "id": "examples",
+      "method": "GET",
+      "path": "/api/examples.json",
+      "purpose": "Copy-ready request bodies for quote, transition, simulate, and verify."
+    },
+    {
+      "id": "templates",
+      "method": "GET",
+      "path": "/api/templates.json",
+      "purpose": "Preset create-job fields (fill only; no auto-create or fund)."
+    },
+    {
+      "id": "agent",
+      "method": "GET",
+      "path": "/api/agent.json",
+      "alias": "/.well-known/agent.json",
+      "purpose": "Discovery card (mode: demo, money: false). Same JSON at both paths."
+    },
+    {
+      "id": "openapi",
+      "method": "GET",
+      "path": "/settlement.openapi.json",
+      "purpose": "OpenAPI 3.1 of the same surface."
+    }
+  ]
+}

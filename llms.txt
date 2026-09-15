@@ -16,6 +16,7 @@ Human demo: https://liberty-amber.vercel.app
 - [What's new](/api/changelog.json): recent shipped slices (newest first; dates and titles only; no user counts or revenue). Same list as `/#whats-new`
 - [Scoreboard](/api/scoreboard.json): honest zeros (`external_users`, `paid_pilots`, `revenue_usd`) plus curated listing URLs. Listings ≠ users. Same facts as `/#scoreboard`
 - [Fees](/api/fees.json): demo fee schedule (release 5% rounded `Math.round(amount * 0.05)`, dispute no release fee, top-up/fund none). Same facts as `/#fees`
+- [Tools](/api/tools.json): callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id; Idempotency-Key echoed only)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow; optional Idempotency-Key stabilizes create ids)
 - [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute (same optional Idempotency-Key)
