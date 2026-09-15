@@ -839,7 +839,17 @@
           "submittedAt": { "type": ["string", "null"], "format": "date-time" },
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
           "fee": { "type": "integer", "minimum": 0 },
-          "agentPayout": { "type": "integer", "minimum": 0 }
+          "agentPayout": { "type": "integer", "minimum": 0 },
+          "releaseNote": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present on released jobs when release_note was sent."
+          },
+          "disputeReason": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present on disputed jobs when dispute_reason was sent."
+          }
         }
       },
       "Receipt": {
@@ -877,6 +887,16 @@
             "type": "string",
             "pattern": "^k_[0-9a-f]{12}$",
             "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+          },
+          "release_note": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present when the payer sent release_note on release."
+          },
+          "dispute_reason": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present when the payer sent dispute_reason on dispute."
           }
         }
       },
@@ -1005,6 +1025,10 @@
           "proof_url": { "type": "string" },
           "proofUrl": { "type": "string" },
           "terminal": { "type": "string", "enum": ["release", "dispute"], "default": "release" },
+          "release_note": { "type": "string", "maxLength": 400, "description": "Optional. Accepted when terminal is release." },
+          "releaseNote": { "type": "string", "maxLength": 400 },
+          "dispute_reason": { "type": "string", "maxLength": 400, "description": "Optional. Accepted when terminal is dispute." },
+          "disputeReason": { "type": "string", "maxLength": 400 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
@@ -1128,7 +1152,9 @@
           "submittedAt": { "type": ["string", "null"], "format": "date-time" },
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
           "fee": { "type": "integer", "minimum": 0 },
-          "agentPayout": { "type": "integer", "minimum": 0 }
+          "agentPayout": { "type": "integer", "minimum": 0 },
+          "releaseNote": { "type": "string", "maxLength": 400 },
+          "disputeReason": { "type": "string", "maxLength": 400 }
         }
       },
       "QuoteSuccess": {
@@ -1209,6 +1235,8 @@
         "properties": {
           "action": { "const": "release" },
           "job": { "$ref": "#/components/schemas/Job" },
+          "release_note": { "type": "string", "maxLength": 400 },
+          "releaseNote": { "type": "string", "maxLength": 400 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
@@ -1220,6 +1248,8 @@
           "action": { "const": "dispute" },
           "job": { "$ref": "#/components/schemas/Job" },
           "payer_credits": { "type": "integer", "minimum": 0 },
+          "dispute_reason": { "type": "string", "maxLength": 400 },
+          "disputeReason": { "type": "string", "maxLength": 400 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }

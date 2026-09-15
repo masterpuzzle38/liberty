@@ -28,6 +28,8 @@
     ["resolvedAt", "ra"],
     ["fee", "f"],
     ["agentPayout", "ap"],
+    ["releaseNote", "rn"],
+    ["disputeReason", "dr"],
   ];
 
   function fail(error, message) {
@@ -117,29 +119,39 @@
       return fail("invalid_job", "job.agentPayout must be an integer >= 0.");
     }
 
-    return {
-      ok: true,
-      job: {
-        id,
-        title,
-        amount,
-        criteria,
-        proofUrl: proofRaw,
-        status,
-        createdAt,
-        fundedAt,
-        submittedAt,
-        resolvedAt,
-        fee: feeRaw,
-        agentPayout: payoutRaw,
-      },
+    const job = {
+      id,
+      title,
+      amount,
+      criteria,
+      proofUrl: proofRaw,
+      status,
+      createdAt,
+      fundedAt,
+      submittedAt,
+      resolvedAt,
+      fee: feeRaw,
+      agentPayout: payoutRaw,
     };
+
+    const releaseNote = readText(firstDefined(raw.releaseNote, raw.release_note));
+    const disputeReason = readText(firstDefined(raw.disputeReason, raw.dispute_reason));
+    if (releaseNote && releaseNote.length > 400) {
+      return fail("invalid_job", "job.releaseNote must be at most 400 characters.");
+    }
+    if (disputeReason && disputeReason.length > 400) {
+      return fail("invalid_job", "job.disputeReason must be at most 400 characters.");
+    }
+    if (status === "released" && releaseNote) job.releaseNote = releaseNote;
+    if (status === "disputed" && disputeReason) job.disputeReason = disputeReason;
+
+    return { ok: true, job };
   }
 
   function compactJob(job) {
     const packed = {};
     for (const [from, to] of JOB_KEYS) {
-      packed[to] = job[from];
+      if (job[from] !== undefined) packed[to] = job[from];
     }
     return packed;
   }
@@ -157,6 +169,8 @@
     if (packed.submitted_at !== undefined && job.submittedAt === undefined) job.submittedAt = packed.submitted_at;
     if (packed.resolved_at !== undefined && job.resolvedAt === undefined) job.resolvedAt = packed.resolved_at;
     if (packed.agent_payout !== undefined && job.agentPayout === undefined) job.agentPayout = packed.agent_payout;
+    if (packed.release_note !== undefined && job.releaseNote === undefined) job.releaseNote = packed.release_note;
+    if (packed.dispute_reason !== undefined && job.disputeReason === undefined) job.disputeReason = packed.dispute_reason;
     return job;
   }
 

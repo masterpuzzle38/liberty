@@ -9,6 +9,7 @@ const VERIFY_ACTIONS = ["release", "dispute"];
 const SIMULATE_TERMINALS = ["release", "dispute"];
 const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 const TERMINAL = ["released", "disputed"];
+const NOTE_MAX_LENGTH = 400;
 const EXPECTED_FROM = {
   fund: "open",
   submit: "funded",
@@ -220,6 +221,71 @@ function readText(value, field, { maxLength, required }) {
   return { value: text };
 }
 
+function readOptionalNote(input, field, aliases) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { value: undefined };
+  }
+  const raw = firstDefined(...aliases.map((name) => input[name]));
+  if (raw === undefined || raw === null) return { value: undefined };
+  if (typeof raw !== "string") {
+    return {
+      error: fail(400, "invalid_field", `${field} must be a string.`, { field }),
+    };
+  }
+  const text = raw.trim();
+  if (!text) return { value: undefined };
+  if (text.length > NOTE_MAX_LENGTH) {
+    return {
+      error: fail(400, "invalid_field", `${field} must be at most ${NOTE_MAX_LENGTH} characters.`, {
+        field,
+      }),
+    };
+  }
+  return { value: text };
+}
+
+function rejectForeignNotes(input, action) {
+  const groups = [];
+  if (action !== "release") groups.push(["release_note", "releaseNote"]);
+  if (action !== "dispute") groups.push(["dispute_reason", "disputeReason"]);
+  for (const aliases of groups) {
+    const raw = firstDefined(...aliases.map((name) => input[name]));
+    if (raw === undefined || raw === null) continue;
+    if (typeof raw === "string" && !raw.trim()) continue;
+    const field = aliases[0];
+    const allowed = field === "release_note" ? "release" : "dispute";
+    return fail(400, "invalid_field", `${field} is only accepted on ${allowed}.`, { field });
+  }
+  return null;
+}
+
+function readActionNote(input, action) {
+  const foreign = rejectForeignNotes(input, action);
+  if (foreign) return { error: foreign };
+  if (action === "release") {
+    return readOptionalNote(input, "release_note", ["release_note", "releaseNote"]);
+  }
+  if (action === "dispute") {
+    return readOptionalNote(input, "dispute_reason", ["dispute_reason", "disputeReason"]);
+  }
+  return { value: undefined };
+}
+
+function applyReceiptNotes(receipt, job) {
+  if (!receipt || !job) return receipt;
+  const released = job.status === "released";
+  const disputed = job.status === "disputed";
+  const releaseNote = firstDefined(job.releaseNote, job.release_note);
+  const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
+  if (released && typeof releaseNote === "string" && releaseNote.trim()) {
+    receipt.release_note = releaseNote.trim();
+  }
+  if (disputed && typeof disputeReason === "string" && disputeReason.trim()) {
+    receipt.dispute_reason = disputeReason.trim();
+  }
+  return receipt;
+}
+
 function readJob(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return {
@@ -298,7 +364,7 @@ function requireStatus(job, action) {
 function receiptFromJob(job) {
   const released = job.status === "released";
   const disputed = job.status === "disputed";
-  return {
+  return applyReceiptNotes({
     job_id: job.id,
     title: job.title,
     status: job.status,
@@ -312,7 +378,7 @@ function receiptFromJob(job) {
     funded: job.fundedAt,
     submitted: job.submittedAt,
     resolved: job.resolvedAt,
-  };
+  }, job);
 }
 
 function moneyFromReceipt(receipt) {
@@ -657,6 +723,8 @@ function transition(input, options) {
   const idem = readIdempotencyFromInput(input, opts);
   if (idem.error) return idem.error;
   const idempotencyKey = idem.value;
+  const note = readActionNote(input, action);
+  if (note.error) return note.error;
   const stamp = now();
 
   if (action === "create") {
@@ -743,6 +811,7 @@ function transition(input, options) {
     job.agentPayout = job.amount - job.fee;
     job.status = "released";
     job.resolvedAt = stamp;
+    if (note.value) job.releaseNote = note.value;
     const released = ok({
       action,
       job,
@@ -760,6 +829,7 @@ function transition(input, options) {
   job.agentPayout = 0;
   job.status = "disputed";
   job.resolvedAt = stamp;
+  if (note.value) job.disputeReason = note.value;
   const body = {
     action,
     job,
@@ -859,9 +929,15 @@ function simulate(input, options) {
   steps.push(stepFromResult(submitted));
 
   const finished = transition(
-    terminal === "release"
-      ? { action: "release", job: submitted.body.job }
-      : { action: "dispute", job: submitted.body.job, payer_credits: funded.body.payer_credits },
+    {
+      action: terminal,
+      job: submitted.body.job,
+      ...(terminal === "dispute" ? { payer_credits: funded.body.payer_credits } : {}),
+      release_note: input.release_note,
+      releaseNote: input.releaseNote,
+      dispute_reason: input.dispute_reason,
+      disputeReason: input.disputeReason,
+    },
     nextOpts,
   );
   if (finished.status !== 200) return finished;
@@ -1006,6 +1082,7 @@ module.exports = {
   FEE_RATE,
   JOB_ID_HEX_LEN,
   JOB_ID_PATTERN,
+  NOTE_MAX_LENGTH,
   SIMULATE_TERMINALS,
   STATUSES,
   TERMINAL,

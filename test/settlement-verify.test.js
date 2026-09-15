@@ -77,6 +77,18 @@ test("valid release receipt matches the shared fee engine", () => {
   }).release_fee);
 });
 
+test("receipt notes do not affect fee verify", () => {
+  const receipt = {
+    ...releasedReceipt(),
+    release_note: "Looks good.",
+  };
+  const result = verify({ receipt }, OPTIONS);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.valid, true);
+  assert.deepEqual(result.body.mismatches, []);
+  assert.equal(result.body.expected.fee, 5);
+});
+
 test("wrong fee on a receipt is a mismatch, not a 4xx", () => {
   const receipt = { ...releasedReceipt(), release_fee: 10, agent_payout: 90 };
   const result = verify({ receipt }, OPTIONS);

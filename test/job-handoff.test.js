@@ -52,6 +52,27 @@ test("encode/decode round-trips a job and names the next legal actions", () => {
   assert.deepEqual(decoded.next, ["submit"]);
 });
 
+test("handoff keeps optional terminal notes on a released job", () => {
+  const job = sampleJob({
+    status: "released",
+    proofUrl: "https://example.com/proof",
+    submittedAt: NOW,
+    resolvedAt: NOW,
+    fee: 5,
+    agentPayout: 95,
+    releaseNote: "Looks good.",
+  });
+  const encoded = encodeHandoff(job);
+  assert.equal(encoded.ok, true);
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.job.rn, "Looks good.");
+  assert.equal(payload.job.releaseNote, undefined);
+  const decoded = decodeHandoff(encoded.token);
+  assert.equal(decoded.ok, true);
+  assert.equal(decoded.job.releaseNote, "Looks good.");
+});
+
 test("handoff payload is compact and does not include credits or API keys", () => {
   const encoded = encodeHandoff(sampleJob({
     receiptKeyId: "k_deadbeef0000",

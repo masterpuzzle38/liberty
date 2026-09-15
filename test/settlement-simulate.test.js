@@ -128,6 +128,28 @@ test("simulate dispute refunds escrow with the same math as transition", () => {
   assert.deepEqual(result.body.receipt, disputed.body.receipt);
 });
 
+test("simulate forwards optional release_note and dispute_reason to the terminal receipt", () => {
+  const released = walk({ release_note: "Proof matches the three-bullet brief." });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.receipt.release_note, "Proof matches the three-bullet brief.");
+  assert.equal(released.body.job.releaseNote, "Proof matches the three-bullet brief.");
+  assert.equal(released.body.steps[3].receipt.release_note, "Proof matches the three-bullet brief.");
+  assert.equal(released.body.fee, 5);
+
+  const disputed = walk({
+    terminal: "dispute",
+    dispute_reason: "Proof does not match the criteria.",
+  });
+  assert.equal(disputed.status, 200);
+  assert.equal(disputed.body.receipt.dispute_reason, "Proof does not match the criteria.");
+  assert.equal(disputed.body.job.disputeReason, "Proof does not match the criteria.");
+  assert.equal(disputed.body.returned_to_payer, 100);
+
+  const wrong = walk({ terminal: "dispute", release_note: "Wrong field." });
+  assert.equal(wrong.status, 400);
+  assert.equal(wrong.body.field, "release_note");
+});
+
 test("simulate defaults terminal to release and accepts aliases", () => {
   const omitted = walk({ terminal: undefined });
   assert.equal(omitted.body.terminal, "release");
