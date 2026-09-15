@@ -4,22 +4,23 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. Neither persists jobs, takes custody, or moves real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. None persist jobs or receipts, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. A successful release or dispute also stores the JSON receipt in this browser for export. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
+    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. A successful release or dispute also stores the JSON receipt in this browser for export. Paste a receipt (or pick a stored one) to POST /api/v0/verify against the same fee engine. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
     "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
     "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account.",
     "receipt_storage_key": "liberty.agent-settlement.receipts.v0",
-    "receipt_export_note": "Client-held terminal receipts (release/dispute). Download JSON for one, or JSON array / NDJSON for all. Liberty does not store receipts. Not a server ledger. Demo only."
+    "receipt_export_note": "Client-held terminal receipts (release/dispute). Download JSON for one, or JSON array / NDJSON for all. POST /api/v0/verify to check fee math. Liberty does not store receipts. Not a server ledger. Demo only."
   },
   "surfaces": {
     "health": "/api/health.json",
     "protocol": "/api/settlement.json",
     "transition": "/api/v0/transition",
     "quote": "/api/v0/quote",
+    "verify": "/api/v0/verify",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
@@ -35,7 +36,7 @@
     "when": "successful release or dispute (transition receipt; quote dry-runs are not stored)",
     "formats": ["json", "ndjson"],
     "fields": ["job_id", "status", "release_fee", "agent_payout", "returned_to_payer", "created", "funded", "submitted", "resolved"],
-    "note": "The human UI keeps the transition receipt in this browser so a human or adapter can download or share proof. Liberty does not store receipts. Not a server ledger. Not real money."
+    "note": "The human UI keeps the transition receipt in this browser so a human or adapter can download or share proof. POST /api/v0/verify to check that receipt against the fee engine. Liberty does not store receipts. Not a server ledger. Not real money."
   },
   "handoff": {
     "mode": "client",
@@ -123,6 +124,28 @@
         "action": "dispute",
         "body": ["action", "job"],
         "optional": ["payer_credits"]
+      }
+    ]
+  },
+  "verify_api": {
+    "path": "/api/v0/verify",
+    "method": "POST",
+    "cors": ["POST", "OPTIONS"],
+    "auth": "optional",
+    "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
+    "auth_note": "Same optional demo API key as /api/v0/quote and /api/v0/transition. If sent, response includes key_id. If omitted, notes key_optional. Not production auth.",
+    "persistence": false,
+    "money": false,
+    "mode": "demo",
+    "engine": "/api/v0/transition",
+    "note": "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Response includes valid, verified, expected, received, and mismatches. Does not store receipts. Not live escrow custody.",
+    "requests": [
+      {
+        "body": ["receipt"]
+      },
+      {
+        "body": ["job"],
+        "optional": ["action", "fee", "agent_payout", "returned_to_payer"]
       }
     ]
   },
@@ -234,6 +257,7 @@
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export.",
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
     "Receipt export is client-held. POST /api/v0/transition returns receipt on release or dispute. The human UI downloads that object as JSON. There is no receipt GET and no server ledger.",
+    "POST /api/v0/verify recomputes fee / agent_payout / returned_to_payer with the same engine as quote/transition. Send a receipt or a job (terminal, or submitted plus action). A mismatch is 200 with valid:false. Liberty does not store the receipt.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
 }

@@ -4,6 +4,7 @@
   const KEY_REVEAL = "liberty.agent-settlement.demo-key.reveal";
   const TRANSITION_URL = "/api/v0/transition";
   const QUOTE_URL = "/api/v0/quote";
+  const VERIFY_URL = "/api/v0/verify";
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
   const QUOTE_ACTIONS = ["fund", "release", "dispute"];
 
@@ -33,6 +34,11 @@
     downloadReceipts: document.getElementById("download-receipts"),
     downloadReceiptsNdjson: document.getElementById("download-receipts-ndjson"),
     copyReceipts: document.getElementById("copy-receipts"),
+    verifyForm: document.getElementById("verify-form"),
+    verifyPick: document.getElementById("verify-pick"),
+    verifyPickWrap: document.getElementById("verify-pick-wrap"),
+    verifyInput: document.getElementById("verify-input"),
+    verifyResult: document.getElementById("verify-result"),
   };
 
   const handoff = window.LibertyJobHandoff;
@@ -371,6 +377,36 @@
     return postEngine(QUOTE_URL, payload, "Quote failed.");
   }
 
+  async function postVerify(payload) {
+    if (inflight) return null;
+    inflight = true;
+    document.body.classList.add("pending");
+    try {
+      const headers = { "Content-Type": "application/json" };
+      const demoKey = loadDemoKey();
+      if (demoKey) headers.Authorization = `Bearer ${demoKey}`;
+      const res = await fetch(VERIFY_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        flash("Verify returned an unreadable response.", true);
+        return null;
+      }
+      return data;
+    } catch {
+      flash("Could not reach the verify engine. Try again.", true);
+      return null;
+    } finally {
+      inflight = false;
+      document.body.classList.remove("pending");
+    }
+  }
+
   function moneyActionPayload(action, job) {
     if (action === "fund") return { action, job, payer_credits: state.credits };
     if (action === "submit") return { action, job };
@@ -594,6 +630,7 @@
             <button type="button" class="secondary" data-action="download">Download .md</button>
             <button type="button" class="ghost" data-action="download-json">Download JSON</button>
             <button type="button" class="ghost" data-action="copy-json">Copy JSON</button>
+            <button type="button" class="ghost" data-action="verify">Verify with engine</button>
           </div>
         </div>`
       : "";
@@ -691,6 +728,7 @@
         <div class="action-row">
           <button type="button" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="download-json">Download JSON</button>
           <button type="button" class="secondary" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="copy-json">Copy JSON</button>
+          <button type="button" class="ghost" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="verify">Verify</button>
         </div>
       `;
       item.querySelector(".status").textContent = receipt.status;
@@ -701,6 +739,124 @@
         `${receipt.job_id} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}`;
       els.receiptList.appendChild(item);
     }
+    renderVerifyPick();
+  }
+
+  function renderVerifyPick() {
+    if (!els.verifyPick) return;
+    const current = els.verifyPick.value;
+    els.verifyPick.replaceChildren();
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = receipts.length ? "Paste JSON below, or pick one" : "Paste JSON below";
+    els.verifyPick.appendChild(blank);
+    for (const receipt of receipts) {
+      const opt = document.createElement("option");
+      opt.value = receipt.job_id;
+      opt.textContent = `${receipt.job_id} · ${receipt.status} · ${receipt.amount} cr`;
+      els.verifyPick.appendChild(opt);
+    }
+    if (current && receipts.some((item) => item.job_id === current)) {
+      els.verifyPick.value = current;
+    }
+    if (els.verifyPickWrap) els.verifyPickWrap.hidden = receipts.length === 0;
+  }
+
+  function fillVerifyInput(receipt) {
+    if (!els.verifyInput || !receiptsApi) return false;
+    const exported = receiptsApi.exportOneJson(receipt);
+    if (!exported.ok) return false;
+    els.verifyInput.value = exported.text.trim();
+    if (els.verifyPick && receipt.job_id) els.verifyPick.value = receipt.job_id;
+    return true;
+  }
+
+  function renderVerifyResult(data) {
+    if (!els.verifyResult) return;
+    if (!data) {
+      els.verifyResult.hidden = true;
+      els.verifyResult.replaceChildren();
+      els.verifyResult.className = "verify-result";
+      return;
+    }
+    els.verifyResult.hidden = false;
+    if (data.ok !== true) {
+      els.verifyResult.className = "verify-result bad";
+      els.verifyResult.innerHTML = `<p class="verify-kicker">Could not verify</p><p class="verify-impact"></p><p class="hint">Demo only — not real money. Liberty did not store this.</p>`;
+      els.verifyResult.querySelector(".verify-impact").textContent = data.message || "Verify failed.";
+      return;
+    }
+    const valid = data.valid === true;
+    els.verifyResult.className = valid ? "verify-result ok" : "verify-result bad";
+    const expected = data.expected || {};
+    const received = data.received || {};
+    const mismatches = Array.isArray(data.mismatches) ? data.mismatches : [];
+    els.verifyResult.innerHTML = `
+      <p class="verify-kicker">${valid ? "Valid" : "Mismatch"} — demo, not real money</p>
+      <p class="verify-impact"></p>
+      <dl class="detail-meta verify-meta">
+        <dt>Expected</dt><dd class="verify-expected"></dd>
+        <dt>Received</dt><dd class="verify-received"></dd>
+      </dl>
+      ${mismatches.length ? `<ul class="verify-mismatches"></ul>` : ""}
+      <p class="hint">Same engine as quote/transition. Liberty did not store this receipt.</p>
+    `;
+    const moneyLine = (row) => {
+      const fee = row.fee;
+      const payout = row.agent_payout;
+      const returned = row.returned_to_payer;
+      const parts = [];
+      if (fee !== undefined) parts.push(`fee ${fee}`);
+      if (payout !== undefined) parts.push(`agent payout ${payout}`);
+      if (returned !== undefined) parts.push(`returned to payer ${returned}`);
+      return parts.length ? parts.join(" · ") : "—";
+    };
+    els.verifyResult.querySelector(".verify-impact").textContent = valid
+      ? "Fee math matches Liberty’s engine."
+      : "Claimed money fields do not match the engine.";
+    els.verifyResult.querySelector(".verify-expected").textContent = moneyLine(expected);
+    els.verifyResult.querySelector(".verify-received").textContent = moneyLine(received);
+    const list = els.verifyResult.querySelector(".verify-mismatches");
+    if (list) {
+      for (const row of mismatches) {
+        const item = document.createElement("li");
+        item.textContent = row;
+        list.appendChild(item);
+      }
+    }
+  }
+
+  async function runVerify(payload) {
+    const data = await postVerify(payload);
+    if (!data) return;
+    renderVerifyResult(data);
+    if (data.ok === true) {
+      flash(data.valid
+        ? "Receipt matches the fee engine. Demo only — not real money."
+        : "Receipt does not match the fee engine. See mismatches below.");
+    } else {
+      flash(data.message || "Verify failed.", true);
+    }
+    if (els.verifyResult) els.verifyResult.scrollIntoView({ block: "nearest" });
+  }
+
+  function parseVerifyInput(raw) {
+    const text = (raw || "").trim();
+    if (!text) return { ok: false, message: "Paste a receipt JSON object first." };
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return { ok: false, message: "Receipt JSON is not valid JSON." };
+    }
+    if (Array.isArray(parsed)) {
+      return { ok: false, message: "Paste a single receipt object, not an array." };
+    }
+    if (!parsed || typeof parsed !== "object") {
+      return { ok: false, message: "Paste a receipt JSON object." };
+    }
+    if (parsed.receipt || parsed.job || parsed.job_id || parsed.jobId) return { ok: true, payload: parsed };
+    return { ok: true, payload: { receipt: parsed } };
   }
 
   function render() {
@@ -800,6 +956,13 @@
       downloadText(receiptMarkdown(job), `${job.id}.md`, "text/markdown");
       flash("Receipt markdown downloaded.");
     }
+    if (action === "verify") {
+      const stored = findReceipt(job.id) || rememberReceipt(job, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
+      if (!stored) return flash("Could not build a receipt for that job.", true);
+      fillVerifyInput(stored);
+      runVerify({ receipt: stored });
+      return;
+    }
     if ((action === "download-json" || action === "copy-json") && receiptsApi) {
       const stored = findReceipt(job.id) || rememberReceipt(job, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
       const exported = stored ? receiptsApi.exportOneJson(stored) : { ok: false };
@@ -861,7 +1024,31 @@
   els.receiptList?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-receipt-action]");
     if (!button) return;
+    if (button.dataset.receiptAction === "verify") {
+      const receipt = findReceipt(button.dataset.receiptId);
+      if (!receipt) return flash("That receipt is not in this browser.", true);
+      fillVerifyInput(receipt);
+      runVerify({ receipt });
+      return;
+    }
     exportReceiptById(button.dataset.receiptId, button.dataset.receiptAction);
+  });
+
+  els.verifyPick?.addEventListener("change", () => {
+    const id = els.verifyPick.value;
+    if (!id) return;
+    const receipt = findReceipt(id);
+    if (receipt) fillVerifyInput(receipt);
+  });
+
+  els.verifyForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const parsed = parseVerifyInput(els.verifyInput ? els.verifyInput.value : "");
+    if (!parsed.ok) {
+      renderVerifyResult({ ok: false, message: parsed.message });
+      return flash(parsed.message, true);
+    }
+    runVerify(parsed.payload);
   });
 
   els.downloadReceipts?.addEventListener("click", () => {

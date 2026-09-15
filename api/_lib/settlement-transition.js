@@ -5,7 +5,9 @@ const crypto = require("crypto");
 const FEE_RATE = 0.05;
 const JOB_ID_PATTERN = /^as_[0-9a-f]{10}$/;
 const ACTIONS = ["create", "fund", "submit", "release", "dispute"];
+const VERIFY_ACTIONS = ["release", "dispute"];
 const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
+const TERMINAL = ["released", "disputed"];
 const EXPECTED_FROM = {
   fund: "open",
   submit: "funded",
@@ -266,13 +268,271 @@ function receiptFromJob(job) {
   };
 }
 
+function moneyFromReceipt(receipt) {
+  return {
+    fee: receipt.release_fee,
+    agent_payout: receipt.agent_payout,
+    returned_to_payer: receipt.returned_to_payer,
+  };
+}
+
+function looksLikeReceipt(raw) {
+  return Boolean(
+    raw
+    && typeof raw === "object"
+    && !Array.isArray(raw)
+    && (typeof raw.job_id === "string" || typeof raw.jobId === "string"),
+  );
+}
+
+function asSubmittedJob(job) {
+  return {
+    ...job,
+    status: "submitted",
+    resolvedAt: null,
+    fee: 0,
+    agentPayout: 0,
+  };
+}
+
+function jobShapeFromReceipt(raw) {
+  return {
+    id: firstDefined(raw.job_id, raw.jobId, raw.id),
+    title: raw.title,
+    amount: raw.amount,
+    criteria: firstDefined(raw.success_criteria, raw.successCriteria, raw.criteria),
+    proofUrl: firstDefined(raw.proof, raw.proofUrl, raw.proof_url, ""),
+    status: raw.status,
+    createdAt: firstDefined(raw.created, raw.createdAt, raw.created_at),
+    fundedAt: firstDefined(raw.funded, raw.fundedAt, raw.funded_at, null),
+    submittedAt: firstDefined(raw.submitted, raw.submittedAt, raw.submitted_at, null),
+    resolvedAt: firstDefined(raw.resolved, raw.resolvedAt, raw.resolved_at, null),
+    fee: firstDefined(raw.release_fee, raw.releaseFee, raw.fee, 0),
+    agentPayout: firstDefined(raw.agent_payout, raw.agentPayout, 0),
+  };
+}
+
+function readClaimedMoney(source, { required } = {}) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return required
+      ? { error: fail(400, "missing_field", "Send claimed fee fields on the receipt or job.", { field: "fee" }) }
+      : { value: {} };
+  }
+
+  const rawFee = firstDefined(source.fee, source.release_fee, source.releaseFee);
+  const rawPayout = firstDefined(source.agent_payout, source.agentPayout);
+  const rawReturned = firstDefined(source.returned_to_payer, source.returnedToPayer);
+  const claimed = {};
+
+  const fee = readCredits(rawFee, "fee", Boolean(required));
+  if (fee.error) return fee;
+  if (fee.value !== undefined) claimed.fee = fee.value;
+
+  const payout = readCredits(rawPayout, "agent_payout", Boolean(required));
+  if (payout.error) return payout;
+  if (payout.value !== undefined) claimed.agent_payout = payout.value;
+
+  const returned = readCredits(rawReturned, "returned_to_payer", Boolean(required));
+  if (returned.error) return returned;
+  if (returned.value !== undefined) claimed.returned_to_payer = returned.value;
+
+  if (required && (claimed.fee === undefined || claimed.agent_payout === undefined || claimed.returned_to_payer === undefined)) {
+    return {
+      error: fail(400, "missing_field", "Receipt must include fee, agent_payout, and returned_to_payer.", {
+        field: "receipt",
+      }),
+    };
+  }
+
+  return { value: claimed };
+}
+
+function mergeClaimed(base, extra) {
+  return { ...base, ...extra };
+}
+
+function moneyMismatches(expected, claimed) {
+  const received = {};
+  const mismatches = [];
+  for (const field of ["fee", "agent_payout", "returned_to_payer"]) {
+    if (!Object.prototype.hasOwnProperty.call(claimed, field)) continue;
+    received[field] = claimed[field];
+    if (claimed[field] !== expected[field]) {
+      mismatches.push(`${field}: received ${claimed[field]}, expected ${expected[field]}`);
+    }
+  }
+  return { received, mismatches };
+}
+
+function expectedFromAction(job, action, options) {
+  const inputJob = job.status === "submitted" ? job : asSubmittedJob(job);
+  return transition({ action, job: inputJob }, { ...(options || {}), dryRun: true });
+}
+
+function verifySuccess(expected, claimed, extra) {
+  const compared = moneyMismatches(expected, claimed);
+  return ok({
+    valid: compared.mismatches.length === 0,
+    verified: true,
+    expected,
+    received: compared.received,
+    mismatches: compared.mismatches,
+    ...(extra || {}),
+  });
+}
+
+function parseReceiptInput(raw) {
+  if (Array.isArray(raw)) {
+    return {
+      error: fail(400, "invalid_field", "receipt must be a single object, not an array.", { field: "receipt" }),
+    };
+  }
+  if (!raw || typeof raw !== "object") {
+    return {
+      error: fail(400, "missing_field", "Send a receipt object.", { field: "receipt" }),
+    };
+  }
+
+  const source = looksLikeReceipt(raw) ? raw : jobShapeFromReceipt(raw);
+  const parsedJob = readJob(jobShapeFromReceipt(source));
+  if (parsedJob.error) return parsedJob;
+  if (!TERMINAL.includes(parsedJob.value.status)) {
+    return {
+      error: fail(400, "invalid_field", "receipt.status must be released or disputed.", {
+        field: "receipt.status",
+      }),
+    };
+  }
+
+  const inferred = parsedJob.value.status === "disputed"
+    ? { returned_to_payer: parsedJob.value.amount }
+    : { returned_to_payer: 0 };
+  const claimed = readClaimedMoney({ ...inferred, ...source }, { required: true });
+  if (claimed.error) return claimed;
+
+  return {
+    value: {
+      job: parsedJob.value,
+      action: parsedJob.value.status === "released" ? "release" : "dispute",
+      claimed: claimed.value,
+    },
+  };
+}
+
+function parseVerifyJobInput(input) {
+  const rawJob = input.job !== undefined ? input.job : input;
+  const parsedJob = readJob(rawJob);
+  if (parsedJob.error) return parsedJob;
+  const job = parsedJob.value;
+
+  const rawAction = input.action;
+  let action;
+  if (rawAction !== undefined) {
+    if (typeof rawAction !== "string" || !VERIFY_ACTIONS.includes(rawAction)) {
+      return {
+        error: fail(400, "invalid_action", "action must be release or dispute when verifying a job.", {
+          actions: VERIFY_ACTIONS,
+        }),
+      };
+    }
+    action = rawAction;
+    if (TERMINAL.includes(job.status) && action !== (job.status === "released" ? "release" : "dispute")) {
+      return {
+        error: fail(
+          409,
+          "illegal_transition",
+          `Terminal job status ${job.status} does not match action ${action}.`,
+          { action, from: job.status, expected: job.status === "released" ? "release" : "dispute" },
+        ),
+      };
+    }
+    if (job.status !== "submitted" && !TERMINAL.includes(job.status)) {
+      return {
+        error: fail(
+          409,
+          "illegal_transition",
+          `Cannot verify ${action} from status ${job.status}. Send a submitted job plus action, or a terminal job.`,
+          { action, from: job.status, expected: "submitted" },
+        ),
+      };
+    }
+  } else if (TERMINAL.includes(job.status)) {
+    action = job.status === "released" ? "release" : "dispute";
+  } else if (job.status === "submitted") {
+    return {
+      error: fail(400, "missing_field", "Submitted jobs need action release or dispute.", { field: "action" }),
+    };
+  } else {
+    return {
+      error: fail(
+        409,
+        "illegal_transition",
+        `Cannot verify a job in status ${job.status}. Send a terminal receipt, a terminal job, or a submitted job plus action.`,
+        { from: job.status, expected: "submitted" },
+      ),
+    };
+  }
+
+  const fromInput = readClaimedMoney(input, { required: false });
+  if (fromInput.error) return fromInput;
+
+  let claimed = fromInput.value;
+  if (TERMINAL.includes(job.status)) {
+    const fromJob = readClaimedMoney(rawJob, { required: false });
+    if (fromJob.error) return fromJob;
+    claimed = mergeClaimed(fromJob.value, fromInput.value);
+    if (claimed.returned_to_payer === undefined) {
+      claimed = {
+        ...claimed,
+        returned_to_payer: job.status === "disputed" && typeof rawJob.amount === "number"
+          ? rawJob.amount
+          : 0,
+      };
+    }
+  }
+
+  return { value: { job, action, claimed } };
+}
+
+function verify(input, options) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail(400, "invalid_json", "Body must be a JSON object.");
+  }
+
+  const hasReceipt = input.receipt !== undefined || looksLikeReceipt(input);
+  const hasJob = input.job !== undefined
+    || (typeof input.id === "string" && typeof input.status === "string" && !looksLikeReceipt(input));
+
+  let parsed;
+  if (hasReceipt) {
+    parsed = parseReceiptInput(input.receipt !== undefined ? input.receipt : input);
+  } else if (hasJob) {
+    parsed = parseVerifyJobInput(input);
+  } else {
+    return fail(400, "missing_field", "Send a receipt object or a job to recompute.", { field: "receipt" });
+  }
+  if (parsed.error) return parsed.error;
+
+  const expectedResult = expectedFromAction(parsed.value.job, parsed.value.action, options);
+  if (expectedResult.status !== 200) return expectedResult;
+
+  const receipt = expectedResult.body.receipt;
+  const expected = moneyFromReceipt(receipt);
+  return verifySuccess(expected, parsed.value.claimed, {
+    action: parsed.value.action,
+    job_id: parsed.value.job.id,
+  });
+}
+
 function discovery(kind) {
   const quote = kind === "quote";
+  const verifyMode = kind === "verify";
+  const path = verifyMode ? "/api/v0/verify" : quote ? "/api/v0/quote" : "/api/v0/transition";
   return {
     service: "liberty-agent-settlement",
     mode: "demo",
     money: false,
-    path: quote ? "/api/v0/quote" : "/api/v0/transition",
+    path,
     methods: ["POST", "OPTIONS"],
     auth: {
       required: false,
@@ -282,14 +542,17 @@ function discovery(kind) {
       missing: "key_optional",
     },
     persistence: false,
-    dry_run: quote,
-    actions: ACTIONS,
-    note: quote
-      ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-      : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    dry_run: quote || verifyMode,
+    actions: verifyMode ? VERIFY_ACTIONS : ACTIONS,
+    note: verifyMode
+      ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+      : quote
+        ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+        : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     protocol: "/api/settlement.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",
+    verify: "/api/v0/verify",
   };
 }
 
@@ -444,7 +707,7 @@ function parseBody(raw) {
   throw error;
 }
 
-function createVercelHandler({ dryRun } = {}) {
+function createVercelHandler({ dryRun, verify: verifyMode } = {}) {
   return async function handler(req, res) {
     let body;
     try {
@@ -468,6 +731,7 @@ function createVercelHandler({ dryRun } = {}) {
       body,
       headers: req.headers,
       dryRun: Boolean(dryRun),
+      verify: Boolean(verifyMode),
     });
     for (const [key, value] of Object.entries(result.headers)) {
       res.setHeader(key, value);
@@ -477,10 +741,11 @@ function createVercelHandler({ dryRun } = {}) {
   };
 }
 
-function handleHttp({ method, body, headers, dryRun }) {
+function handleHttp({ method, body, headers, dryRun, verify: verifyMode }) {
   const cors = corsHeaders();
   const verb = (method || "").toUpperCase();
   const quoteMode = Boolean(dryRun);
+  const checking = Boolean(verifyMode);
 
   if (verb === "OPTIONS") {
     return { status: 204, headers: cors, body: null };
@@ -490,7 +755,7 @@ function handleHttp({ method, body, headers, dryRun }) {
     return {
       status: 200,
       headers: { ...cors, "Content-Type": "application/json" },
-      body: discovery(quoteMode ? "quote" : "transition"),
+      body: discovery(checking ? "verify" : quoteMode ? "quote" : "transition"),
     };
   }
 
@@ -509,7 +774,7 @@ function handleHttp({ method, body, headers, dryRun }) {
     };
   }
 
-  const result = transition(body, { dryRun: quoteMode });
+  const result = checking ? verify(body) : transition(body, { dryRun: quoteMode });
   return {
     status: result.status,
     headers: { ...cors, "Content-Type": "application/json" },
@@ -523,6 +788,8 @@ module.exports = {
   FEE_RATE,
   JOB_ID_PATTERN,
   STATUSES,
+  TERMINAL,
+  VERIFY_ACTIONS,
   applyDemoAuth,
   corsHeaders,
   createVercelHandler,
@@ -535,4 +802,5 @@ module.exports = {
   receiptFromJob,
   releaseFee,
   transition,
+  verify,
 };

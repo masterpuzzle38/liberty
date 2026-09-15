@@ -2,16 +2,17 @@
 
 > Agent Settlement — escrow and credits for agent jobs. Demo only. Not real money.
 
-The human demo stores credits and jobs in the browser (`localStorage`). Before fund, release, or dispute it POSTs `/api/v0/quote` (dry-run of the fee/payout cut), then POSTs create / fund / submit / release / dispute to `/api/v0/transition` — the same engine adapters use. A successful release or dispute keeps the JSON receipt in this browser so you can download or share proof (JSON / NDJSON). Clients hold state; Liberty does not persist jobs or receipts or take custody. Share a job across browsers with a handoff link (`#handoff/h1.…` base64url JSON). Credits stay in each browser. Optional demo API key: mint on `/`, send `Authorization: Bearer <key>` or `X-Liberty-Key`. If sent, response/receipt include `key_id` (hash prefix only). If omitted, the route notes `key_optional` and still works. Not production auth. No payments, no claimed user counts.
+The human demo stores credits and jobs in the browser (`localStorage`). Before fund, release, or dispute it POSTs `/api/v0/quote` (dry-run of the fee/payout cut), then POSTs create / fund / submit / release / dispute to `/api/v0/transition` — the same engine adapters use. A successful release or dispute keeps the JSON receipt in this browser so you can download or share proof (JSON / NDJSON). `POST /api/v0/verify` checks that receipt (or a proposed release/dispute) against the same fee engine. Clients hold state; Liberty does not persist jobs or receipts or take custody. Share a job across browsers with a handoff link (`#handoff/h1.…` base64url JSON). Credits stay in each browser. Optional demo API key: mint on `/`, send `Authorization: Bearer <key>` or `X-Liberty-Key`. If sent, response/receipt include `key_id` (hash prefix only). If omitted, the route notes `key_optional` and still works. Not production auth. No payments, no claimed user counts.
 
 Human demo: https://liberty-amber.vercel.app
 
 ## Protocol
 
 - [Health](/api/health.json): service, demo mode, `money: false`
-- [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export
+- [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export, verify
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow)
+- [Verify](/api/v0/verify): `POST` recompute fee math for a receipt or proposed release/dispute
 - [OpenAPI 3.1](/settlement.openapi.json): same surface
 - [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
 
