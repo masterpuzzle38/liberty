@@ -1064,7 +1064,9 @@
   els.receiptForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     const raw = els.receiptInput ? els.receiptInput.value : "";
-    const receipt = applyReceiptInput(raw);
+    const receipt = applyReceiptInput(raw, {
+      fromLink: /#receipt\/|\?receipt=|^https?:\/\//i.test(raw),
+    });
     if (!receipt) return;
     if (els.receiptInput) els.receiptInput.value = "";
     fillVerifyInput(receipt);
