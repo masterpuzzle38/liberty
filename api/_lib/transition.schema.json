@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/transition.json",
+  "title": "Liberty Agent Settlement transition request",
+  "description": "JSON Schema for POST /api/v0/transition request bodies. Client-held demo protocol; Liberty does not move real money. Same request shape as POST /api/v0/quote (dry-run). Quote, transition, and simulate never persist jobs or take custody. Agent wallets stay client-held — apply response agent_credits_delta locally after release. payer_credits is the only credits field accepted on a request (required on fund; optional on dispute).",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/CreateRequest" },
+    { "$ref": "#/$defs/FundRequest" },
+    { "$ref": "#/$defs/SubmitRequest" },
+    { "$ref": "#/$defs/ReleaseRequest" },
+    { "$ref": "#/$defs/DisputeRequest" }
+  ],
+  "$defs": {
+    "IdempotencyKey": {
+      "type": "string",
+      "description": "Optional. Header Idempotency-Key or body idempotency_key / idempotencyKey. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Liberty does not store or replay responses."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Adapter-owned https URL. Lands on the job and later receipt. Liberty never HTTP-fetches or calls it. Empty or whitespace-only is rejected. notify_url / notifyUrl / callbackUrl are aliases."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id. Lands on the job and later receipt. Independent of Idempotency-Key. Empty or whitespace-only is rejected. clientRef is an alias."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Client-held payer credit balance in integer demo credits. Not real money."
+    },
+    "Job": {
+      "type": "object",
+      "description": "Current client-held job. Liberty does not look jobs up. Send the object from the previous response. camelCase matches the UI and OpenAPI Job schema; snake_case aliases are accepted.",
+      "required": ["id", "title", "amount", "criteria", "status"],
+      "anyOf": [
+        { "required": ["createdAt"] },
+        { "required": ["created_at"] }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^as_[0-9a-f]{10}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "criteria": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "funded", "submitted", "released", "disputed"]
+        },
+        "proofUrl": { "type": "string" },
+        "proof_url": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "created_at": { "type": "string" },
+        "fundedAt": { "type": ["string", "null"] },
+        "funded_at": { "type": ["string", "null"] },
+        "submittedAt": { "type": ["string", "null"] },
+        "submitted_at": { "type": ["string", "null"] },
+        "resolvedAt": { "type": ["string", "null"] },
+        "resolved_at": { "type": ["string", "null"] },
+        "fee": { "type": "integer", "minimum": 0 },
+        "agentPayout": { "type": "integer", "minimum": 0 },
+        "agent_payout": { "type": "integer", "minimum": 0 },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "dispute_reason": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "CreateRequest": {
+      "type": "object",
+      "required": ["action", "title", "amount", "criteria"],
+      "properties": {
+        "action": { "const": "create" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "amount": { "type": "integer", "minimum": 1 },
+        "criteria": { "type": "string", "minLength": 1 },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "FundRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "anyOf": [
+        { "required": ["payer_credits"] },
+        { "required": ["payerCredits"] }
+      ],
+      "properties": {
+        "action": { "const": "fund" },
+        "job": { "$ref": "#/$defs/Job" },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payerCredits": { "$ref": "#/$defs/Credits" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "SubmitRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "anyOf": [
+        { "required": ["proof_url"] },
+        { "required": ["proofUrl"] }
+      ],
+      "properties": {
+        "action": { "const": "submit" },
+        "job": { "$ref": "#/$defs/Job" },
+        "proof_url": { "type": "string", "minLength": 1 },
+        "proofUrl": { "type": "string", "minLength": 1 },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "ReleaseRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "properties": {
+        "action": { "const": "release" },
+        "job": { "$ref": "#/$defs/Job" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "DisputeRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "properties": {
+        "action": { "const": "dispute" },
+        "job": { "$ref": "#/$defs/Job" },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payerCredits": { "$ref": "#/$defs/Credits" },
+        "dispute_reason": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    }
+  }
+}

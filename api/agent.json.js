@@ -1,10 +1,10 @@
 "use strict";
 
 const OPENAPI = require("../settlement.openapi.json");
-const { AGENT, TOOLS, QUICKSTART, serveProtocol } = require("./_lib/settlement-protocol");
+const { AGENT, TOOLS, QUICKSTART, TRANSITION_SCHEMA, serveProtocol } = require("./_lib/settlement-protocol");
 
 // Hobby deployments allow 12 functions. /api/tools.json, /api/openapi.json,
-// and /api/quickstart.json rewrite here (?doc=tools / ?doc=openapi / ?doc=quickstart)
+// /api/quickstart.json, and /api/schemas/transition.json rewrite here
 // instead of adding more api/*.json.js files.
 // /openapi.json rewrites to the static settlement.openapi.json file.
 function documentFor(req) {
@@ -17,6 +17,12 @@ function documentFor(req) {
   }
   if (url.includes("doc=quickstart") || /(?:^|[/?])quickstart\.json(?:\?|$)/.test(url)) {
     return QUICKSTART;
+  }
+  if (
+    url.includes("doc=transition-schema")
+    || /(?:^|[/?])schemas\/transition\.json(?:\?|$)/.test(url)
+  ) {
+    return TRANSITION_SCHEMA;
   }
   return AGENT;
 }

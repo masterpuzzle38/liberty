@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). GET /api/tools.json lists callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk. GET /settlement.openapi.json is this OpenAPI 3.1 document (same JSON at GET /openapi.json and GET /api/openapi.json). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. /#ledger reads those stored receipts for this-browser running totals and a CSV download — not a server ledger. /#activity appends local demo actions in this browser — Liberty never receives that log. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). GET /api/tools.json lists callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk. GET /api/schemas/transition.json is the JSON Schema (2020-12) for POST /api/v0/transition bodies. GET /settlement.openapi.json is this OpenAPI 3.1 document (same JSON at GET /openapi.json and GET /api/openapi.json). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. /#ledger reads those stored receipts for this-browser running totals and a CSV download — not a server ledger. /#activity appends local demo actions in this browser — Liberty never receives that log. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, /api/scoreboard.json for honest zeros, /api/fees.json for the demo fee schedule, /api/tools.json for callable Settlement surfaces, and /api/quickstart.json for the ordered demo escrow walk. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, /api/scoreboard.json for honest zeros, /api/fees.json for the demo fee schedule, /api/tools.json for callable Settlement surfaces, /api/quickstart.json for the ordered demo escrow walk, and /api/schemas/transition.json for the transition request JSON Schema. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -238,6 +238,24 @@
         }
       }
     },
+    "/api/schemas/transition.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "JSON Schema for transition requests",
+        "description": "JSON Schema draft 2020-12 for POST /api/v0/transition bodies. $id is the production absolute URL. Client-held demo protocol; Liberty does not move real money. Same request shape as POST /api/v0/quote.",
+        "operationId": "getTransitionRequestSchema",
+        "responses": {
+          "200": {
+            "description": "JSON Schema for transition request bodies. Demo only. Not real money.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionRequestSchemaDocument" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v0/transition": {
       "get": {
         "tags": ["transition"],
@@ -267,7 +285,7 @@
       "post": {
         "tags": ["transition"],
         "summary": "Apply one demo settlement action",
-        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries; Liberty does not replay stored responses. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. Validate the body against GET /api/schemas/transition.json before calling. Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries; Liberty does not replay stored responses. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postTransition",
         "security": [
           {},
@@ -757,6 +775,7 @@
               "fees": { "const": "/api/fees.json" },
               "tools": { "const": "/api/tools.json" },
               "quickstart": { "const": "/api/quickstart.json" },
+              "transition_schema": { "const": "/api/schemas/transition.json" },
               "openapi": { "const": "/settlement.openapi.json" },
               "openapi_aliases": {
                 "type": "array",
@@ -809,6 +828,7 @@
           "scoreboard": { "type": "object" },
           "fees": { "type": "object" },
           "tools": { "type": "object" },
+          "transition_schema": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
@@ -1086,6 +1106,7 @@
                 "id": { "type": "string", "enum": ["quote", "transition", "simulate", "verify"] },
                 "method": { "const": "POST" },
                 "path": { "type": "string" },
+                "schema": { "type": "string" },
                 "purpose": { "type": "string" },
                 "body": { "type": "array", "items": { "type": "string" } },
                 "optional": { "type": "array", "items": { "type": "string" } },
@@ -1579,7 +1600,22 @@
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
+      "TransitionRequestSchemaDocument": {
+        "type": "object",
+        "description": "Shape of GET /api/schemas/transition.json. JSON Schema 2020-12 for POST /api/v0/transition bodies.",
+        "required": ["$schema", "$id", "title", "description", "oneOf"],
+        "properties": {
+          "$schema": { "const": "https://json-schema.org/draft/2020-12/schema" },
+          "$id": { "const": "https://liberty-amber.vercel.app/api/schemas/transition.json" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "const": "object" },
+          "oneOf": { "type": "array", "minItems": 5, "maxItems": 5 },
+          "$defs": { "type": "object" }
+        }
+      },
       "TransitionRequest": {
+        "description": "Same request shape as GET /api/schemas/transition.json (JSON Schema 2020-12). Client-held demo protocol; Liberty does not move real money.",
         "oneOf": [
           { "$ref": "#/components/schemas/CreateRequest" },
           { "$ref": "#/components/schemas/FundRequest" },

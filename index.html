@@ -376,6 +376,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/fees.json"><code>/api/fees.json</code></a> — demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Same facts as <a href="#fees">/#fees</a></li>
         <li><a href="/api/tools.json"><code>/api/tools.json</code></a> — callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server</li>
         <li><a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional)</li>
+        <li><a href="/api/schemas/transition.json"><code>/api/schemas/transition.json</code></a> — JSON Schema for <code>POST /api/v0/transition</code> bodies (client-held demo protocol; Liberty does not move real money)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

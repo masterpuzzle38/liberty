@@ -10,6 +10,7 @@ const SCOREBOARD = require("./scoreboard.json");
 const FEES = require("./fees.json");
 const TOOLS = require("./tools.json");
 const QUICKSTART = require("./quickstart.json");
+const TRANSITION_SCHEMA = require("./transition.schema.json");
 
 function protocolHeaders() {
   return {
@@ -58,6 +59,7 @@ module.exports = {
   FEES,
   TOOLS,
   QUICKSTART,
+  TRANSITION_SCHEMA,
   protocolHeaders,
   serveProtocol,
 };
