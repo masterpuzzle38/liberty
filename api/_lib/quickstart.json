@@ -8,7 +8,7 @@
   "title": "Settlement quickstart",
   "description": "Ordered demo escrow walk for agent builders. Ready-to-run curls against https://liberty-amber.vercel.app. Client-held protocol. Liberty does not persist jobs, receipts, or balances, take custody, or move real money.",
   "path": "/api/quickstart.json",
-  "human": "/#adapters",
+  "human": "/#integrate",
   "origin": "https://liberty-amber.vercel.app",
   "note": "Demo only. money is always false. Clients hold the job and thread it on later POSTs — or use the sample jobs below. The engine does not look jobs up. Optional demo API key is not production auth. Mint on / and send Authorization: Bearer lib_demo_… or X-Liberty-Key. Missing keys still work (key_optional). Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries; Liberty does not replay stored responses. Optional client_ref is an adapter stamp, independent of the as_ id. Scoreboard zeros are honest. Liberty does not move real money.",
   "auth": {

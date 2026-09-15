@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "integrate",
+      "title": "Human Integrate panel for Settlement quickstart",
+      "href": "/#integrate"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-8",
       "title": "Scoreboard curated listings + wave 8",
       "href": "/#scoreboard"
@@ -76,12 +82,6 @@
       "id": "robots-sitemap",
       "title": "robots.txt and sitemap",
       "href": "/sitemap.xml"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "fees",
-      "title": "Machine-readable fee schedule",
-      "href": "/#fees"
     }
   ]
 }

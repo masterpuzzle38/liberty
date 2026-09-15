@@ -42,6 +42,9 @@
 
   <main>
     <nav class="jump" aria-label="On this page">
+      <a href="#integrate">Integrate</a>
+      <a href="#adapters">Adapters</a>
+      <a href="#scoreboard">Scoreboard</a>
       <a href="#activity">Activity</a>
       <a href="#ledger">Ledger</a>
       <a href="#demo-pack">Demo pack</a>
@@ -87,6 +90,13 @@
       <p id="scoreboard-listings-label" class="hint" hidden>Public listing URLs (not users):</p>
       <ul id="scoreboard-listings" class="scoreboard-listings" hidden></ul>
       <p id="scoreboard-note" class="hint" hidden></p>
+    </section>
+
+    <section id="integrate" class="panel adapter-examples" aria-labelledby="integrate-heading">
+      <h2 id="integrate-heading">Integrate</h2>
+      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Client-held demo. Liberty does not move real money. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
+      <p id="integrate-empty" class="hint">Loading the demo escrow walk…</p>
+      <div id="integrate-body" hidden></div>
     </section>
 
     <p id="flash" class="flash" role="status" aria-live="polite" hidden></p>
@@ -296,7 +306,7 @@
 
     <section id="adapters" class="panel adapter-examples" aria-labelledby="adapter-heading">
       <h2 id="adapter-heading">Try as an adapter</h2>
-      <p class="hint">Copy-ready curls against the live demo. Optional <code>Authorization: Bearer</code> or <code>X-Liberty-Key</code> — mint a key above. Missing keys still work (<code>key_optional</code>). Optional <code>Idempotency-Key</code> (or body <code>idempotency_key</code>) keeps create ids stable for retries; Liberty does not replay stored responses. Release returns <code>agent_credits_delta</code> (same as <code>agent_payout</code>); apply it to a client-held agent wallet. Demo only. <code>money: false</code>. Liberty does not persist jobs or receipts. Same bodies: <a href="/api/examples.json"><code>/api/examples.json</code></a>. Ordered walk: <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a>.</p>
+      <p class="hint">Copy-ready curls against the live demo. Optional <code>Authorization: Bearer</code> or <code>X-Liberty-Key</code> — mint a key above. Missing keys still work (<code>key_optional</code>). Optional <code>Idempotency-Key</code> (or body <code>idempotency_key</code>) keeps create ids stable for retries; Liberty does not replay stored responses. Release returns <code>agent_credits_delta</code> (same as <code>agent_payout</code>); apply it to a client-held agent wallet. Demo only. <code>money: false</code>. Liberty does not persist jobs or receipts. Same bodies: <a href="/api/examples.json"><code>/api/examples.json</code></a>. Ordered walk: <a href="#integrate">/#integrate</a> (from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a>).</p>
 
       <article class="adapter-example">
         <h3>POST /api/v0/quote</h3>
@@ -365,6 +375,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
       <h2 id="agents-heading">For agents</h2>
       <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. The <a href="#activity">activity log</a> appends local demo actions in this browser (create / fund / submit / release / dispute, simulate, verify, demo pack import / export / reset). Liberty never receives that log. The <a href="#ledger">Settlement ledger</a> sums this browser’s stored receipts (fees paid, agent payouts, disputed returns) and can download them as CSV. Liberty does not persist that ledger. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Come back later, or move to another device, with a <a href="#demo-pack">demo pack</a> — one JSON file of this browser’s Settlement localStorage. Import replaces (does not merge). Reset demo on that section clears the known Settlement keys after confirm. Liberty never receives the pack. The file may include the raw demo API key if one is stored here. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
+        <li><a href="#integrate">Integrate</a> — ordered demo escrow walk rendered from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a></li>
         <li><a href="#adapters">Try as an adapter</a> — copy-ready curls for quote, transition, simulate, and verify</li>
         <li><a href="/.well-known/agent.json"><code>/.well-known/agent.json</code></a> — discovery card (same JSON as <a href="/api/agent.json"><code>/api/agent.json</code></a>; demo / <code>money: false</code>)</li>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
@@ -375,7 +386,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Same facts as <a href="#scoreboard">/#scoreboard</a></li>
         <li><a href="/api/fees.json"><code>/api/fees.json</code></a> — demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Same facts as <a href="#fees">/#fees</a></li>
         <li><a href="/api/tools.json"><code>/api/tools.json</code></a> — callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server</li>
-        <li><a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional)</li>
+        <li><a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as <a href="#integrate">/#integrate</a></li>
         <li><a href="/api/schemas/transition.json"><code>/api/schemas/transition.json</code></a> — JSON Schema for <code>POST /api/v0/transition</code> bodies (client-held demo protocol; Liberty does not move real money)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
