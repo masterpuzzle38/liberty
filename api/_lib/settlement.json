@@ -4,16 +4,18 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. None persist jobs or receipts, take custody, or move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. None persist jobs, receipts, or balances, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. Run a full demo settlement POSTs /api/v0/simulate with safe defaults and stores the terminal receipt. A successful release or dispute also stores the JSON receipt in this browser for export. Paste a receipt (or pick a stored one) to POST /api/v0/verify against the same fee engine. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link. Terminal receipts can be copied via a client-held receipt link (#receipt/r1.…).",
+    "note": "The browser UI stores payer credits and jobs here, and a separate agent wallet under liberty.agent-settlement.agent-credits.v0. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. A successful release credits the agent wallet by agent_credits_delta (same as agent_payout). Dispute refunds the payer and does not credit the agent. Run a full demo settlement POSTs /api/v0/simulate with safe defaults and stores the terminal receipt. A successful release or dispute also stores the JSON receipt in this browser for export. Paste a receipt (or pick a stored one) to POST /api/v0/verify against the same fee engine. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link. Terminal receipts can be copied via a client-held receipt link (#receipt/r1.…).",
     "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
     "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account.",
     "receipt_storage_key": "liberty.agent-settlement.receipts.v0",
-    "receipt_export_note": "Client-held terminal receipts (release/dispute). Download JSON for one, or JSON array / NDJSON for all. Copy a receipt link (#receipt/r1.…) to load the receipt into Verify on another device. POST /api/v0/verify to check fee math. Liberty does not store receipts. Not a server ledger. Demo only."
+    "receipt_export_note": "Client-held terminal receipts (release/dispute). Download JSON for one, or JSON array / NDJSON for all. Copy a receipt link (#receipt/r1.…) to load the receipt into Verify on another device. POST /api/v0/verify to check fee math. Liberty does not store receipts. Not a server ledger. Demo only.",
+    "agent_credits_storage_key": "liberty.agent-settlement.agent-credits.v0",
+    "agent_credits_note": "Client-held agent wallet. Credited on release by agent_credits_delta / agent_payout. Dispute does not credit. localStorage only. Not real money."
   },
   "surfaces": {
     "health": "/api/health.json",
@@ -27,7 +29,19 @@
     "llms": "/llms.txt",
     "handoff": "/#handoff/<token>",
     "receipt_link": "/#receipt/<token>",
-    "receipt_export": "/"
+    "receipt_export": "/",
+    "agent_wallet": "/"
+  },
+  "agent_wallet": {
+    "mode": "client",
+    "persistence": false,
+    "money": false,
+    "storage": "localStorage",
+    "storage_key": "liberty.agent-settlement.agent-credits.v0",
+    "when": "successful release (transition or simulate). Dispute does not credit.",
+    "unit": "credits",
+    "delta_field": "agent_credits_delta",
+    "note": "The human UI credits this browser’s agent wallet by agent_credits_delta (same integer as agent_payout) after a successful release. Dispute leaves the agent wallet unchanged and refunds the payer. Adapters should apply the same delta locally. Liberty does not store balances. Not real money."
   },
   "receipt_export": {
     "mode": "client",
@@ -49,7 +63,7 @@
     "hash": "#receipt/<token>",
     "query": "?receipt=<token>",
     "includes": ["receipt"],
-    "excludes": ["credits", "demo_api_key", "jobs"],
+    "excludes": ["credits", "agent_credits", "demo_api_key", "jobs"],
     "note": "Share a terminal receipt so another browser can inspect it or POST /api/v0/verify without pasting JSON. Credits, jobs, and the demo API key stay in each browser. Liberty does not store the receipt."
   },
   "handoff": {
@@ -61,7 +75,7 @@
     "hash": "#handoff/<token>",
     "query": "?handoff=<token>",
     "includes": ["job"],
-    "excludes": ["credits", "demo_api_key", "receipts"],
+    "excludes": ["credits", "agent_credits", "demo_api_key", "receipts"],
     "note": "Share a job snapshot so another browser can continue the next legal action via POST /api/v0/transition. Credits and the demo API key stay in each browser. Copy a fresh link after each action. Liberty does not store the job."
   },
   "transition_api": {
@@ -74,7 +88,7 @@
     "persistence": false,
     "money": false,
     "mode": "demo",
-    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout on release, and a receipt on release or dispute. Not live escrow custody.",
+    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Dispute returns agent_credits_delta: 0. Not live escrow custody.",
     "job_object": {
       "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout)",
       "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl"]
@@ -115,7 +129,7 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Not live escrow custody.",
+    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Not live escrow custody.",
     "create_job": "Validated open job fields only. No durable id.",
     "requests": [
       {
@@ -152,7 +166,7 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
+    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
     "create_job": "Committed demo walk. Assigns as_ + 10 hex.",
     "terminals": ["release", "dispute"],
     "default_terminal": "release",
@@ -241,14 +255,14 @@
       "from": "submitted",
       "to": "released",
       "requires": ["job"],
-      "effect": "Computes fee and agent_payout. Escrow is not returned to the payer. Terminal."
+      "effect": "Computes fee, agent_payout, and agent_credits_delta. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. Terminal."
     },
     {
       "id": "dispute",
       "from": "submitted",
       "to": "disputed",
       "requires": ["job"],
-      "effect": "Returns the full amount to the payer. fee=0, agent_payout=0. Terminal."
+      "effect": "Returns the full amount to the payer. fee=0, agent_payout=0, agent_credits_delta=0. Terminal."
     }
   ],
   "job": {
@@ -291,11 +305,12 @@
     "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Client holds the result. Liberty does not persist.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
-    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export.",
-    "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
-    "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0, and the agent wallet under liberty.agent-settlement.agent-credits.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. A successful release credits the agent wallet by agent_credits_delta. Dispute does not. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export.",
+    "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Payer credits, agent credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
+    "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Payer credits, agent credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",
     "Receipt export is client-held. POST /api/v0/transition and POST /api/v0/simulate return receipt on release or dispute. The human UI downloads that object as JSON or copies a receipt link. There is no receipt GET and no server ledger.",
     "POST /api/v0/verify recomputes fee / agent_payout / returned_to_payer with the same engine as quote/transition. Send a receipt or a job (terminal, or submitted plus action). A mismatch is 200 with valid:false. Liberty does not store the receipt.",
+    "Release and simulate return agent_credits_delta (same integer as agent_payout on release; 0 on dispute). The human UI credits liberty.agent-settlement.agent-credits.v0 by that delta. Liberty does not store the agent wallet. Not a server ledger.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
 }

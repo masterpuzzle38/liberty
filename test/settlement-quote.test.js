@@ -105,6 +105,7 @@ test("quote and transition share fee, payout, and credit math on happy paths", (
   assert.deepEqual(withoutQuoteOnly(releaseQuote.body), released.body);
   assert.equal(releaseQuote.body.fee, 5);
   assert.equal(releaseQuote.body.agent_payout, 95);
+  assert.equal(releaseQuote.body.agent_credits_delta, 95);
   assert.equal(releaseQuote.body.job.status, "released");
 
   const disputeInput = { action: "dispute", job: submitted.body.job, payer_credits: 0 };
@@ -114,6 +115,7 @@ test("quote and transition share fee, payout, and credit math on happy paths", (
   assert.equal(disputeQuote.body.returned_to_payer, 100);
   assert.equal(disputeQuote.body.payer_credits_after, 100);
   assert.equal(disputeQuote.body.fee, 0);
+  assert.equal(disputeQuote.body.agent_credits_delta, 0);
 });
 
 test("illegal quote matches illegal transition and does not invent a next job", () => {

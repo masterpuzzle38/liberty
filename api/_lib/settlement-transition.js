@@ -563,7 +563,7 @@ function discovery(kind) {
     note: verifyMode
       ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
       : simulateMode
-        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
         : quote
           ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
           : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
@@ -679,6 +679,7 @@ function transition(input, options) {
       job,
       fee: job.fee,
       agent_payout: job.agentPayout,
+      agent_credits_delta: job.agentPayout,
       receipt: receiptFromJob(job),
     });
     return dryRun ? decorateQuote(released) : released;
@@ -695,6 +696,7 @@ function transition(input, options) {
     job,
     fee: 0,
     agent_payout: 0,
+    agent_credits_delta: 0,
     returned_to_payer: job.amount,
     receipt: receiptFromJob(job),
   };
@@ -715,6 +717,7 @@ function stepFromResult(result) {
   if (Number.isInteger(body.payer_credits)) step.payer_credits = body.payer_credits;
   if (Number.isInteger(body.fee)) step.fee = body.fee;
   if (Number.isInteger(body.agent_payout)) step.agent_payout = body.agent_payout;
+  if (Number.isInteger(body.agent_credits_delta)) step.agent_credits_delta = body.agent_credits_delta;
   if (Number.isInteger(body.returned_to_payer)) step.returned_to_payer = body.returned_to_payer;
   if (body.receipt && typeof body.receipt === "object") step.receipt = body.receipt;
   return step;
@@ -796,6 +799,9 @@ function simulate(input, options) {
     payer_credits: payerCredits,
     fee: finished.body.fee,
     agent_payout: finished.body.agent_payout,
+    agent_credits_delta: Number.isInteger(finished.body.agent_credits_delta)
+      ? finished.body.agent_credits_delta
+      : 0,
     ...(Number.isInteger(finished.body.returned_to_payer)
       ? { returned_to_payer: finished.body.returned_to_payer }
       : {}),
