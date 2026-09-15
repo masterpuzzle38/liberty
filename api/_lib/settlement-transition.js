@@ -1000,7 +1000,7 @@ function discovery(kind) {
         }),
     protocol: "/api/settlement.json",
     discovery: "/.well-known/agent.json",
-    schema: "/api/schemas/transition.json",
+    schema: verifyMode ? "/api/schemas/receipt.json" : "/api/schemas/transition.json",
     errors: "/api/errors.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",

@@ -129,6 +129,7 @@
       "id": "verify",
       "method": "POST",
       "path": "/api/v0/verify",
+      "schema": "/api/schemas/receipt.json",
       "purpose": "Recompute fee math for a receipt or proposed release/dispute.",
       "bodies": [
         { "body": ["receipt"] },
@@ -204,6 +205,12 @@
       "method": "GET",
       "path": "/api/schemas/transition.json",
       "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
+    },
+    {
+      "id": "receipt_schema",
+      "method": "GET",
+      "path": "/api/schemas/receipt.json",
+      "purpose": "JSON Schema (2020-12) for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment."
     },
     {
       "id": "errors",

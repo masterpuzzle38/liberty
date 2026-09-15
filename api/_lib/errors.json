@@ -10,7 +10,7 @@
   "path": "/api/errors.json",
   "human": "/#integrate",
   "origin": "https://liberty-amber.vercel.app",
-  "note": "Derived from the quote / validate / transition / simulate / verify engine and HTTP wrappers. Codes are the `error` field on `{ ok: false, mode: demo, money: false }`. POST /api/v0/validate also adds `kind` (schema on 400, state on 409). Do not invent codes. money is always false.",
+  "note": "Derived from the quote / validate / transition / simulate / verify engine and HTTP wrappers. Codes are the `error` field on `{ ok: false, mode: demo, money: false }`. POST /api/v0/validate also adds `kind` (schema on 400, state on 409). GET /api/schemas/receipt.json for the receipt object shape verify accepts. Receipts are not proof of payment. Do not invent codes. money is always false.",
   "honesty": {
     "mode": "demo",
     "money": false,

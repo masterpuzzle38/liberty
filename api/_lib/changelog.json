@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "receipt-schema",
+      "title": "JSON Schema for shareable receipts",
+      "href": "/api/schemas/receipt.json"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-12",
       "title": "Scoreboard curated listings + wave 12",
       "href": "/#scoreboard"
@@ -76,12 +82,6 @@
       "id": "scoreboard-wave-7",
       "title": "Scoreboard curated listings + wave 7",
       "href": "/#scoreboard"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "quickstart",
-      "title": "Machine-readable Settlement quickstart",
-      "href": "/api/quickstart.json"
     }
   ]
 }

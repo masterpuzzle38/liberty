@@ -72,6 +72,13 @@
       "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
     },
     {
+      "id": "receipt_schema",
+      "method": "GET",
+      "path": "/api/schemas/receipt.json",
+      "url": "https://liberty-amber.vercel.app/api/schemas/receipt.json",
+      "purpose": "JSON Schema (2020-12) for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment."
+    },
+    {
       "id": "errors",
       "method": "GET",
       "path": "/api/errors.json",
