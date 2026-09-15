@@ -39,6 +39,10 @@
       "destination": "/api/agent.json?doc=handoff-schema"
     },
     {
+      "source": "/api/schemas/simulate.json",
+      "destination": "/api/agent.json?doc=simulate-schema"
+    },
+    {
       "source": "/api/errors.json",
       "destination": "/api/agent.json?doc=errors"
     },

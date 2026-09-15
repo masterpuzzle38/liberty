@@ -285,6 +285,7 @@ test("simulate HTTP wrapper: OPTIONS, GET discovery, POST, optional key, and 405
   assert.equal(get.body.commit, "/api/v0/transition");
   assert.equal(get.body.quote, "/api/v0/quote");
   assert.equal(get.body.verify, "/api/v0/verify");
+  assert.equal(get.body.schema, "/api/schemas/simulate.json");
 
   const posted = handleHttp({
     method: "POST",
@@ -387,6 +388,7 @@ test("protocol files describe simulate next to quote, transition, and verify", (
   assert.equal(settlement.simulate_api.money, false);
   assert.equal(settlement.simulate_api.persistence, false);
   assert.equal(settlement.simulate_api.engine, "/api/v0/transition");
+  assert.equal(settlement.simulate_api.schema, "/api/schemas/simulate.json");
   assert.equal(settlement.simulate_api.default_terminal, "release");
   assert.ok(settlement.surfaces.simulate);
   assert.ok(settlement.adapter_notes.some((note) => note.includes("/api/v0/simulate")));

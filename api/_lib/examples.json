@@ -140,7 +140,7 @@
       "path": "/api/v0/simulate",
       "url": "https://liberty-amber.vercel.app/api/v0/simulate",
       "title": "One-shot create → fund → submit → release",
-      "note": "Full walk through the same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias) is stamped the same way; Liberty never fetches it. Optional expires_at or ttl_seconds is applied on fund (send one, not both) and stamps expiresAt. After that instant, release fails; dispute remains allowed. Default terminal is release. Set terminal to dispute for a refund walk. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
+      "note": "Full walk through the same engine. Validate against GET /api/schemas/simulate.json. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias) is stamped the same way; Liberty never fetches it. Optional expires_at or ttl_seconds is applied on fund (send one, not both) and stamps expiresAt. After that instant, release fails; dispute remains allowed. Default terminal is release. Set terminal to dispute for a refund walk. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
       "body": {
         "title": "Summarize filings",
         "amount": 100,

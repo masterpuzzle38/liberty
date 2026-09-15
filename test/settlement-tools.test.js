@@ -122,6 +122,7 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     "openapi",
     "transition_schema",
     "quote_schema",
+    "simulate_schema",
     "receipt_schema",
     "handoff_schema",
     "errors",
@@ -149,6 +150,14 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
   assert.equal(
     TOOLS.discovery.find((row) => row.id === "quote_schema").path,
     "/api/schemas/quote.json",
+  );
+  assert.equal(
+    TOOLS.tools.find((tool) => tool.id === "simulate").schema,
+    "/api/schemas/simulate.json",
+  );
+  assert.equal(
+    TOOLS.discovery.find((row) => row.id === "simulate_schema").path,
+    "/api/schemas/simulate.json",
   );
   assert.equal(
     TOOLS.tools.find((tool) => tool.id === "verify").schema,

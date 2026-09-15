@@ -28,6 +28,9 @@
     <loc>https://liberty-amber.vercel.app/api/schemas/quote.json</loc>
   </url>
   <url>
+    <loc>https://liberty-amber.vercel.app/api/schemas/simulate.json</loc>
+  </url>
+  <url>
     <loc>https://liberty-amber.vercel.app/api/schemas/receipt.json</loc>
   </url>
   <url>
