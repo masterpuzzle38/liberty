@@ -220,6 +220,11 @@
         "directory": "Nanda Town SkillMD",
         "url": "https://nandatown.projectnanda.org/api/skills/51cfbdaa-b155-4e14-9c31-a2119ffdd2be",
         "note": "Free SkillMD registry POST. Catalog search https://nandatown.projectnanda.org/skills?q=liberty. Not an MCP server."
+      },
+      {
+        "directory": "ANS Registry",
+        "url": "https://ans-registry.org/agent/ag_sjKpYijwAUXVl5vW",
+        "note": "Agent id liberty-settle. Free offer https://ans-registry.org/offers/@liberty-settle/demo-validate (priceMicros=0) points at Liberty /api/v0/validate. ANS Trust 50/0 is the platform new-agent default — not Liberty traction or users."
       }
     ]
   },
