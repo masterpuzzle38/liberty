@@ -28,6 +28,7 @@
     ["resolvedAt", "ra"],
     ["fee", "f"],
     ["agentPayout", "ap"],
+    ["clientRef", "cr"],
     ["releaseNote", "rn"],
     ["disputeReason", "dr"],
   ];
@@ -134,6 +135,12 @@
       agentPayout: payoutRaw,
     };
 
+    const clientRef = readText(firstDefined(raw.clientRef, raw.client_ref));
+    if (clientRef && clientRef.length > 128) {
+      return fail("invalid_job", "job.clientRef must be at most 128 characters.");
+    }
+    if (clientRef) job.clientRef = clientRef;
+
     const releaseNote = readText(firstDefined(raw.releaseNote, raw.release_note));
     const disputeReason = readText(firstDefined(raw.disputeReason, raw.dispute_reason));
     if (releaseNote && releaseNote.length > 400) {
@@ -169,6 +176,7 @@
     if (packed.submitted_at !== undefined && job.submittedAt === undefined) job.submittedAt = packed.submitted_at;
     if (packed.resolved_at !== undefined && job.resolvedAt === undefined) job.resolvedAt = packed.resolved_at;
     if (packed.agent_payout !== undefined && job.agentPayout === undefined) job.agentPayout = packed.agent_payout;
+    if (packed.client_ref !== undefined && job.clientRef === undefined) job.clientRef = packed.client_ref;
     if (packed.release_note !== undefined && job.releaseNote === undefined) job.releaseNote = packed.release_note;
     if (packed.dispute_reason !== undefined && job.disputeReason === undefined) job.disputeReason = packed.dispute_reason;
     return job;

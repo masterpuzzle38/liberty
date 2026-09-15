@@ -798,6 +798,7 @@
           "from": { "type": ["string", "null"] },
           "to": { "$ref": "#/components/schemas/JobStatus" },
           "requires": { "type": "array", "items": { "type": "string" } },
+          "optional": { "type": "array", "items": { "type": "string" } },
           "effect": { "type": "string" }
         }
       },
@@ -840,6 +841,11 @@
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
+          "clientRef": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Present when client_ref was sent on create. Adapter/correlation id. Independent of job.id and Idempotency-Key."
+          },
           "releaseNote": {
             "type": "string",
             "maxLength": 400,
@@ -887,6 +893,11 @@
             "type": "string",
             "pattern": "^k_[0-9a-f]{12}$",
             "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+          },
+          "client_ref": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Present when the adapter sent client_ref on create."
           },
           "release_note": {
             "type": "string",
@@ -1029,6 +1040,8 @@
           "releaseNote": { "type": "string", "maxLength": 400 },
           "dispute_reason": { "type": "string", "maxLength": 400, "description": "Optional. Accepted when terminal is dispute." },
           "disputeReason": { "type": "string", "maxLength": 400 },
+          "client_ref": { "type": "string", "maxLength": 128, "description": "Optional adapter/correlation id. Lands on the job and receipt. Independent of Idempotency-Key." },
+          "clientRef": { "type": "string", "maxLength": 128 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
@@ -1153,6 +1166,7 @@
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
+          "clientRef": { "type": "string", "maxLength": 128 },
           "releaseNote": { "type": "string", "maxLength": 400 },
           "disputeReason": { "type": "string", "maxLength": 400 }
         }
@@ -1201,6 +1215,8 @@
           "title": { "type": "string", "maxLength": 80 },
           "amount": { "type": "integer", "minimum": 1 },
           "criteria": { "type": "string" },
+          "client_ref": { "type": "string", "maxLength": 128, "description": "Optional adapter/correlation id. Lands on the job and later receipt. Independent of Idempotency-Key. Empty or whitespace-only is rejected." },
+          "clientRef": { "type": "string", "maxLength": 128 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }

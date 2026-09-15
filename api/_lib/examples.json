@@ -35,12 +35,13 @@
       "path": "/api/v0/quote",
       "url": "https://liberty-amber.vercel.app/api/v0/quote",
       "title": "Dry-run quote",
-      "note": "Same engine as transition. No state change. Create quote has no durable id. Optional Idempotency-Key is echoed only.",
+      "note": "Same engine as transition. No state change. Create quote has no durable id. Optional client_ref echoes on the quoted job. Optional Idempotency-Key is echoed only.",
       "body": {
         "action": "create",
         "title": "Summarize filings",
         "amount": 100,
-        "criteria": "Three-bullet brief"
+        "criteria": "Three-bullet brief",
+        "client_ref": "agent-job-42"
       }
     },
     {
@@ -49,7 +50,7 @@
       "path": "/api/v0/transition",
       "url": "https://liberty-amber.vercel.app/api/v0/transition",
       "title": "Create → fund → submit → release",
-      "note": "Stateless sketch. Each step is a separate POST. Thread the job from the previous response, or send the sample jobs below (the engine does not look jobs up). Or skip the walk and POST /api/v0/simulate. Optional Idempotency-Key on create keeps the as_ id stable for retries; Liberty does not replay stored responses. Optional release_note (max 400) lands on the receipt. Release returns agent_credits_delta (same as agent_payout). Apply it to a client-held agent wallet. Dispute returns 0.",
+      "note": "Stateless sketch. Each step is a separate POST. Thread the job from the previous response, or send the sample jobs below (the engine does not look jobs up). Or skip the walk and POST /api/v0/simulate. Optional Idempotency-Key on create keeps the as_ id stable for retries; Liberty does not replay stored responses. Optional client_ref (max 128) stamps the adapter’s correlation id on the job and later receipt; it is independent of the as_ id. Optional release_note (max 400) lands on the receipt. Release returns agent_credits_delta (same as agent_payout). Apply it to a client-held agent wallet. Dispute returns 0.",
       "steps": [
         {
           "action": "create",
@@ -57,7 +58,8 @@
             "action": "create",
             "title": "Summarize filings",
             "amount": 100,
-            "criteria": "Three-bullet brief"
+            "criteria": "Three-bullet brief",
+            "client_ref": "agent-job-42"
           }
         },
         {
@@ -132,7 +134,7 @@
       "path": "/api/v0/simulate",
       "url": "https://liberty-amber.vercel.app/api/v0/simulate",
       "title": "One-shot create → fund → submit → release",
-      "note": "Full walk through the same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Default terminal is release. Set terminal to dispute for a refund walk. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
+      "note": "Full walk through the same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Default terminal is release. Set terminal to dispute for a refund walk. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
       "body": {
         "title": "Summarize filings",
         "amount": 100,
@@ -140,6 +142,7 @@
         "payer_credits": 100,
         "proof_url": "https://example.com/proof",
         "terminal": "release",
+        "client_ref": "agent-job-42",
         "release_note": "Proof matches the three-bullet brief."
       }
     },

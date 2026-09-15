@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  CLIENT_REF_MAX_LENGTH,
   CORS_ALLOW_HEADERS,
   JOB_ID_PATTERN,
   NOTE_MAX_LENGTH,
@@ -320,6 +321,83 @@ test("protocol files describe optional demo keys and stay valid JSON", () => {
     simulateHeaders.headers.find((h) => h.key === "Access-Control-Allow-Headers").value,
     CORS_ALLOW_HEADERS,
   );
+});
+
+test("optional client_ref lands on the job, survives later actions, and echoes on the receipt", () => {
+  const created = step("create", {
+    title: "Summarize filings",
+    amount: 100,
+    criteria: "Three-bullet brief matching the last three filings.",
+    client_ref: "  agent-job-42  ",
+  });
+  assert.equal(created.status, 200);
+  assert.equal(created.body.job.clientRef, "agent-job-42");
+  assert.equal(created.body.job.client_ref, undefined);
+
+  const funded = step("fund", { job: created.body.job, payer_credits: 100 });
+  assert.equal(funded.body.job.clientRef, "agent-job-42");
+  const submitted = step("submit", {
+    job: funded.body.job,
+    proof_url: "https://example.com/proof",
+  });
+  assert.equal(submitted.body.job.clientRef, "agent-job-42");
+
+  const released = step("release", { job: submitted.body.job });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.job.clientRef, "agent-job-42");
+  assert.equal(released.body.receipt.client_ref, "agent-job-42");
+  assert.equal(released.body.fee, 5);
+
+  const camel = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    clientRef: "camel-ref",
+  });
+  assert.equal(camel.body.job.clientRef, "camel-ref");
+
+  const omitted = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+  });
+  assert.equal(omitted.body.job.clientRef, undefined);
+});
+
+test("client_ref stays optional, bounded, and create-only", () => {
+  const empty = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    client_ref: "   ",
+  });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.error, "invalid_field");
+  assert.equal(empty.body.field, "client_ref");
+  assert.equal(empty.body.money, false);
+
+  const tooLong = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    client_ref: "x".repeat(CLIENT_REF_MAX_LENGTH + 1),
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.field, "client_ref");
+
+  const notString = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    client_ref: 12,
+  });
+  assert.equal(notString.status, 400);
+  assert.equal(notString.body.field, "client_ref");
+
+  const open = createJob();
+  const onFund = step("fund", { job: open, payer_credits: 100, client_ref: "late" });
+  assert.equal(onFund.status, 400);
+  assert.equal(onFund.body.field, "client_ref");
 });
 
 test("optional release_note and dispute_reason land on the job and receipt", () => {

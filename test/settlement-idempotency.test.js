@@ -49,6 +49,19 @@ test("same Idempotency-Key plus same create fields yields the same as_ id", () =
   assert.equal(first.body.job.status, "open");
 });
 
+test("client_ref does not change a deterministic create id", () => {
+  const key = "retry-create-1";
+  const without = commit({ ...CREATE, idempotency_key: key });
+  const withRef = commit({ ...CREATE, idempotency_key: key, client_ref: "agent-job-42" });
+  const otherRef = commit({ ...CREATE, idempotency_key: key, client_ref: "other-ref" });
+  assert.equal(without.body.job.id, withRef.body.job.id);
+  assert.equal(withRef.body.job.id, otherRef.body.job.id);
+  assert.equal(withRef.body.job.clientRef, "agent-job-42");
+  assert.equal(otherRef.body.job.clientRef, "other-ref");
+  assert.equal(without.body.job.clientRef, undefined);
+  assert.equal(withRef.body.idempotent, true);
+});
+
 test("different keys or create fields yield different ids; missing key stays random as_ + 10 hex", () => {
   const sameFields = commit({ ...CREATE, idempotency_key: "key-a" });
   const otherKey = commit({ ...CREATE, idempotency_key: "key-b" });

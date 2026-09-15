@@ -14,6 +14,7 @@
   const KEY_ID_PATTERN = /^k_[0-9a-f]{12}$/;
   const TERMINAL = ["released", "disputed"];
   const NOTE_MAX_LENGTH = 400;
+  const CLIENT_REF_MAX_LENGTH = 128;
   const VERSION = 1;
   const PREFIX = "r1.";
   const HASH_RE = /^#receipt\/(.+)$/i;
@@ -33,6 +34,7 @@
     ["submitted", "sa"],
     ["resolved", "ra"],
     ["key_id", "k"],
+    ["client_ref", "cr"],
     ["release_note", "rn"],
     ["dispute_reason", "dr"],
   ];
@@ -117,6 +119,10 @@
     };
     const keyId = extras && extras.key_id ? extras.key_id : job.receiptKeyId;
     if (keyId) receipt.key_id = keyId;
+    const clientRef = firstDefined(job.clientRef, job.client_ref);
+    if (typeof clientRef === "string" && clientRef.trim()) {
+      receipt.client_ref = clientRef.trim();
+    }
     const releaseNote = firstDefined(job.releaseNote, job.release_note);
     const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
     if (released && typeof releaseNote === "string" && releaseNote.trim()) {
@@ -212,6 +218,18 @@
         return fail("invalid_receipt", "key_id must match k_ plus 12 hex characters.");
       }
       receipt.key_id = keyId;
+    }
+
+    const clientRef = readText(
+      firstDefined(raw.client_ref, raw.clientRef),
+      "client_ref",
+    );
+    if (!clientRef.ok) return clientRef;
+    if (clientRef.value) {
+      if (clientRef.value.length > CLIENT_REF_MAX_LENGTH) {
+        return fail("invalid_receipt", `client_ref must be at most ${CLIENT_REF_MAX_LENGTH} characters.`);
+      }
+      receipt.client_ref = clientRef.value;
     }
 
     const releaseNote = readText(
@@ -475,6 +493,7 @@
   }
 
   return {
+    CLIENT_REF_MAX_LENGTH,
     JOB_ID_PATTERN,
     KEY_ID_PATTERN,
     NOTE_MAX_LENGTH,

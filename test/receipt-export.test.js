@@ -54,6 +54,20 @@ test("receiptFromJob matches the transition engine and rejects non-terminal jobs
   assert.equal(STORAGE_KEY, "liberty.agent-settlement.receipts.v0");
 });
 
+test("optional client_ref survives export parse", () => {
+  const fromJob = receiptFromJob(releasedJob({ clientRef: "agent-job-42" }));
+  assert.equal(fromJob.ok, true);
+  assert.equal(fromJob.receipt.client_ref, "agent-job-42");
+  assert.equal(fromJob.receipt.client_ref, engineReceipt(releasedJob({ clientRef: "agent-job-42" })).client_ref);
+
+  const parsed = readReceipt({
+    ...engineReceipt(releasedJob()),
+    client_ref: "from-the-api",
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.receipt.client_ref, "from-the-api");
+});
+
 test("optional release_note and dispute_reason survive export parse", () => {
   const released = receiptFromJob(releasedJob({ releaseNote: "Looks good." }));
   assert.equal(released.ok, true);
