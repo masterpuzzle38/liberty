@@ -79,6 +79,13 @@
       "purpose": "JSON Schema (2020-12) for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment."
     },
     {
+      "id": "handoff_schema",
+      "method": "GET",
+      "path": "/api/schemas/handoff.json",
+      "url": "https://liberty-amber.vercel.app/api/schemas/handoff.json",
+      "purpose": "JSON Schema (2020-12) for shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers."
+    },
+    {
       "id": "errors",
       "method": "GET",
       "path": "/api/errors.json",

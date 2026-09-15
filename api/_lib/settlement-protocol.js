@@ -12,6 +12,7 @@ const TOOLS = require("./tools.json");
 const QUICKSTART = require("./quickstart.json");
 const TRANSITION_SCHEMA = require("./transition.schema.json");
 const RECEIPT_SCHEMA = require("./receipt.schema.json");
+const HANDOFF_SCHEMA = require("./handoff.schema.json");
 const ERRORS = require("./errors.json");
 
 function protocolHeaders() {
@@ -63,6 +64,7 @@ module.exports = {
   QUICKSTART,
   TRANSITION_SCHEMA,
   RECEIPT_SCHEMA,
+  HANDOFF_SCHEMA,
   ERRORS,
   protocolHeaders,
   serveProtocol,

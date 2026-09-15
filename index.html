@@ -95,7 +95,7 @@
 
     <section id="integrate" class="panel adapter-examples" aria-labelledby="integrate-heading">
       <h2 id="integrate-heading">Integrate</h2>
-      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Dry-check a body first with <a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — same rules, no commit. Handle failures from <a href="/api/errors.json"><code>/api/errors.json</code></a> (live codes only, including <code>hold_expired</code>). Validate a shared receipt against <a href="/api/schemas/receipt.json"><code>/api/schemas/receipt.json</code></a> before trusting the link. Client-held demo. Liberty does not move real money. Receipts are not proof of payment. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
+      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Dry-check a body first with <a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — same rules, no commit. Handle failures from <a href="/api/errors.json"><code>/api/errors.json</code></a> (live codes only, including <code>hold_expired</code>). Validate a shared receipt against <a href="/api/schemas/receipt.json"><code>/api/schemas/receipt.json</code></a> before trusting the link. Validate a shared job handoff against <a href="/api/schemas/handoff.json"><code>/api/schemas/handoff.json</code></a> before trusting the link. Client-held demo. Liberty does not move real money. Receipts are not proof of payment. Handoffs are not custody transfers. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
       <p id="integrate-empty" class="hint">Loading the demo escrow walk…</p>
       <div id="integrate-body" hidden></div>
     </section>
@@ -241,7 +241,7 @@
           </label>
           <button type="submit" class="secondary">Load job</button>
         </form>
-        <p class="hint">Loads a job snapshot into this browser so the other party can continue. Credits stay here. Liberty does not store the job.</p>
+        <p class="hint">Loads a job snapshot into this browser so the other party can continue. Machine-readable shape: <a href="/api/schemas/handoff.json"><code>/api/schemas/handoff.json</code></a>. Credits stay here. Liberty does not store the job. Handoffs are not custody transfers.</p>
         <p id="jobs-empty" class="hint">No jobs yet. Create one above, or load a handoff.</p>
         <ul id="job-list" class="job-list"></ul>
       </div>
@@ -390,6 +390,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as <a href="#integrate">/#integrate</a></li>
         <li><a href="/api/schemas/transition.json"><code>/api/schemas/transition.json</code></a> — JSON Schema for <code>POST /api/v0/transition</code> bodies (client-held demo protocol; Liberty does not move real money)</li>
         <li><a href="/api/schemas/receipt.json"><code>/api/schemas/receipt.json</code></a> — JSON Schema for shareable terminal receipts (<code>#receipt/r1.…</code> / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment</li>
+        <li><a href="/api/schemas/handoff.json"><code>/api/schemas/handoff.json</code></a> — JSON Schema for shareable job handoffs (<code>#handoff/h1.…</code>). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers</li>
         <li><a href="/api/errors.json"><code>/api/errors.json</code></a> — live Settlement error codes (schema vs state, including <code>hold_expired</code>). Client-held demo; Liberty does not move real money</li>
         <li><a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — dry-check a transition body (no apply, no persist, no job id)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
