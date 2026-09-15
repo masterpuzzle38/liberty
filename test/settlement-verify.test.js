@@ -80,6 +80,7 @@ test("valid release receipt matches the shared fee engine", () => {
 test("receipt notes do not affect fee verify", () => {
   const receipt = {
     ...releasedReceipt(),
+    proof_note: "Three-bullet brief attached.",
     release_note: "Looks good.",
   };
   const result = verify({ receipt }, OPTIONS);

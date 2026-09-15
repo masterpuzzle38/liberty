@@ -66,6 +66,15 @@ test("receipt-link compact payload keeps optional client_ref", () => {
 });
 
 test("receipt-link compact payload keeps optional notes", () => {
+  const withProof = encodeReceipt(sampleReceipt({ proof_note: "Three-bullet brief attached." }));
+  assert.equal(withProof.ok, true);
+  assert.equal(withProof.receipt.proof_note, "Three-bullet brief attached.");
+  const proofRaw = Buffer.from(withProof.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const proofPayload = JSON.parse(proofRaw);
+  assert.equal(proofPayload.receipt.pn, "Three-bullet brief attached.");
+  assert.equal(proofPayload.receipt.proof_note, undefined);
+  assert.equal(decodeReceipt(withProof.token).receipt.proof_note, "Three-bullet brief attached.");
+
   const encoded = encodeReceipt(sampleReceipt({ release_note: "Looks good." }));
   assert.equal(encoded.ok, true);
   assert.equal(encoded.receipt.release_note, "Looks good.");

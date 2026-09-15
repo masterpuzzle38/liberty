@@ -29,6 +29,7 @@
     ["fee", "f"],
     ["agentPayout", "ap"],
     ["clientRef", "cr"],
+    ["proofNote", "pn"],
     ["releaseNote", "rn"],
     ["disputeReason", "dr"],
   ];
@@ -141,13 +142,20 @@
     }
     if (clientRef) job.clientRef = clientRef;
 
+    const proofNote = readText(firstDefined(raw.proofNote, raw.proof_note));
     const releaseNote = readText(firstDefined(raw.releaseNote, raw.release_note));
     const disputeReason = readText(firstDefined(raw.disputeReason, raw.dispute_reason));
+    if (proofNote && proofNote.length > 400) {
+      return fail("invalid_job", "job.proofNote must be at most 400 characters.");
+    }
     if (releaseNote && releaseNote.length > 400) {
       return fail("invalid_job", "job.releaseNote must be at most 400 characters.");
     }
     if (disputeReason && disputeReason.length > 400) {
       return fail("invalid_job", "job.disputeReason must be at most 400 characters.");
+    }
+    if ((status === "submitted" || status === "released" || status === "disputed") && proofNote) {
+      job.proofNote = proofNote;
     }
     if (status === "released" && releaseNote) job.releaseNote = releaseNote;
     if (status === "disputed" && disputeReason) job.disputeReason = disputeReason;
@@ -177,6 +185,7 @@
     if (packed.resolved_at !== undefined && job.resolvedAt === undefined) job.resolvedAt = packed.resolved_at;
     if (packed.agent_payout !== undefined && job.agentPayout === undefined) job.agentPayout = packed.agent_payout;
     if (packed.client_ref !== undefined && job.clientRef === undefined) job.clientRef = packed.client_ref;
+    if (packed.proof_note !== undefined && job.proofNote === undefined) job.proofNote = packed.proof_note;
     if (packed.release_note !== undefined && job.releaseNote === undefined) job.releaseNote = packed.release_note;
     if (packed.dispute_reason !== undefined && job.disputeReason === undefined) job.disputeReason = packed.dispute_reason;
     return job;

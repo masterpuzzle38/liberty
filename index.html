@@ -263,7 +263,7 @@
 
       <article class="adapter-example">
         <h3>POST /api/v0/transition</h3>
-        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Optional <code>client_ref</code> on create (max 128) stamps your adapter id on the job and receipt. Optional <code>release_note</code> or <code>dispute_reason</code> on the terminal action. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Optional <code>client_ref</code> on create (max 128) stamps your adapter id on the job and receipt. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> on the terminal action. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","client_ref":"agent-job-42"}'
@@ -276,7 +276,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -d '{"action":"fund","payer_credits":100,"job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"open","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":null,"submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
 curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
-  -d '{"action":"submit","proof_url":"https://example.com/proof","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"funded","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
+  -d '{"action":"submit","proof_url":"https://example.com/proof","proof_note":"Three-bullet brief attached.","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"funded","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
 curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
   -d '{"action":"release","release_note":"Proof matches the three-bullet brief.","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"https://example.com/proof","status":"submitted","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":"2026-09-15T00:00:00.000Z","resolvedAt":null,"fee":0,"agentPayout":0}}'</code></pre>
@@ -287,10 +287,10 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
 
       <article class="adapter-example">
         <h3>POST /api/v0/simulate</h3>
-        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Optional <code>client_ref</code> on create lands on the job and receipt. Optional <code>release_note</code> or <code>dispute_reason</code> lands on the receipt. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Optional <code>client_ref</code> on create lands on the job and receipt. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> lands on the receipt. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
   -H 'content-type: application/json' \
-  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release","client_ref":"agent-job-42","release_note":"Proof matches the three-bullet brief."}'
+  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","proof_note":"Three-bullet brief attached.","terminal":"release","client_ref":"agent-job-42","release_note":"Proof matches the three-bullet brief."}'
 # optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
 # optional: -H 'Idempotency-Key: retry-create-1' (stable create id; no stored replay)</code></pre>
         <div class="action-row">

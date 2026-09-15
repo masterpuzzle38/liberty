@@ -282,15 +282,20 @@ function readOptionalNote(input, field, aliases) {
 
 function rejectForeignNotes(input, action) {
   const groups = [];
+  if (action !== "submit") groups.push(["proof_note", "proofNote"]);
   if (action !== "release") groups.push(["release_note", "releaseNote"]);
   if (action !== "dispute") groups.push(["dispute_reason", "disputeReason"]);
+  const allowedByField = {
+    proof_note: "submit",
+    release_note: "release",
+    dispute_reason: "dispute",
+  };
   for (const aliases of groups) {
     const raw = firstDefined(...aliases.map((name) => input[name]));
     if (raw === undefined || raw === null) continue;
     if (typeof raw === "string" && !raw.trim()) continue;
     const field = aliases[0];
-    const allowed = field === "release_note" ? "release" : "dispute";
-    return fail(400, "invalid_field", `${field} is only accepted on ${allowed}.`, { field });
+    return fail(400, "invalid_field", `${field} is only accepted on ${allowedByField[field]}.`, { field });
   }
   return null;
 }
@@ -298,6 +303,9 @@ function rejectForeignNotes(input, action) {
 function readActionNote(input, action) {
   const foreign = rejectForeignNotes(input, action);
   if (foreign) return { error: foreign };
+  if (action === "submit") {
+    return readOptionalNote(input, "proof_note", ["proof_note", "proofNote"]);
+  }
   if (action === "release") {
     return readOptionalNote(input, "release_note", ["release_note", "releaseNote"]);
   }
@@ -311,11 +319,15 @@ function applyReceiptNotes(receipt, job) {
   if (!receipt || !job) return receipt;
   const released = job.status === "released";
   const disputed = job.status === "disputed";
+  const proofNote = firstDefined(job.proofNote, job.proof_note);
   const releaseNote = firstDefined(job.releaseNote, job.release_note);
   const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
   const clientRef = firstDefined(job.clientRef, job.client_ref);
   if (typeof clientRef === "string" && clientRef.trim()) {
     receipt.client_ref = clientRef.trim();
+  }
+  if (typeof proofNote === "string" && proofNote.trim()) {
+    receipt.proof_note = proofNote.trim();
   }
   if (released && typeof releaseNote === "string" && releaseNote.trim()) {
     receipt.release_note = releaseNote.trim();
@@ -375,6 +387,9 @@ function readJob(raw) {
   const clientRef = readOptionalClientRef(raw, ["clientRef", "client_ref"]);
   if (clientRef.error) return clientRef;
 
+  const proofNote = readOptionalNote(raw, "proof_note", ["proofNote", "proof_note"]);
+  if (proofNote.error) return proofNote;
+
   return {
     value: {
       id: raw.id,
@@ -390,6 +405,7 @@ function readJob(raw) {
       fee: 0,
       agentPayout: 0,
       ...(clientRef.value ? { clientRef: clientRef.value } : {}),
+      ...(proofNote.value ? { proofNote: proofNote.value } : {}),
     },
   };
 }
@@ -470,6 +486,10 @@ function jobShapeFromReceipt(raw) {
   const clientRef = firstDefined(raw.client_ref, raw.clientRef);
   if (typeof clientRef === "string" && clientRef.trim()) {
     shape.clientRef = clientRef.trim();
+  }
+  const proofNote = firstDefined(raw.proof_note, raw.proofNote);
+  if (typeof proofNote === "string" && proofNote.trim()) {
+    shape.proofNote = proofNote.trim();
   }
   return shape;
 }
@@ -856,6 +876,7 @@ function transition(input, options) {
     job.proofUrl = proof.value;
     job.status = "submitted";
     job.submittedAt = stamp;
+    if (note.value) job.proofNote = note.value;
     const submitted = ok({ action, job });
     return attachIdempotency(dryRun ? decorateQuote(submitted) : submitted, idempotencyKey);
   }
@@ -980,6 +1001,8 @@ function simulate(input, options) {
     action: "submit",
     job: funded.body.job,
     proof_url: proof.value,
+    proof_note: input.proof_note,
+    proofNote: input.proofNote,
   }, nextOpts);
   if (submitted.status !== 200) return submitted;
   steps.push(stepFromResult(submitted));

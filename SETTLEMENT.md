@@ -40,7 +40,7 @@ Payer credits live in `liberty.agent-settlement.v0`. The agent wallet lives in `
 | --- | --- | --- | --- |
 | create | — | open | Job exists. Credits unchanged. Requires title, amount, success criteria. Optional `client_ref` (max 128) stamps the adapter’s own reference on the job and later receipt. |
 | fund | open | funded | Deduct `amount` from payer credits; hold in escrow. Fails if balance is short. |
-| submit | funded | submitted | Attach a proof URL (or a note the payer can check). Escrow stays held. |
+| submit | funded | submitted | Attach a proof URL (or a note the payer can check). Optional `proof_note` (max 400) lands on the job and later receipt. Escrow stays held. |
 | release | submitted | released | Terminal. Set `fee`, `agentPayout`, and `agent_credits_delta`. Optional `release_note` lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. |
 | dispute | submitted | disputed | Terminal. Return `amount` to the payer. Optional `dispute_reason` lands on the job and receipt. `fee = 0`, `agentPayout = 0`, `agent_credits_delta = 0`. |
 
@@ -52,7 +52,7 @@ JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Aut
 | --- | --- | --- |
 | `create` | `title`, `amount`, `criteria` (optional `client_ref`, max 128) | `job` (`status: open`, id `as_` + 10 hex; stable when an Idempotency-Key is sent; `clientRef` when sent) |
 | `fund` | `job`, `payer_credits` | updated `job`, updated `payer_credits` |
-| `submit` | `job`, `proof_url` | updated `job` |
+| `submit` | `job`, `proof_url` (optional `proof_note`, max 400) | updated `job` |
 | `release` | `job` (optional `release_note`, max 400) | updated `job`, `fee`, `agent_payout`, `agent_credits_delta`, `receipt` |
 | `dispute` | `job` (optional `payer_credits`, optional `dispute_reason`, max 400) | updated `job`, `fee: 0`, `agent_credits_delta: 0`, `returned_to_payer`, `receipt` |
 
@@ -62,7 +62,7 @@ Liberty does not store the job. Send the current job on every later action.
 
 ## `POST /api/v0/quote`
 
-Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Optional `release_note` / `dispute_reason` echo on the quoted receipt and job when sent. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
+Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Optional `proof_note` echoes on the quoted submit job. Optional `release_note` / `dispute_reason` echo on the quoted receipt and job when sent. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
 
 Create quote returns the validated open job fields **without a durable id**. Optional `client_ref` echoes on the quoted job. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
 
@@ -80,13 +80,14 @@ Send JSON:
 | `client_ref` | Optional adapter/correlation id (`clientRef` alias). Max 128. Empty or whitespace-only is rejected. Lands on the job and receipt. Independent of Idempotency-Key. |
 | `payer_credits` | Starting payer balance (`payerCredits` alias). Must cover `amount`. |
 | `proof_url` | Attached on submit (`proofUrl` alias) |
+| `proof_note` | Optional on the submit step (`proofNote` alias). Max 400. Lands on the job and later receipt. |
 | `terminal` | `release` (default) or `dispute` |
 | `release_note` | Optional on `terminal: release`. Max 400. Echoed on the receipt and job. |
 | `dispute_reason` | Optional on `terminal: dispute`. Max 400. Echoed on the receipt and job. |
 
 A completed walk returns `200` with `ok: true`, `mode: "demo"`, `money: false`, ordered `steps` (each action’s job and money impact), final `job`, final `payer_credits`, `agent_credits_delta`, and `receipt`. Illegal or incomplete input — and a short fund — return the same style 4xx JSON as transition (`error`, `message`; `money` stays false).
 
-The human UI on `/` can run this with safe demo defaults in one click. An optional note field is sent as `release_note` or `dispute_reason`.
+The human UI on `/` can run this with safe demo defaults in one click. A default `proof_note` is sent on submit. An optional note field is sent as `release_note` or `dispute_reason`.
 
 ## `POST /api/v0/verify`
 
@@ -149,6 +150,7 @@ Liberty stays stateless. The key makes create ids stable so adapters can retry w
 | `amount` | integer credits |
 | `criteria` | what done looks like; proof must match this |
 | `proofUrl` | empty until submit |
+| `proofNote` | optional; set on submit when `proof_note` was sent (max 400) |
 | `status` | one of the states above |
 | `createdAt` `fundedAt` `submittedAt` `resolvedAt` | ISO-8601; later stamps are null until that step |
 | `fee` `agentPayout` | integers; zero until release |
@@ -161,9 +163,10 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 
 - Job ID, optional `client_ref`, title, status, amount
 - Release fee (5%), agent payout, returned to payer
-- Success criteria, proof
+- Success criteria, proof, optional `proof_note`
 - Created, funded, submitted, resolved timestamps
 - `client_ref` when the adapter sent one on create (max 128)
+- `proof_note` when the agent sent one on submit (max 400)
 - `release_note` when the payer sent one on release (max 400)
 - `dispute_reason` when the payer sent one on dispute (max 400)
 - `key_id` when a demo key header was sent (hash prefix only)

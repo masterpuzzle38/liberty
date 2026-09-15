@@ -13,6 +13,7 @@
     amount: 100,
     criteria: "Three-bullet brief matching the last three filings.",
     proof_url: "https://example.com/proof",
+    proof_note: "Three-bullet brief attached.",
   };
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
   const QUOTE_ACTIONS = ["fund", "release", "dispute"];
@@ -472,6 +473,10 @@
       `- Returned to payer: ${refund} credits`,
       `- Success criteria: ${job.criteria}`,
       `- Proof: ${job.proofUrl || "—"}`,
+    );
+    const proofNote = (stored && stored.proof_note) || job.proofNote;
+    if (proofNote) lines.push(`- Proof note: ${proofNote}`);
+    lines.push(
       `- Created: ${job.createdAt}`,
       `- Funded: ${job.fundedAt || "—"}`,
       `- Submitted: ${job.submittedAt || "—"}`,
@@ -600,6 +605,7 @@
       criteria: SIMULATE_DEFAULTS.criteria,
       payer_credits: starting,
       proof_url: SIMULATE_DEFAULTS.proof_url,
+      proof_note: SIMULATE_DEFAULTS.proof_note,
       terminal,
       ...(note
         ? (terminal === "dispute" ? { dispute_reason: note } : { release_note: note })
@@ -775,14 +781,16 @@
     render();
   }
 
-  async function submitProof(id, proofUrl) {
+  async function submitProof(id, proofUrl, proofNote) {
     const job = findJob(id);
     if (!job) return;
-    const data = await postTransition({
+    const payload = {
       action: "submit",
       job,
       proof_url: proofUrl,
-    });
+    };
+    if (proofNote) payload.proof_note = proofNote;
+    const data = await postTransition(payload);
     if (!data) return;
     applyResult(data);
     flash("Proof submitted. Payer can release or dispute.");
@@ -879,6 +887,10 @@
             <span>Proof URL</span>
             <input id="proof-url" name="proof" type="text" inputmode="url" required placeholder="https://… or a note the payer can check" />
           </label>
+          <label class="field">
+            <span>Proof note (optional)</span>
+            <textarea id="proof-note" name="proof-note" rows="2" maxlength="400" placeholder="What the proof shows — appears on the receipt"></textarea>
+          </label>
           <button type="submit">Submit proof</button>
         </form>
       `);
@@ -936,6 +948,9 @@
           if (job.clientRef || (stored && stored.client_ref)) {
             bits.push(`<dt>Client ref</dt><dd class="client-ref"></dd>`);
           }
+          if (job.proofNote || (stored && stored.proof_note)) {
+            bits.push(`<dt>Proof note</dt><dd class="proof-note"></dd>`);
+          }
           if (job.status === "released" && (job.releaseNote || (stored && stored.release_note))) {
             bits.push(`<dt>Release note</dt><dd class="terminal-note"></dd>`);
           }
@@ -971,6 +986,11 @@
       const stored = findReceipt(job.id);
       clientRefDd.textContent = job.clientRef || (stored && stored.client_ref) || "";
     }
+    const proofNoteDd = els.detail.querySelector(".detail-meta .proof-note");
+    if (proofNoteDd) {
+      const stored = findReceipt(job.id);
+      proofNoteDd.textContent = job.proofNote || (stored && stored.proof_note) || "";
+    }
     const noteDd = els.detail.querySelector(".detail-meta .terminal-note");
     if (noteDd) {
       const stored = findReceipt(job.id);
@@ -1000,7 +1020,8 @@
       proofForm.addEventListener("submit", (event) => {
         event.preventDefault();
         const input = document.getElementById("proof-url");
-        submitProof(job.id, input ? input.value : "");
+        const noteInput = document.getElementById("proof-note");
+        submitProof(job.id, input ? input.value : "", noteInput ? noteInput.value.trim() : "");
       });
     }
   }
@@ -1045,7 +1066,9 @@
       item.querySelector("code").textContent = receipt.job_id;
       item.querySelector(".receipt-item-money").textContent =
         `Fee ${receipt.release_fee} · Agent payout ${receipt.agent_payout} · Returned to payer ${receipt.returned_to_payer}`;
-      const note = receipt.release_note || receipt.dispute_reason;
+      const note = [receipt.proof_note, receipt.release_note || receipt.dispute_reason]
+        .filter(Boolean)
+        .join(" · ");
       const clientRef = receipt.client_ref ? ` · ${receipt.client_ref}` : "";
       item.querySelector(".receipt-item-when").textContent =
         `${receipt.job_id}${clientRef} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;

@@ -68,6 +68,23 @@ test("optional client_ref survives export parse", () => {
   assert.equal(parsed.receipt.client_ref, "from-the-api");
 });
 
+test("optional proof_note survives export parse", () => {
+  const released = receiptFromJob(releasedJob({ proofNote: "Three-bullet brief attached." }));
+  assert.equal(released.ok, true);
+  assert.equal(released.receipt.proof_note, "Three-bullet brief attached.");
+  assert.equal(
+    released.receipt.proof_note,
+    engineReceipt(releasedJob({ proofNote: "Three-bullet brief attached." })).proof_note,
+  );
+
+  const parsed = readReceipt({
+    ...engineReceipt(releasedJob()),
+    proof_note: "From the API.",
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.receipt.proof_note, "From the API.");
+});
+
 test("optional release_note and dispute_reason survive export parse", () => {
   const released = receiptFromJob(releasedJob({ releaseNote: "Looks good." }));
   assert.equal(released.ok, true);
