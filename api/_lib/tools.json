@@ -14,6 +14,41 @@
   "note": "Capability list only. Clients hold jobs, receipts, and balances. Liberty does not persist or take custody. money is always false. Optional demo API key is not production auth.",
   "tools": [
     {
+      "id": "validate",
+      "method": "POST",
+      "path": "/api/v0/validate",
+      "schema": "/api/schemas/transition.json",
+      "purpose": "Dry-check a transition body against the live engine and JSON Schema. Returns { ok: true } or field errors. Does not apply, persist, or mint a job id. Non-create actions must send the client-held job.",
+      "body": ["action"],
+      "actions": [
+        {
+          "action": "create",
+          "body": ["action", "title", "amount", "criteria"],
+          "optional": ["client_ref", "callback_url", "idempotency_key"]
+        },
+        {
+          "action": "fund",
+          "body": ["action", "job", "payer_credits"],
+          "optional": ["idempotency_key"]
+        },
+        {
+          "action": "submit",
+          "body": ["action", "job", "proof_url"],
+          "optional": ["proof_note", "idempotency_key"]
+        },
+        {
+          "action": "release",
+          "body": ["action", "job"],
+          "optional": ["release_note", "idempotency_key"]
+        },
+        {
+          "action": "dispute",
+          "body": ["action", "job"],
+          "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
+        }
+      ]
+    },
+    {
       "id": "quote",
       "method": "POST",
       "path": "/api/v0/quote",

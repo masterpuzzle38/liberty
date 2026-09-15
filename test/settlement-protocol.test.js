@@ -63,6 +63,12 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.surfaces.quote, "/api/v0/quote");
   assert.equal(SETTLEMENT.surfaces.verify, "/api/v0/verify");
   assert.equal(SETTLEMENT.surfaces.simulate, "/api/v0/simulate");
+  assert.equal(SETTLEMENT.surfaces.validate, "/api/v0/validate");
+  assert.equal(SETTLEMENT.validate_api.path, "/api/v0/validate");
+  assert.equal(SETTLEMENT.validate_api.money, false);
+  assert.equal(SETTLEMENT.validate_api.persistence, false);
+  assert.equal(SETTLEMENT.validate_api.dry_run, true);
+  assert.equal(SETTLEMENT.validate_api.engine, "/api/v0/transition");
   assert.equal(SETTLEMENT.surfaces.discovery, "/.well-known/agent.json");
   assert.equal(SETTLEMENT.surfaces.agent, "/api/agent.json");
   assert.equal(SETTLEMENT.discovery.path, "/.well-known/agent.json");

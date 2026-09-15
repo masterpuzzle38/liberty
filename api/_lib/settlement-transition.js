@@ -768,17 +768,71 @@ function verify(input, options) {
   });
 }
 
+const SCHEMA_ERROR_CODES = new Set([
+  "invalid_json",
+  "invalid_action",
+  "missing_field",
+  "invalid_field",
+]);
+const STATE_ERROR_CODES = new Set([
+  "illegal_transition",
+  "insufficient_credits",
+]);
+
+function errorKind(error) {
+  if (SCHEMA_ERROR_CODES.has(error)) return "schema";
+  if (STATE_ERROR_CODES.has(error)) return "state";
+  return undefined;
+}
+
+function decorateValidateError(result) {
+  if (!result || !result.body || typeof result.body !== "object") return result;
+  const kind = errorKind(result.body.error);
+  return {
+    status: result.status,
+    body: {
+      ...result.body,
+      validated: false,
+      ...(kind ? { kind } : {}),
+    },
+  };
+}
+
+function decorateValidate(result, input) {
+  if (!result || result.status !== 200) return decorateValidateError(result);
+  const action = input && typeof input === "object" && !Array.isArray(input)
+    ? input.action
+    : undefined;
+  const extra = {
+    validated: true,
+    persistence: false,
+    schema: "/api/schemas/transition.json",
+  };
+  if (typeof action === "string") extra.action = action;
+  if (typeof result.body.idempotency_key === "string" && result.body.idempotency_key) {
+    extra.idempotency_key = result.body.idempotency_key;
+  }
+  return ok(extra);
+}
+
+function validate(input, options) {
+  return decorateValidate(quote(input, options), input);
+}
+
 function discovery(kind) {
   const quote = kind === "quote";
   const verifyMode = kind === "verify";
   const simulateMode = kind === "simulate";
+  const validateMode = kind === "validate";
   const path = verifyMode
     ? "/api/v0/verify"
     : simulateMode
       ? "/api/v0/simulate"
-      : quote
-        ? "/api/v0/quote"
-        : "/api/v0/transition";
+      : validateMode
+        ? "/api/v0/validate"
+        : quote
+          ? "/api/v0/quote"
+          : "/api/v0/transition";
   return {
     service: "liberty-agent-settlement",
     mode: "demo",
@@ -793,15 +847,17 @@ function discovery(kind) {
       missing: "key_optional",
     },
     persistence: false,
-    dry_run: quote || verifyMode,
+    dry_run: quote || verifyMode || validateMode,
     actions: verifyMode ? VERIFY_ACTIONS : ACTIONS,
     note: verifyMode
       ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
       : simulateMode
         ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-        : quote
-          ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-          : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+        : validateMode
+          ? "Dry-check of the same engine and JSON Schema as POST /api/v0/transition. Same request shape as quote and transition. Returns { ok: true } when the body would be accepted, or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits) with kind: state. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+          : quote
+            ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+            : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     ...(verifyMode
       ? {}
       : {
@@ -810,17 +866,19 @@ function discovery(kind) {
             body: "idempotency_key",
             persistence: false,
             replay: false,
-            note: quote
-              ? "Optional. Echoed on success. Create quote stays dry-run and still has no durable id. Liberty does not replay stored responses. No persistence. No SSRF. No real money."
+            note: quote || validateMode
+              ? "Optional. Echoed on success. Create stays dry-check / dry-run and still has no durable id. Liberty does not replay stored responses. No persistence. No SSRF. No real money."
               : "Optional. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Same key and create fields = same job id. Different keys = different ids. Missing key = random as_ + 10 hex. Echoed on success; idempotent is true when the id came from the key. Later actions echo the key only. Liberty does not replay stored responses. No persistence. No SSRF. No real money.",
           },
         }),
     protocol: "/api/settlement.json",
     discovery: "/.well-known/agent.json",
+    schema: "/api/schemas/transition.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",
     verify: "/api/v0/verify",
     simulate: "/api/v0/simulate",
+    validate: "/api/v0/validate",
     ...(simulateMode ? { terminals: SIMULATE_TERMINALS } : {}),
   };
 }
@@ -1132,8 +1190,23 @@ function parseBody(raw) {
   throw error;
 }
 
+function wantsValidate(url) {
+  const raw = String(url || "");
+  if (!raw) return false;
+  if (/(?:^|[?&])validate=1(?:&|$)/.test(raw)) return true;
+  try {
+    const parsed = new URL(raw, "https://liberty-amber.vercel.app");
+    if (parsed.searchParams.get("validate") === "1") return true;
+    if (parsed.pathname === "/api/v0/validate") return true;
+  } catch {
+    if (/(?:^|[/?])api\/v0\/validate(?:\?|$)/.test(raw)) return true;
+  }
+  return false;
+}
+
 function createVercelHandler({ dryRun, verify: verifyMode, simulate: simulateMode } = {}) {
   return async function handler(req, res) {
+    const validateMode = wantsValidate(req.url);
     let body;
     try {
       body = parseBody(req.body);
@@ -1148,6 +1221,7 @@ function createVercelHandler({ dryRun, verify: verifyMode, simulate: simulateMod
         money: false,
         error: "invalid_json",
         message: "Body must be JSON.",
+        ...(validateMode ? { validated: false, kind: "schema" } : {}),
       }, req.headers));
     }
 
@@ -1155,9 +1229,10 @@ function createVercelHandler({ dryRun, verify: verifyMode, simulate: simulateMod
       method: req.method,
       body,
       headers: req.headers,
-      dryRun: Boolean(dryRun),
+      dryRun: Boolean(dryRun) && !validateMode,
       verify: Boolean(verifyMode),
       simulate: Boolean(simulateMode),
+      validate: validateMode,
     });
     for (const [key, value] of Object.entries(result.headers)) {
       res.setHeader(key, value);
@@ -1167,10 +1242,19 @@ function createVercelHandler({ dryRun, verify: verifyMode, simulate: simulateMod
   };
 }
 
-function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulate: simulateMode }) {
+function handleHttp({
+  method,
+  body,
+  headers,
+  dryRun,
+  verify: verifyMode,
+  simulate: simulateMode,
+  validate: validateMode,
+}) {
   const cors = corsHeaders();
   const verb = (method || "").toUpperCase();
-  const quoteMode = Boolean(dryRun);
+  const checkingValidate = Boolean(validateMode);
+  const quoteMode = Boolean(dryRun) && !checkingValidate;
   const checking = Boolean(verifyMode);
   const walking = Boolean(simulateMode);
 
@@ -1182,7 +1266,17 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
     return {
       status: 200,
       headers: { ...cors, "Content-Type": "application/json" },
-      body: discovery(checking ? "verify" : walking ? "simulate" : quoteMode ? "quote" : "transition"),
+      body: discovery(
+        checking
+          ? "verify"
+          : walking
+            ? "simulate"
+            : checkingValidate
+              ? "validate"
+              : quoteMode
+                ? "quote"
+                : "transition",
+      ),
     };
   }
 
@@ -1201,14 +1295,15 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
     };
   }
 
-  let engineOpts = { dryRun: quoteMode };
+  let engineOpts = { dryRun: quoteMode || checkingValidate };
   if (!checking) {
     const idem = readIdempotencyKey(headers, body);
     if (idem.error) {
+      const error = checkingValidate ? decorateValidateError(idem.error) : idem.error;
       return {
-        status: idem.error.status,
+        status: error.status,
         headers: { ...cors, "Content-Type": "application/json" },
-        body: applyDemoAuth(idem.error.body, headers),
+        body: applyDemoAuth(error.body, headers),
       };
     }
     engineOpts = { ...engineOpts, idempotencyKey: idem.value };
@@ -1218,7 +1313,9 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
     ? verify(body)
     : walking
       ? simulate(body, engineOpts)
-      : transition(body, engineOpts);
+      : checkingValidate
+        ? validate(body, engineOpts)
+        : transition(body, engineOpts);
   return {
     status: result.status,
     headers: { ...cors, "Content-Type": "application/json" },
@@ -1255,5 +1352,7 @@ module.exports = {
   releaseFee,
   simulate,
   transition,
+  validate,
+  wantsValidate,
   verify,
 };

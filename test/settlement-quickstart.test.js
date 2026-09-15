@@ -107,12 +107,13 @@ test("quickstart JSON stays demo-only and lists an ordered escrow walk", () => {
 
   assert.deepEqual(
     QUICKSTART.related.map((row) => row.id),
-    ["openapi", "examples", "templates", "tools", "transition_schema", "scoreboard"],
+    ["validate", "openapi", "examples", "templates", "tools", "transition_schema", "scoreboard"],
   );
   for (const row of QUICKSTART.related) {
-    assert.equal(row.method, "GET");
+    assert.ok(row.method === "GET" || (row.id === "validate" && row.method === "POST"));
     assert.ok(row.url.startsWith(ORIGIN));
   }
+  assert.equal(QUICKSTART.related.find((row) => row.id === "validate").path, "/api/v0/validate");
   assert.equal(QUICKSTART.related.find((row) => row.id === "openapi").path, "/openapi.json");
   assert.match(QUICKSTART.related.find((row) => row.id === "scoreboard").note, /zeros are honest/i);
 
