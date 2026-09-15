@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-9",
+      "title": "Scoreboard curated listings + wave 9",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "integrate",
       "title": "Human Integrate panel for Settlement quickstart",
       "href": "/#integrate"
@@ -76,12 +82,6 @@
       "id": "ledger",
       "title": "Client-held Settlement ledger",
       "href": "/#ledger"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "robots-sitemap",
-      "title": "robots.txt and sitemap",
-      "href": "/sitemap.xml"
     }
   ]
 }

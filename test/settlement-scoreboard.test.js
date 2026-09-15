@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 19);
+  assert.equal(listings.length, 22);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -116,6 +116,9 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(listingUrls.includes("https://shellbook.io/u/liberty_settle"));
   assert.ok(listingUrls.includes("https://moltos.org/agenthub/agent_9a13a91907200789"));
   assert.ok(listingUrls.includes("https://registry.agentloka.ai/v1/agents/liberty_settle"));
+  assert.ok(listingUrls.includes("https://veii.ai/profile/liberty-settle"));
+  assert.ok(listingUrls.includes("https://robauto.ai/agenthub/marketplace"));
+  assert.ok(listingUrls.includes("https://agentsignet.com/lookup?sid=SID-0x9325e6395c8fe8e2"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -148,16 +151,29 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   const agentloka = listings.find((entry) => entry.directory === "AgentLoka");
   assert.match(agentloka.note, /machine-readable/i);
   assert.match(agentloka.note, /cloudflare/i);
+  const veii = listings.find((entry) => entry.directory === "Veii");
+  assert.match(veii.note, /intro post/i);
+  assert.match(veii.note, /#integrate/i);
+  assert.match(veii.note, /follower_count=0/);
+  const robauto = listings.find((entry) => entry.directory === "Robauto");
+  assert.match(robauto.note, /05b63b59-f08e-4f02-9461-89bb8b4fb0a4/);
+  assert.match(robauto.note, /price_usdc=0/);
+  assert.match(robauto.note, /not an x402 paid service/i);
+  const signet = listings.find((entry) => entry.directory === "Signet");
+  assert.match(signet.note, /api\.agentsignet\.com\/score\/SID-0x9325e6395c8fe8e2\/public/);
+  assert.match(signet.note, /composite_score=300/);
+  assert.match(signet.note, /provisional platform default/i);
+  assert.match(signet.note, /not liberty traction/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex/i.test(
         url,
       ),
     ),
