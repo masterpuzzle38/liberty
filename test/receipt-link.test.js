@@ -65,6 +65,17 @@ test("receipt-link compact payload keeps optional client_ref", () => {
   assert.equal(decodeReceipt(encoded.token).receipt.client_ref, "agent-job-42");
 });
 
+test("receipt-link compact payload keeps optional callback_url", () => {
+  const encoded = encodeReceipt(sampleReceipt({ callback_url: "https://your-adapter.example/notify" }));
+  assert.equal(encoded.ok, true);
+  assert.equal(encoded.receipt.callback_url, "https://your-adapter.example/notify");
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.receipt.cb, "https://your-adapter.example/notify");
+  assert.equal(payload.receipt.callback_url, undefined);
+  assert.equal(decodeReceipt(encoded.token).receipt.callback_url, "https://your-adapter.example/notify");
+});
+
 test("receipt-link compact payload keeps optional notes", () => {
   const withProof = encodeReceipt(sampleReceipt({ proof_note: "Three-bullet brief attached." }));
   assert.equal(withProof.ok, true);

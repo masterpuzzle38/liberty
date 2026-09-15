@@ -62,6 +62,27 @@ test("client_ref does not change a deterministic create id", () => {
   assert.equal(withRef.body.idempotent, true);
 });
 
+test("callback_url does not change a deterministic create id", () => {
+  const key = "retry-create-1";
+  const without = commit({ ...CREATE, idempotency_key: key });
+  const withUrl = commit({
+    ...CREATE,
+    idempotency_key: key,
+    callback_url: "https://your-adapter.example/notify",
+  });
+  const otherUrl = commit({
+    ...CREATE,
+    idempotency_key: key,
+    notify_url: "https://hooks.example/other",
+  });
+  assert.equal(without.body.job.id, withUrl.body.job.id);
+  assert.equal(withUrl.body.job.id, otherUrl.body.job.id);
+  assert.equal(withUrl.body.job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(otherUrl.body.job.callbackUrl, "https://hooks.example/other");
+  assert.equal(without.body.job.callbackUrl, undefined);
+  assert.equal(withUrl.body.idempotent, true);
+});
+
 test("different keys or create fields yield different ids; missing key stays random as_ + 10 hex", () => {
   const sameFields = commit({ ...CREATE, idempotency_key: "key-a" });
   const otherKey = commit({ ...CREATE, idempotency_key: "key-b" });

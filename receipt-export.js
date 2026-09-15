@@ -15,6 +15,7 @@
   const TERMINAL = ["released", "disputed"];
   const NOTE_MAX_LENGTH = 400;
   const CLIENT_REF_MAX_LENGTH = 128;
+  const CALLBACK_URL_MAX_LENGTH = 512;
   const VERSION = 1;
   const PREFIX = "r1.";
   const HASH_RE = /^#receipt\/(.+)$/i;
@@ -35,6 +36,7 @@
     ["resolved", "ra"],
     ["key_id", "k"],
     ["client_ref", "cr"],
+    ["callback_url", "cb"],
     ["proof_note", "pn"],
     ["release_note", "rn"],
     ["dispute_reason", "dr"],
@@ -123,6 +125,10 @@
     const clientRef = firstDefined(job.clientRef, job.client_ref);
     if (typeof clientRef === "string" && clientRef.trim()) {
       receipt.client_ref = clientRef.trim();
+    }
+    const callbackUrl = firstDefined(job.callbackUrl, job.callback_url, job.notifyUrl, job.notify_url);
+    if (typeof callbackUrl === "string" && callbackUrl.trim()) {
+      receipt.callback_url = callbackUrl.trim();
     }
     const proofNote = firstDefined(job.proofNote, job.proof_note);
     const releaseNote = firstDefined(job.releaseNote, job.release_note);
@@ -235,6 +241,18 @@
         return fail("invalid_receipt", `client_ref must be at most ${CLIENT_REF_MAX_LENGTH} characters.`);
       }
       receipt.client_ref = clientRef.value;
+    }
+
+    const callbackUrl = readText(
+      firstDefined(raw.callback_url, raw.callbackUrl, raw.notify_url, raw.notifyUrl),
+      "callback_url",
+    );
+    if (!callbackUrl.ok) return callbackUrl;
+    if (callbackUrl.value) {
+      if (callbackUrl.value.length > CALLBACK_URL_MAX_LENGTH) {
+        return fail("invalid_receipt", `callback_url must be at most ${CALLBACK_URL_MAX_LENGTH} characters.`);
+      }
+      receipt.callback_url = callbackUrl.value;
     }
 
     const proofNote = readText(
@@ -510,6 +528,7 @@
   }
 
   return {
+    CALLBACK_URL_MAX_LENGTH,
     CLIENT_REF_MAX_LENGTH,
     JOB_ID_PATTERN,
     KEY_ID_PATTERN,

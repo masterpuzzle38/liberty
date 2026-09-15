@@ -68,6 +68,23 @@ test("optional client_ref survives export parse", () => {
   assert.equal(parsed.receipt.client_ref, "from-the-api");
 });
 
+test("optional callback_url survives export parse", () => {
+  const fromJob = receiptFromJob(releasedJob({ callbackUrl: "https://your-adapter.example/notify" }));
+  assert.equal(fromJob.ok, true);
+  assert.equal(fromJob.receipt.callback_url, "https://your-adapter.example/notify");
+  assert.equal(
+    fromJob.receipt.callback_url,
+    engineReceipt(releasedJob({ callbackUrl: "https://your-adapter.example/notify" })).callback_url,
+  );
+
+  const parsed = readReceipt({
+    ...engineReceipt(releasedJob()),
+    callback_url: "https://from-the-api.example/cb",
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.receipt.callback_url, "https://from-the-api.example/cb");
+});
+
 test("optional proof_note survives export parse", () => {
   const released = receiptFromJob(releasedJob({ proofNote: "Three-bullet brief attached." }));
   assert.equal(released.ok, true);

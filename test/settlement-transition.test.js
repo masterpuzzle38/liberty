@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  CALLBACK_URL_MAX_LENGTH,
   CLIENT_REF_MAX_LENGTH,
   CORS_ALLOW_HEADERS,
   JOB_ID_PATTERN,
@@ -398,6 +399,115 @@ test("client_ref stays optional, bounded, and create-only", () => {
   const onFund = step("fund", { job: open, payer_credits: 100, client_ref: "late" });
   assert.equal(onFund.status, 400);
   assert.equal(onFund.body.field, "client_ref");
+});
+
+test("optional callback_url lands on the job, survives later actions, and echoes on the receipt", () => {
+  const created = step("create", {
+    title: "Summarize filings",
+    amount: 100,
+    criteria: "Three-bullet brief matching the last three filings.",
+    callback_url: "  https://your-adapter.example/notify  ",
+  });
+  assert.equal(created.status, 200);
+  assert.equal(created.body.job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(created.body.job.callback_url, undefined);
+  assert.equal(created.body.money, false);
+
+  const funded = step("fund", { job: created.body.job, payer_credits: 100 });
+  assert.equal(funded.body.job.callbackUrl, "https://your-adapter.example/notify");
+  const submitted = step("submit", {
+    job: funded.body.job,
+    proof_url: "https://example.com/proof",
+  });
+  assert.equal(submitted.body.job.callbackUrl, "https://your-adapter.example/notify");
+
+  const released = step("release", { job: submitted.body.job });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(released.body.receipt.callback_url, "https://your-adapter.example/notify");
+  assert.equal(released.body.fee, 5);
+
+  const notifyAlias = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    notify_url: "https://hooks.example/done",
+  });
+  assert.equal(notifyAlias.body.job.callbackUrl, "https://hooks.example/done");
+
+  const camel = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callbackUrl: "https://camel.example/cb",
+  });
+  assert.equal(camel.body.job.callbackUrl, "https://camel.example/cb");
+
+  const omitted = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+  });
+  assert.equal(omitted.body.job.callbackUrl, undefined);
+});
+
+test("callback_url stays optional, https-only, bounded, and create-only", () => {
+  const empty = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: "   ",
+  });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.error, "invalid_field");
+  assert.equal(empty.body.field, "callback_url");
+  assert.equal(empty.body.money, false);
+
+  const http = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: "http://insecure.example/notify",
+  });
+  assert.equal(http.status, 400);
+  assert.equal(http.body.field, "callback_url");
+  assert.match(http.body.message, /https/i);
+
+  const notUrl = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: "not-a-url",
+  });
+  assert.equal(notUrl.status, 400);
+  assert.equal(notUrl.body.field, "callback_url");
+
+  const tooLong = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: `https://example.com/${"x".repeat(CALLBACK_URL_MAX_LENGTH)}`,
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.field, "callback_url");
+
+  const notString = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: 12,
+  });
+  assert.equal(notString.status, 400);
+  assert.equal(notString.body.field, "callback_url");
+
+  const open = createJob();
+  const onFund = step("fund", { job: open, payer_credits: 100, callback_url: "https://late.example/cb" });
+  assert.equal(onFund.status, 400);
+  assert.equal(onFund.body.field, "callback_url");
+
+  const notifyLate = step("fund", { job: open, payer_credits: 100, notify_url: "https://late.example/cb" });
+  assert.equal(notifyLate.status, 400);
+  assert.equal(notifyLate.body.field, "callback_url");
 });
 
 test("optional proof_note lands on the submitted job and later receipt", () => {

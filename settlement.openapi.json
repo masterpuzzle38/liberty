@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -898,6 +898,12 @@
             "maxLength": 128,
             "description": "Present when client_ref was sent on create. Adapter/correlation id. Independent of job.id and Idempotency-Key."
           },
+          "callbackUrl": {
+            "type": "string",
+            "maxLength": 512,
+            "format": "uri",
+            "description": "Present when callback_url or notify_url was sent on create. Adapter-owned https URL. Liberty never HTTP-fetches or calls this URL."
+          },
           "proofNote": {
             "type": "string",
             "maxLength": 400,
@@ -955,6 +961,12 @@
             "type": "string",
             "maxLength": 128,
             "description": "Present when the adapter sent client_ref on create."
+          },
+          "callback_url": {
+            "type": "string",
+            "maxLength": 512,
+            "format": "uri",
+            "description": "Present when the adapter sent callback_url or notify_url on create. Liberty never HTTP-fetches or calls this URL."
           },
           "proof_note": {
             "type": "string",
@@ -1106,6 +1118,10 @@
           "disputeReason": { "type": "string", "maxLength": 400 },
           "client_ref": { "type": "string", "maxLength": 128, "description": "Optional adapter/correlation id. Lands on the job and receipt. Independent of Idempotency-Key." },
           "clientRef": { "type": "string", "maxLength": 128 },
+          "callback_url": { "type": "string", "maxLength": 512, "format": "uri", "description": "Optional adapter-owned https URL. Lands on the job and receipt. Liberty never HTTP-fetches or calls it. notify_url is an alias." },
+          "callbackUrl": { "type": "string", "maxLength": 512, "format": "uri" },
+          "notify_url": { "type": "string", "maxLength": 512, "format": "uri" },
+          "notifyUrl": { "type": "string", "maxLength": 512, "format": "uri" },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
@@ -1231,6 +1247,7 @@
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
           "clientRef": { "type": "string", "maxLength": 128 },
+          "callbackUrl": { "type": "string", "maxLength": 512, "format": "uri" },
           "proofNote": { "type": "string", "maxLength": 400 },
           "releaseNote": { "type": "string", "maxLength": 400 },
           "disputeReason": { "type": "string", "maxLength": 400 }
@@ -1282,6 +1299,10 @@
           "criteria": { "type": "string" },
           "client_ref": { "type": "string", "maxLength": 128, "description": "Optional adapter/correlation id. Lands on the job and later receipt. Independent of Idempotency-Key. Empty or whitespace-only is rejected." },
           "clientRef": { "type": "string", "maxLength": 128 },
+          "callback_url": { "type": "string", "maxLength": 512, "format": "uri", "description": "Optional adapter-owned https URL. Lands on the job and later receipt. Liberty never HTTP-fetches or calls it. Empty or whitespace-only is rejected. notify_url is an alias." },
+          "callbackUrl": { "type": "string", "maxLength": 512, "format": "uri" },
+          "notify_url": { "type": "string", "maxLength": 512, "format": "uri" },
+          "notifyUrl": { "type": "string", "maxLength": 512, "format": "uri" },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }

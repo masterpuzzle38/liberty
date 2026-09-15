@@ -145,6 +145,31 @@ test("simulate forwards optional client_ref to the job and terminal receipt", ()
   assert.equal(empty.body.field, "client_ref");
 });
 
+test("simulate forwards optional callback_url to the job and terminal receipt", () => {
+  const result = walk({ callback_url: "  https://your-adapter.example/notify  " });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(result.body.receipt.callback_url, "https://your-adapter.example/notify");
+  assert.equal(result.body.steps[0].job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(result.body.steps[3].receipt.callback_url, "https://your-adapter.example/notify");
+  assert.equal(result.body.fee, 5);
+  assert.equal(result.body.money, false);
+
+  const alias = walk({ notify_url: "https://hooks.example/done" });
+  assert.equal(alias.body.receipt.callback_url, "https://hooks.example/done");
+
+  const camel = walk({ callbackUrl: "https://camel.example/cb" });
+  assert.equal(camel.body.receipt.callback_url, "https://camel.example/cb");
+
+  const empty = walk({ callback_url: "   " });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.field, "callback_url");
+
+  const http = walk({ callback_url: "http://insecure.example/notify" });
+  assert.equal(http.status, 400);
+  assert.equal(http.body.field, "callback_url");
+});
+
 test("simulate forwards optional proof_note to the submit job and terminal receipt", () => {
   const released = walk({ proof_note: "Three-bullet brief attached." });
   assert.equal(released.status, 200);
