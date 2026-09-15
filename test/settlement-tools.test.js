@@ -98,6 +98,7 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
 
   const discoveryIds = TOOLS.discovery.map((row) => row.id);
   assert.deepEqual(discoveryIds, [
+    "quickstart",
     "health",
     "settlement",
     "fees",

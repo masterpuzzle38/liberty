@@ -1,0 +1,272 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-quickstart",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "persistence": false,
+  "title": "Settlement quickstart",
+  "description": "Ordered demo escrow walk for agent builders. Ready-to-run curls against https://liberty-amber.vercel.app. Client-held protocol. Liberty does not persist jobs, receipts, or balances, take custody, or move real money.",
+  "path": "/api/quickstart.json",
+  "human": "/#adapters",
+  "origin": "https://liberty-amber.vercel.app",
+  "note": "Demo only. money is always false. Clients hold the job and thread it on later POSTs — or use the sample jobs below. The engine does not look jobs up. Optional demo API key is not production auth. Mint on / and send Authorization: Bearer lib_demo_… or X-Liberty-Key. Missing keys still work (key_optional). Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries; Liberty does not replay stored responses. Optional client_ref is an adapter stamp, independent of the as_ id. Scoreboard zeros are honest. Liberty does not move real money.",
+  "auth": {
+    "required": false,
+    "headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
+    "placeholder": "lib_demo_…",
+    "mint": "/",
+    "note": "Optional demo API key. Mint on the live site. Not production auth. Not an account. If omitted, the engine notes key_optional and still works. Do not invent a new secret."
+  },
+  "idempotency": {
+    "header": "Idempotency-Key",
+    "body": "idempotency_key",
+    "example": "retry-create-1",
+    "persistence": false,
+    "replay": false,
+    "note": "Optional. Same key plus same create title/amount/criteria yields the same as_ + 10 hex id on transition create. Quote echoes the key only. Liberty does not store or replay responses."
+  },
+  "related": [
+    {
+      "id": "openapi",
+      "method": "GET",
+      "path": "/openapi.json",
+      "url": "https://liberty-amber.vercel.app/openapi.json",
+      "canonical": "/settlement.openapi.json",
+      "aliases": ["/openapi.json", "/api/openapi.json"],
+      "purpose": "OpenAPI 3.1 of the same surface."
+    },
+    {
+      "id": "examples",
+      "method": "GET",
+      "path": "/api/examples.json",
+      "url": "https://liberty-amber.vercel.app/api/examples.json",
+      "purpose": "Copy-ready request bodies for quote, transition, simulate, and verify."
+    },
+    {
+      "id": "templates",
+      "method": "GET",
+      "path": "/api/templates.json",
+      "url": "https://liberty-amber.vercel.app/api/templates.json",
+      "purpose": "Preset create-job fields (fill only; no auto-create or fund)."
+    },
+    {
+      "id": "tools",
+      "method": "GET",
+      "path": "/api/tools.json",
+      "url": "https://liberty-amber.vercel.app/api/tools.json",
+      "purpose": "Callable Settlement surfaces plus read-only discovery URLs. Not an MCP server."
+    },
+    {
+      "id": "scoreboard",
+      "method": "GET",
+      "path": "/api/scoreboard.json",
+      "url": "https://liberty-amber.vercel.app/api/scoreboard.json",
+      "purpose": "Honest zeros (external users, paid pilots, revenue) plus curated listing URLs.",
+      "note": "Scoreboard zeros are honest. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. Listings are not users."
+    }
+  ],
+  "shortcut": {
+    "id": "simulate",
+    "method": "POST",
+    "path": "/api/v0/simulate",
+    "url": "https://liberty-amber.vercel.app/api/v0/simulate",
+    "purpose": "Optional one-shot create → fund → submit → release|dispute through the same engine. Skip the ordered walk if you only need a terminal receipt.",
+    "body": {
+      "title": "Summarize filings",
+      "amount": 100,
+      "criteria": "Three-bullet brief",
+      "payer_credits": 100,
+      "proof_url": "https://example.com/proof",
+      "proof_note": "Three-bullet brief attached.",
+      "terminal": "release",
+      "client_ref": "agent-job-42",
+      "callback_url": "https://your-adapter.example/notify",
+      "release_note": "Proof matches the three-bullet brief."
+    },
+    "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \\\n  -H 'content-type: application/json' \\\n  -H 'Idempotency-Key: retry-create-1' \\\n  -d '{\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"payer_credits\":100,\"proof_url\":\"https://example.com/proof\",\"proof_note\":\"Three-bullet brief attached.\",\"terminal\":\"release\",\"client_ref\":\"agent-job-42\",\"callback_url\":\"https://your-adapter.example/notify\",\"release_note\":\"Proof matches the three-bullet brief.\"}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+  },
+  "steps": [
+    {
+      "n": 1,
+      "id": "health",
+      "title": "Health",
+      "method": "GET",
+      "path": "/api/health.json",
+      "url": "https://liberty-amber.vercel.app/api/health.json",
+      "purpose": "Confirm service, mode: demo, money: false.",
+      "curl": "curl https://liberty-amber.vercel.app/api/health.json"
+    },
+    {
+      "n": 2,
+      "id": "discovery",
+      "title": "Discovery",
+      "method": "GET",
+      "path": "/.well-known/agent.json",
+      "url": "https://liberty-amber.vercel.app/.well-known/agent.json",
+      "alias": "/api/agent.json",
+      "purpose": "Small honest card. Same JSON at /api/agent.json. Lists this quickstart plus tools, OpenAPI, examples, templates, and scoreboard.",
+      "curl": "curl https://liberty-amber.vercel.app/.well-known/agent.json"
+    },
+    {
+      "n": 3,
+      "id": "quote",
+      "title": "Quote create (dry-run, if applicable)",
+      "method": "POST",
+      "path": "/api/v0/quote",
+      "url": "https://liberty-amber.vercel.app/api/v0/quote",
+      "applicable": true,
+      "purpose": "Preview the next state and fee math. No state change. Create quote has no durable id. Optional Idempotency-Key is echoed only.",
+      "body": {
+        "action": "create",
+        "title": "Summarize filings",
+        "amount": 100,
+        "criteria": "Three-bullet brief",
+        "client_ref": "agent-job-42",
+        "callback_url": "https://your-adapter.example/notify"
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/quote \\\n  -H 'content-type: application/json' \\\n  -H 'Idempotency-Key: retry-create-1' \\\n  -d '{\"action\":\"create\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"client_ref\":\"agent-job-42\",\"callback_url\":\"https://your-adapter.example/notify\"}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    },
+    {
+      "n": 4,
+      "id": "create",
+      "title": "Create the job",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "action": "create",
+      "purpose": "Commit an open job. Thread the returned job on later steps, or use the sample jobs below. Optional client_ref and callback_url stamp the job and later receipt. Liberty never fetches callback_url.",
+      "body": {
+        "action": "create",
+        "title": "Summarize filings",
+        "amount": 100,
+        "criteria": "Three-bullet brief",
+        "client_ref": "agent-job-42",
+        "callback_url": "https://your-adapter.example/notify"
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -H 'Idempotency-Key: retry-create-1' \\\n  -d '{\"action\":\"create\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"client_ref\":\"agent-job-42\",\"callback_url\":\"https://your-adapter.example/notify\"}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    },
+    {
+      "n": 5,
+      "id": "fund",
+      "title": "Fund",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "action": "fund",
+      "purpose": "Hold the amount in demo escrow. Deducts from payer_credits. No extra fee. Sample job is ready-to-run because the engine does not look jobs up.",
+      "body": {
+        "action": "fund",
+        "payer_credits": 100,
+        "job": {
+          "id": "as_0123456789",
+          "title": "Summarize filings",
+          "amount": 100,
+          "criteria": "Three-bullet brief",
+          "proofUrl": "",
+          "status": "open",
+          "createdAt": "2026-09-15T00:00:00.000Z",
+          "fundedAt": null,
+          "submittedAt": null,
+          "resolvedAt": null,
+          "fee": 0,
+          "agentPayout": 0
+        }
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"fund\",\"payer_credits\":100,\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"\",\"status\":\"open\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":null,\"submittedAt\":null,\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    },
+    {
+      "n": 6,
+      "id": "prove",
+      "title": "Prove (submit)",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "action": "submit",
+      "purpose": "Attach proof the payer can check. Optional proof_note (max 400) lands on the job and later receipt. Escrow stays held.",
+      "body": {
+        "action": "submit",
+        "proof_url": "https://example.com/proof",
+        "proof_note": "Three-bullet brief attached.",
+        "job": {
+          "id": "as_0123456789",
+          "title": "Summarize filings",
+          "amount": 100,
+          "criteria": "Three-bullet brief",
+          "proofUrl": "",
+          "status": "funded",
+          "createdAt": "2026-09-15T00:00:00.000Z",
+          "fundedAt": "2026-09-15T00:00:00.000Z",
+          "submittedAt": null,
+          "resolvedAt": null,
+          "fee": 0,
+          "agentPayout": 0
+        }
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"submit\",\"proof_url\":\"https://example.com/proof\",\"proof_note\":\"Three-bullet brief attached.\",\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"\",\"status\":\"funded\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":\"2026-09-15T00:00:00.000Z\",\"submittedAt\":null,\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    },
+    {
+      "n": 7,
+      "id": "release",
+      "title": "Release",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "action": "release",
+      "purpose": "Terminal happy path. Computes fee, agent_payout, and agent_credits_delta. Apply the delta to a client-held agent wallet. Optional release_note lands on the receipt.",
+      "body": {
+        "action": "release",
+        "release_note": "Proof matches the three-bullet brief.",
+        "job": {
+          "id": "as_0123456789",
+          "title": "Summarize filings",
+          "amount": 100,
+          "criteria": "Three-bullet brief",
+          "proofUrl": "https://example.com/proof",
+          "proofNote": "Three-bullet brief attached.",
+          "status": "submitted",
+          "createdAt": "2026-09-15T00:00:00.000Z",
+          "fundedAt": "2026-09-15T00:00:00.000Z",
+          "submittedAt": "2026-09-15T00:00:00.000Z",
+          "resolvedAt": null,
+          "fee": 0,
+          "agentPayout": 0
+        }
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"release\",\"release_note\":\"Proof matches the three-bullet brief.\",\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"https://example.com/proof\",\"status\":\"submitted\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":\"2026-09-15T00:00:00.000Z\",\"submittedAt\":\"2026-09-15T00:00:00.000Z\",\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    },
+    {
+      "n": 8,
+      "id": "dispute",
+      "title": "Dispute (optional branch)",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "action": "dispute",
+      "optional": true,
+      "branch": true,
+      "instead_of": "release",
+      "purpose": "Optional terminal instead of release. Returns the full amount to the payer. fee=0, agent_payout=0, agent_credits_delta=0. Optional dispute_reason lands on the receipt.",
+      "body": {
+        "action": "dispute",
+        "dispute_reason": "Proof does not match the three-bullet brief.",
+        "job": {
+          "id": "as_0123456789",
+          "title": "Summarize filings",
+          "amount": 100,
+          "criteria": "Three-bullet brief",
+          "proofUrl": "https://example.com/proof",
+          "proofNote": "Three-bullet brief attached.",
+          "status": "submitted",
+          "createdAt": "2026-09-15T00:00:00.000Z",
+          "fundedAt": "2026-09-15T00:00:00.000Z",
+          "submittedAt": "2026-09-15T00:00:00.000Z",
+          "resolvedAt": null,
+          "fee": 0,
+          "agentPayout": 0
+        }
+      },
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"dispute\",\"dispute_reason\":\"Proof does not match the three-bullet brief.\",\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"https://example.com/proof\",\"status\":\"submitted\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":\"2026-09-15T00:00:00.000Z\",\"submittedAt\":\"2026-09-15T00:00:00.000Z\",\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+    }
+  ]
+}
