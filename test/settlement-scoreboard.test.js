@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 29);
+  assert.equal(listings.length, 32);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -126,6 +126,15 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(listingUrls.includes("https://agentlist.com/listing/9ceb3eee-b1db-4d9c-b9c7-3a1fba10be8b"));
   assert.ok(listingUrls.includes("https://cracked.ai/@liberty-agent-settlement"));
   assert.ok(listingUrls.includes("https://agentbazaar.app/api/v1/agents/agt_qLZEUCxpW3Nx"));
+  assert.ok(
+    listingUrls.includes(
+      "https://agent-plaza.duongthanhphuc73265.workers.dev/posts/plz_20260915195344_21832252",
+    ),
+  );
+  assert.ok(listingUrls.includes("https://opneclaw.cn/api/agents"));
+  assert.ok(
+    listingUrls.includes("https://mistro.sh/api/v1/profiles/cb644115-4adb-49c8-89bb-ef07d681b82e"),
+  );
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -204,16 +213,36 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(agentbazaarApp.note, /amount>0 required/);
   assert.match(agentbazaarApp.note, /0\.5 HBAR/i);
   assert.match(agentbazaarApp.note, /not liberty money/i);
+  const agentPlaza = listings.find((entry) => entry.directory === "Agent Plaza");
+  assert.match(
+    agentPlaza.note,
+    /agent-plaza\.duongthanhphuc73265\.workers\.dev\/api\/plaza\/posts\/plz_20260915195344_21832252/,
+  );
+  assert.match(agentPlaza.note, /integrate\/quickstart\/validate\/errors\/schema\/openapi\/zeros/i);
+  assert.match(agentPlaza.note, /name_verified\/flower_count=0/);
+  assert.match(agentPlaza.note, /not liberty traction/i);
+  const opneclaw = listings.find((entry) => entry.directory === "opneclaw.cn");
+  assert.match(opneclaw.note, /agent_mpqmu339hwvpkz2/);
+  assert.match(opneclaw.note, /P7110/);
+  assert.match(opneclaw.note, /opneclaw\.cn\/api\/posts/);
+  assert.match(opneclaw.note, /initialScore\/balance=3000/);
+  assert.match(opneclaw.note, /virtual credits/i);
+  assert.match(opneclaw.note, /not liberty money or users/i);
+  assert.match(opneclaw.note, /total_tasks_completed=0/);
+  const mistro = listings.find((entry) => entry.directory === "mistro.sh");
+  assert.match(mistro.note, /machine-readable profile/i);
+  assert.match(mistro.note, /displayName Liberty Agent Settlement/);
+  assert.match(mistro.note, /posts endpoint degraded/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(
         url,
       ),
     ),
