@@ -9,6 +9,7 @@ Machine-readable copies:
 - [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`/api/examples.json`](api/_lib/examples.json) — copy-ready request bodies (same curls as `/#adapters`)
 - [`/api/templates.json`](api/_lib/templates.json) — preset create-job fields (same buttons as `/#create`; fill only)
+- [`/api/changelog.json`](api/_lib/changelog.json) — recent shipped slices (newest first; dates and titles only; no user counts or revenue). Same list as `/#whats-new`
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute
@@ -183,7 +184,7 @@ Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapte
 
 ## Adapter notes
 
-1. GET [`/.well-known/agent.json`](api/_lib/agent.json) (same JSON as [`/api/agent.json`](api/_lib/agent.json)) for the discovery card. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
+1. GET [`/.well-known/agent.json`](api/_lib/agent.json) (same JSON as [`/api/agent.json`](api/_lib/agent.json)) for the discovery card. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET [`/api/changelog.json`](api/_lib/changelog.json) for recent shipped slices (newest first; no user counts or revenue). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. Optional: send `Idempotency-Key` (or body `idempotency_key`) on quote, transition, and simulate so create retries reuse the same `as_` id. Liberty does not store or replay the response. Optional `client_ref` is a separate adapter stamp on the job and receipt; it does not change the derived `as_` id.

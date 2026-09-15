@@ -61,6 +61,7 @@ test("agent discovery card stays demo-only and points at the real surfaces", () 
   assert.equal(AGENT.surfaces.protocol, "/api/settlement.json");
   assert.equal(AGENT.surfaces.examples, "/api/examples.json");
   assert.equal(AGENT.surfaces.templates, "/api/templates.json");
+  assert.equal(AGENT.surfaces.changelog, "/api/changelog.json");
   assert.equal(AGENT.surfaces.openapi, "/settlement.openapi.json");
   assert.equal(AGENT.surfaces.llms, "/llms.txt");
   assert.equal(AGENT.surfaces.quote, "/api/v0/quote");
@@ -70,6 +71,7 @@ test("agent discovery card stays demo-only and points at the real surfaces", () 
   assert.match(AGENT.note, /not an a2a agent card/i);
   assert.match(AGENT.note, /not a chatgpt plugin/i);
   assert.match(AGENT.note, /no payments/i);
+  assert.match(AGENT.note, /changelog/i);
   assert.doesNotMatch(JSON.stringify(AGENT), /\b\d[\d,]*\s+(users?|customers?)\b/i);
 });
 

@@ -5,6 +5,7 @@ const SETTLEMENT = require("./settlement.json");
 const EXAMPLES = require("./examples.json");
 const TEMPLATES = require("./templates.json");
 const AGENT = require("./agent.json");
+const CHANGELOG = require("./changelog.json");
 
 function protocolHeaders() {
   return {
@@ -48,6 +49,7 @@ module.exports = {
   EXAMPLES,
   TEMPLATES,
   AGENT,
+  CHANGELOG,
   protocolHeaders,
   serveProtocol,
 };

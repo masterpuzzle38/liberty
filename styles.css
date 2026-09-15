@@ -173,6 +173,32 @@ h1 {
   color: var(--warn);
 }
 
+.whats-new-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.whats-new-list li {
+  display: flex;
+  gap: 0.7rem;
+  align-items: baseline;
+  font-size: 0.92rem;
+}
+
+.whats-new-list time {
+  flex: 0 0 6.6rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.whats-new-list a {
+  color: var(--accent);
+}
+
 .for-agents ul {
   margin: 0;
   padding-left: 1.15rem;
