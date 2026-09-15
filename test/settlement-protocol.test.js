@@ -108,6 +108,14 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.agent_wallet.delta_field, "agent_credits_delta");
   assert.equal(SETTLEMENT.human_path.agent_credits_storage_key, "liberty.agent-settlement.agent-credits.v0");
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("agent_credits_delta")));
+  assert.equal(SETTLEMENT.demo_pack.persistence, false);
+  assert.equal(SETTLEMENT.demo_pack.money, false);
+  assert.equal(SETTLEMENT.demo_pack.mode, "client");
+  assert.equal(SETTLEMENT.demo_pack.import, "replace");
+  assert.equal(SETTLEMENT.demo_pack.human_path, "/#demo-pack");
+  assert.equal(SETTLEMENT.surfaces.demo_pack, "/#demo-pack");
+  assert.ok(SETTLEMENT.demo_pack.storage_keys.includes("liberty.agent-settlement.v0"));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/#demo-pack")));
   assert.equal(SETTLEMENT.receipt_export.persistence, false);
   assert.equal(SETTLEMENT.receipt_export.money, false);
   assert.equal(SETTLEMENT.receipt_export.mode, "client");

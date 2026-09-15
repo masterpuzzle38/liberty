@@ -514,6 +514,18 @@ body.pending textarea {
 .detail-meta dt { font-weight: 650; color: var(--ink); }
 .detail-meta dd { margin: 0 0 0.55rem; }
 
+.pack-warn {
+  color: var(--warn);
+}
+
+#demo-pack .stack-form {
+  margin-top: 0.85rem;
+}
+
+#import-demo-pack-file {
+  padding: 0.45rem;
+}
+
 .handoff-form {
   margin-bottom: 0.75rem;
 }

@@ -59,11 +59,16 @@
     simulateResult: document.getElementById("simulate-result"),
     whatsNewList: document.getElementById("whats-new-list"),
     whatsNewEmpty: document.getElementById("whats-new-empty"),
+    exportPack: document.getElementById("export-demo-pack"),
+    importPackForm: document.getElementById("import-demo-pack-form"),
+    importPackFile: document.getElementById("import-demo-pack-file"),
+    importPackInput: document.getElementById("import-demo-pack-input"),
   };
 
   const handoff = window.LibertyJobHandoff;
   const receiptsApi = window.LibertyReceiptExport;
   const walletApi = window.LibertyAgentWallet;
+  const packApi = window.LibertyDemoPack;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -155,16 +160,79 @@
     return receipts.find((item) => item.job_id === jobId) || null;
   }
 
-  function loadDemoKey() {
+  function loadDemoKeyRecord() {
     try {
       const raw = localStorage.getItem(KEY_STORAGE);
-      if (!raw) return "";
+      if (!raw) return null;
       const data = JSON.parse(raw);
-      if (data && typeof data.key === "string" && data.key.trim()) return data.key.trim();
-      return "";
+      if (!data || typeof data.key !== "string" || !data.key.trim()) return null;
+      const record = { key: data.key.trim() };
+      if (typeof data.mintedAt === "string" && data.mintedAt.trim()) {
+        record.mintedAt = data.mintedAt.trim();
+      }
+      return record;
     } catch {
-      return "";
+      return null;
     }
+  }
+
+  function loadDemoKey() {
+    const record = loadDemoKeyRecord();
+    return record ? record.key : "";
+  }
+
+  function applyDemoPack(raw) {
+    if (!packApi) {
+      flash("Demo pack helper failed to load.", true);
+      return false;
+    }
+    const parsed = packApi.readPack(raw);
+    if (!parsed.ok) {
+      flash(parsed.message || "Could not read that demo pack.", true);
+      return false;
+    }
+    const prompt = packApi.confirmMessage(parsed.pack);
+    if (!prompt.ok) {
+      flash(prompt.message || "Could not confirm that demo pack.", true);
+      return false;
+    }
+    if (!confirm(prompt.message)) return false;
+    const writes = packApi.storageWrites(parsed.pack);
+    if (!writes.ok) {
+      flash(writes.message || "Could not apply that demo pack.", true);
+      return false;
+    }
+    Object.entries(writes.writes).forEach(([key, value]) => {
+      localStorage.setItem(key, value);
+    });
+    writes.removes.forEach((key) => localStorage.removeItem(key));
+    try { sessionStorage.removeItem(KEY_REVEAL); } catch { /* ignore */ }
+    state = load();
+    receipts = loadReceipts();
+    agentCredits = loadAgentCredits();
+    pendingQuote = null;
+    if (els.importPackInput) els.importPackInput.value = "";
+    if (els.importPackFile) els.importPackFile.value = "";
+    const keyNote = writes.containsDemoKey ? " Raw demo key restored in this browser." : "";
+    flash(`Imported demo pack. ${writes.summary.jobCount} jobs, ${writes.summary.receiptCount} receipts.${keyNote} Liberty did not receive the file. Demo only.`);
+    selectJob(null);
+    return true;
+  }
+
+  function exportDemoPack() {
+    if (!packApi) return flash("Demo pack helper failed to load.", true);
+    const source = {
+      payer: state,
+      agent_credits: agentCredits,
+      receipts,
+    };
+    const record = loadDemoKeyRecord();
+    if (record) source.demo_key = record;
+    const encoded = packApi.encodePack(source);
+    if (!encoded.ok) return flash(encoded.message || "Could not build a demo pack.", true);
+    downloadText(encoded.text, encoded.filename, "application/json");
+    const keyNote = encoded.containsDemoKey ? " This file includes the raw demo API key." : "";
+    flash(`Downloaded demo pack.${keyNote} Client-held only — Liberty did not receive the file. Demo only.`);
   }
 
   function saveDemoKey(key) {
@@ -1438,6 +1506,34 @@
     saveDemoKey("");
     flash("Demo key revoked in this browser.");
     renderKey();
+  });
+
+  els.exportPack?.addEventListener("click", () => {
+    exportDemoPack();
+  });
+
+  els.importPackFile?.addEventListener("change", () => {
+    const file = els.importPackFile.files && els.importPackFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      applyDemoPack(String(reader.result || ""));
+    };
+    reader.onerror = () => flash("Could not read that file.", true);
+    reader.readAsText(file);
+  });
+
+  els.importPackForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const file = els.importPackFile && els.importPackFile.files && els.importPackFile.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => applyDemoPack(String(reader.result || ""));
+      reader.onerror = () => flash("Could not read that file.", true);
+      reader.readAsText(file);
+      return;
+    }
+    applyDemoPack(els.importPackInput ? els.importPackInput.value : "");
   });
 
   els.reset?.addEventListener("click", () => {
