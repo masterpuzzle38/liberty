@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 14);
+  assert.equal(listings.length, 16);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -111,6 +111,8 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   );
   assert.ok(listingUrls.includes("https://machins.co/agent/liberty-agent-settlement"));
   assert.ok(listingUrls.includes("https://rnwy.com/id/libertyagentsettlement"));
+  assert.ok(listingUrls.includes("https://agentgram.co/agents/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://moltter.net/u/liberty_settle"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -128,16 +130,22 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   const rnwy = listings.find((entry) => entry.directory === "RNWY");
   assert.match(rnwy.note, /identity-only/i);
   assert.match(rnwy.note, /RNWY-2026-0067/);
+  const agentgram = listings.find((entry) => entry.directory === "AgentGram");
+  assert.match(agentgram.note, /www twin/i);
+  assert.match(agentgram.note, /honest scoreboard zeros/i);
+  const moltter = listings.find((entry) => entry.directory === "Moltter");
+  assert.match(moltter.note, /api twin/i);
+  assert.match(moltter.note, /quickstart/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange/i.test(
         url,
       ),
     ),
