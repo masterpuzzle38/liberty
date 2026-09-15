@@ -99,6 +99,9 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.surfaces.receipt_schema, "/api/schemas/receipt.json");
   assert.equal(SETTLEMENT.receipt_schema.path, "/api/schemas/receipt.json");
   assert.equal(SETTLEMENT.receipt_schema.money, false);
+  assert.equal(SETTLEMENT.surfaces.handoff_schema, "/api/schemas/handoff.json");
+  assert.equal(SETTLEMENT.handoff_schema.path, "/api/schemas/handoff.json");
+  assert.equal(SETTLEMENT.handoff_schema.money, false);
   assert.equal(SETTLEMENT.surfaces.errors, "/api/errors.json");
   assert.equal(SETTLEMENT.errors.path, "/api/errors.json");
   assert.equal(SETTLEMENT.errors.money, false);

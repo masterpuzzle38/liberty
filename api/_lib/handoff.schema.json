@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/handoff.json",
+  "title": "Liberty Agent Settlement job handoff",
+  "description": "JSON Schema for a shareable Settlement job handoff payload. Same decoded object as `#handoff/h1.…` / `?handoff=` after compact short keys expand (job-handoff.js). Client-held demo; Liberty does not persist jobs, take custody, or move real money. A handoff is not a custody transfer.",
+  "type": "object",
+  "$ref": "#/$defs/HandoffPayload",
+  "$defs": {
+    "JobId": {
+      "type": "string",
+      "pattern": "^as_[0-9a-f]{10}$",
+      "description": "Job id assigned at create. as_ plus 10 hex characters."
+    },
+    "Title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "Amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Job amount in integer demo credits. Not real money."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Integer demo credits. Not real money. fee and agentPayout on the snapshot; not payer or agent wallet balances."
+    },
+    "Criteria": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Success criteria. Same text as the job."
+    },
+    "Proof": {
+      "type": "string",
+      "description": "Proof URL or text. May be empty until submit."
+    },
+    "Created": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Created stamp from the job. Live jobs use ISO-8601 UTC. Handoff decode requires a non-empty string."
+    },
+    "Stamp": {
+      "type": ["string", "null"],
+      "description": "Funded, submitted, or resolved stamp. Null if that step has no time. Must be a string or null — other types are rejected."
+    },
+    "ExpiresAt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional escrow hold expiry stamped on fund. Handoff decode requires a string when present (no date-time re-check)."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id stamped on create. Empty or whitespace-only is dropped."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Adapter-owned URL stamped on create (notify_url alias). Max 512. Handoff decode does not re-check https. Liberty never HTTP-fetches or calls it."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim. proofNote kept on submitted/released/disputed; releaseNote only on released; disputeReason only on disputed."
+    },
+    "Status": {
+      "type": "string",
+      "enum": ["open", "funded", "submitted", "released", "disputed"],
+      "description": "Current settlement state. Next legal actions follow this status."
+    },
+    "NextActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["fund", "submit", "release", "dispute"]
+      },
+      "description": "Next legal actions for this snapshot. Encode writes them from status. Decode uses the array when present, otherwise derives from status. Empty when the job is terminal."
+    },
+    "Job": {
+      "type": "object",
+      "description": "Expanded job after compact keys expand. Canonical camelCase matches the UI and POST /api/v0/transition job. snake_case aliases are accepted by decode. Compact short keys (t, a, s, …) are encoding-only inside an h1. token — expand them before POSTing the job. Credits, wallets, receipts, and the demo API key are not in this object.",
+      "required": ["id", "title", "amount", "criteria", "status"],
+      "anyOf": [
+        { "required": ["createdAt"] },
+        { "required": ["created_at"] }
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/JobId" },
+        "title": { "$ref": "#/$defs/Title" },
+        "amount": { "$ref": "#/$defs/Amount" },
+        "criteria": { "$ref": "#/$defs/Criteria" },
+        "status": { "$ref": "#/$defs/Status" },
+        "proofUrl": { "$ref": "#/$defs/Proof" },
+        "proof_url": { "$ref": "#/$defs/Proof" },
+        "createdAt": { "$ref": "#/$defs/Created" },
+        "created_at": { "$ref": "#/$defs/Created" },
+        "fundedAt": { "$ref": "#/$defs/Stamp" },
+        "funded_at": { "$ref": "#/$defs/Stamp" },
+        "submittedAt": { "$ref": "#/$defs/Stamp" },
+        "submitted_at": { "$ref": "#/$defs/Stamp" },
+        "resolvedAt": { "$ref": "#/$defs/Stamp" },
+        "resolved_at": { "$ref": "#/$defs/Stamp" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "dispute_reason": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "CompactJob": {
+      "type": "object",
+      "description": "Packed job inside an h1. token ({ v: 1, job, next }). Short keys only. Clients expand these to the Job fields before POST /api/v0/transition. Not a second public API.",
+      "properties": {
+        "id": { "$ref": "#/$defs/JobId" },
+        "t": { "$ref": "#/$defs/Title" },
+        "a": { "$ref": "#/$defs/Amount" },
+        "c": { "$ref": "#/$defs/Criteria" },
+        "p": { "$ref": "#/$defs/Proof" },
+        "s": { "$ref": "#/$defs/Status" },
+        "ca": { "$ref": "#/$defs/Created" },
+        "fa": { "$ref": "#/$defs/Stamp" },
+        "sa": { "$ref": "#/$defs/Stamp" },
+        "ra": { "$ref": "#/$defs/Stamp" },
+        "ea": { "$ref": "#/$defs/ExpiresAt" },
+        "f": { "$ref": "#/$defs/Credits" },
+        "ap": { "$ref": "#/$defs/Credits" },
+        "cr": { "$ref": "#/$defs/ClientRef" },
+        "cb": { "$ref": "#/$defs/CallbackUrl" },
+        "pn": { "$ref": "#/$defs/Note" },
+        "rn": { "$ref": "#/$defs/Note" },
+        "dr": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "HandoffPayload": {
+      "type": "object",
+      "description": "JSON inside an h1. base64url token after compact job keys expand. Hash form is #handoff/<token>. Query form is ?handoff=<token>. Credits, receipts, wallets, and the demo API key are not in this payload. Not a custody transfer.",
+      "required": ["v", "job"],
+      "properties": {
+        "v": {
+          "const": 1,
+          "description": "Handoff version. Only v=1 is accepted."
+        },
+        "job": { "$ref": "#/$defs/Job" },
+        "next": { "$ref": "#/$defs/NextActions" }
+      }
+    }
+  }
+}

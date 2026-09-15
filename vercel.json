@@ -31,6 +31,10 @@
       "destination": "/api/agent.json?doc=receipt-schema"
     },
     {
+      "source": "/api/schemas/handoff.json",
+      "destination": "/api/agent.json?doc=handoff-schema"
+    },
+    {
       "source": "/api/errors.json",
       "destination": "/api/agent.json?doc=errors"
     },
