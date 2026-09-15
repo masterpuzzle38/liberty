@@ -102,6 +102,12 @@
   ],
   "discovery": [
     {
+      "id": "quickstart",
+      "method": "GET",
+      "path": "/api/quickstart.json",
+      "purpose": "Ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional)."
+    },
+    {
       "id": "health",
       "method": "GET",
       "path": "/api/health.json",

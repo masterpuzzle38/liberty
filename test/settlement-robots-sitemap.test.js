@@ -16,6 +16,7 @@ const SITEMAP_PATHS = [
   "/api/settlement.json",
   "/api/fees.json",
   "/api/tools.json",
+  "/api/quickstart.json",
   "/api/scoreboard.json",
   "/api/changelog.json",
   "/api/examples.json",

@@ -17,6 +17,10 @@
     {
       "source": "/api/openapi.json",
       "destination": "/api/agent.json?doc=openapi"
+    },
+    {
+      "source": "/api/quickstart.json",
+      "destination": "/api/agent.json?doc=quickstart"
     }
   ],
   "headers": [

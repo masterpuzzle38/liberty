@@ -19,6 +19,9 @@
     <loc>https://liberty-amber.vercel.app/api/tools.json</loc>
   </url>
   <url>
+    <loc>https://liberty-amber.vercel.app/api/quickstart.json</loc>
+  </url>
+  <url>
     <loc>https://liberty-amber.vercel.app/api/scoreboard.json</loc>
   </url>
   <url>

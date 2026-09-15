@@ -91,6 +91,11 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.tools.money, false);
   assert.equal(SETTLEMENT.tools.persistence, false);
   assert.equal(SETTLEMENT.tools.human_path, "/#adapters");
+  assert.equal(SETTLEMENT.surfaces.quickstart, "/api/quickstart.json");
+  assert.equal(SETTLEMENT.quickstart.path, "/api/quickstart.json");
+  assert.equal(SETTLEMENT.quickstart.money, false);
+  assert.equal(SETTLEMENT.quickstart.persistence, false);
+  assert.equal(SETTLEMENT.quickstart.human_path, "/#adapters");
   assert.equal(SETTLEMENT.templates.auto_create, false);
   assert.equal(SETTLEMENT.templates.auto_fund, false);
   assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");
@@ -169,6 +174,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/changelog.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/scoreboard.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/tools.json")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/quickstart.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("Idempotency-Key")));
   assert.match(SETTLEMENT.job.callback_url.note, /never HTTP-fetches/i);
   assert.match(SETTLEMENT.transition_api.note, /never HTTP-fetches/i);
