@@ -35,6 +35,7 @@
     ["resolved", "ra"],
     ["key_id", "k"],
     ["client_ref", "cr"],
+    ["proof_note", "pn"],
     ["release_note", "rn"],
     ["dispute_reason", "dr"],
   ];
@@ -123,8 +124,12 @@
     if (typeof clientRef === "string" && clientRef.trim()) {
       receipt.client_ref = clientRef.trim();
     }
+    const proofNote = firstDefined(job.proofNote, job.proof_note);
     const releaseNote = firstDefined(job.releaseNote, job.release_note);
     const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
+    if (typeof proofNote === "string" && proofNote.trim()) {
+      receipt.proof_note = proofNote.trim();
+    }
     if (released && typeof releaseNote === "string" && releaseNote.trim()) {
       receipt.release_note = releaseNote.trim();
     }
@@ -230,6 +235,18 @@
         return fail("invalid_receipt", `client_ref must be at most ${CLIENT_REF_MAX_LENGTH} characters.`);
       }
       receipt.client_ref = clientRef.value;
+    }
+
+    const proofNote = readText(
+      firstDefined(raw.proof_note, raw.proofNote),
+      "proof_note",
+    );
+    if (!proofNote.ok) return proofNote;
+    if (proofNote.value) {
+      if (proofNote.value.length > NOTE_MAX_LENGTH) {
+        return fail("invalid_receipt", `proof_note must be at most ${NOTE_MAX_LENGTH} characters.`);
+      }
+      receipt.proof_note = proofNote.value;
     }
 
     const releaseNote = readText(

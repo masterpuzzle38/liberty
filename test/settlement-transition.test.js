@@ -400,6 +400,89 @@ test("client_ref stays optional, bounded, and create-only", () => {
   assert.equal(onFund.body.field, "client_ref");
 });
 
+test("optional proof_note lands on the submitted job and later receipt", () => {
+  const open = createJob();
+  const funded = step("fund", { job: open, payer_credits: 100 }).body.job;
+  const submitted = step("submit", {
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proof_note: "  Three-bullet brief attached.  ",
+  });
+  assert.equal(submitted.status, 200);
+  assert.equal(submitted.body.job.proofNote, "Three-bullet brief attached.");
+  assert.equal(submitted.body.job.proofUrl, "https://example.com/proof");
+
+  const camel = step("submit", {
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proofNote: "Camel proof note",
+  });
+  assert.equal(camel.body.job.proofNote, "Camel proof note");
+
+  const released = step("release", { job: submitted.body.job });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.job.proofNote, "Three-bullet brief attached.");
+  assert.equal(released.body.receipt.proof_note, "Three-bullet brief attached.");
+  assert.equal(released.body.receipt.release_note, undefined);
+  assert.equal(released.body.fee, 5);
+  assert.equal(released.body.agent_credits_delta, 95);
+
+  const disputed = step("dispute", {
+    job: submitted.body.job,
+    payer_credits: 0,
+  });
+  assert.equal(disputed.body.receipt.proof_note, "Three-bullet brief attached.");
+  assert.equal(disputed.body.job.proofNote, "Three-bullet brief attached.");
+});
+
+test("proof_note stays optional, bounded, and submit-only", () => {
+  const open = createJob();
+  const funded = step("fund", { job: open, payer_credits: 100 }).body.job;
+
+  const omitted = step("submit", { job: funded, proof_url: "https://example.com/proof" });
+  assert.equal(omitted.body.job.proofNote, undefined);
+
+  const blank = step("submit", {
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proof_note: "   ",
+  });
+  assert.equal(blank.status, 200);
+  assert.equal(blank.body.job.proofNote, undefined);
+
+  const tooLong = step("submit", {
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proof_note: "x".repeat(NOTE_MAX_LENGTH + 1),
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.error, "invalid_field");
+  assert.equal(tooLong.body.field, "proof_note");
+
+  const submitted = omitted.body.job;
+  const wrongField = step("release", { job: submitted, proof_note: "Not for release." });
+  assert.equal(wrongField.status, 400);
+  assert.equal(wrongField.body.error, "invalid_field");
+  assert.equal(wrongField.body.field, "proof_note");
+
+  const onCreate = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    proof_note: "No.",
+  });
+  assert.equal(onCreate.status, 400);
+  assert.equal(onCreate.body.field, "proof_note");
+
+  const notString = step("submit", {
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proof_note: 12,
+  });
+  assert.equal(notString.status, 400);
+  assert.equal(notString.body.field, "proof_note");
+});
+
 test("optional release_note and dispute_reason land on the job and receipt", () => {
   const open = createJob();
   const funded = step("fund", { job: open, payer_credits: 100 }).body.job;

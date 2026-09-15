@@ -142,6 +142,23 @@ test("create quote echoes optional client_ref without assigning an id", () => {
   assert.equal(empty.body.field, "client_ref");
 });
 
+test("quote dry-run echoes optional proof_note on submit without committing", () => {
+  const open = createOpen();
+  const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;
+  const quoted = preview({
+    action: "submit",
+    job: funded,
+    proof_url: "https://example.com/proof",
+    proof_note: "Three-bullet brief attached.",
+  });
+  assert.equal(quoted.status, 200);
+  assert.equal(quoted.body.quoted, true);
+  assert.equal(quoted.body.job.status, "submitted");
+  assert.equal(quoted.body.job.proofNote, "Three-bullet brief attached.");
+  assert.equal(funded.status, "funded");
+  assert.equal(funded.proofNote, undefined);
+});
+
 test("quote dry-run echoes optional terminal notes without changing fee math", () => {
   const open = createOpen();
   const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;

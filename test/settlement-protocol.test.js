@@ -164,10 +164,12 @@ test("receipt fields match the engine receipt plus optional notes and key_id", (
   );
   assert.deepEqual(
     SETTLEMENT.receipt_fields.filter((field) => field.optional).map((field) => field.id),
-    ["client_ref", "release_note", "dispute_reason", "key_id"],
+    ["client_ref", "proof_note", "release_note", "dispute_reason", "key_id"],
   );
   const noted = receiptFromJob({ ...job, releaseNote: "Looks good." });
   assert.equal(noted.release_note, "Looks good.");
+  const proofNoted = receiptFromJob({ ...job, proofNote: "Three-bullet brief attached." });
+  assert.equal(proofNoted.proof_note, "Three-bullet brief attached.");
 });
 
 test("GET /api/health.json and /api/settlement.json handlers serve the protocol docs", async () => {

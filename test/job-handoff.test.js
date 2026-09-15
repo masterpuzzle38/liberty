@@ -65,6 +65,24 @@ test("handoff keeps optional clientRef on an open job", () => {
   assert.equal(decoded.job.clientRef, "agent-job-42");
 });
 
+test("handoff keeps optional proofNote on a submitted job", () => {
+  const job = sampleJob({
+    status: "submitted",
+    proofUrl: "https://example.com/proof",
+    submittedAt: NOW,
+    proofNote: "Three-bullet brief attached.",
+  });
+  const encoded = encodeHandoff(job);
+  assert.equal(encoded.ok, true);
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.job.pn, "Three-bullet brief attached.");
+  assert.equal(payload.job.proofNote, undefined);
+  const decoded = decodeHandoff(encoded.token);
+  assert.equal(decoded.ok, true);
+  assert.equal(decoded.job.proofNote, "Three-bullet brief attached.");
+});
+
 test("handoff keeps optional terminal notes on a released job", () => {
   const job = sampleJob({
     status: "released",

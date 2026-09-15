@@ -898,6 +898,11 @@
             "maxLength": 128,
             "description": "Present when client_ref was sent on create. Adapter/correlation id. Independent of job.id and Idempotency-Key."
           },
+          "proofNote": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present on submitted and later jobs when proof_note was sent."
+          },
           "releaseNote": {
             "type": "string",
             "maxLength": 400,
@@ -950,6 +955,11 @@
             "type": "string",
             "maxLength": 128,
             "description": "Present when the adapter sent client_ref on create."
+          },
+          "proof_note": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Present when the agent sent proof_note on submit."
           },
           "release_note": {
             "type": "string",
@@ -1087,6 +1097,8 @@
           "payerCredits": { "type": "integer", "minimum": 0 },
           "proof_url": { "type": "string" },
           "proofUrl": { "type": "string" },
+          "proof_note": { "type": "string", "maxLength": 400, "description": "Optional. Accepted on the submit step. Lands on the job and later receipt." },
+          "proofNote": { "type": "string", "maxLength": 400 },
           "terminal": { "type": "string", "enum": ["release", "dispute"], "default": "release" },
           "release_note": { "type": "string", "maxLength": 400, "description": "Optional. Accepted when terminal is release." },
           "releaseNote": { "type": "string", "maxLength": 400 },
@@ -1219,6 +1231,7 @@
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
           "clientRef": { "type": "string", "maxLength": 128 },
+          "proofNote": { "type": "string", "maxLength": 400 },
           "releaseNote": { "type": "string", "maxLength": 400 },
           "disputeReason": { "type": "string", "maxLength": 400 }
         }
@@ -1293,6 +1306,8 @@
           "job": { "$ref": "#/components/schemas/Job" },
           "proof_url": { "type": "string" },
           "proofUrl": { "type": "string" },
+          "proof_note": { "type": "string", "maxLength": 400 },
+          "proofNote": { "type": "string", "maxLength": 400 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }

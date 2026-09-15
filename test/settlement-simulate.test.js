@@ -145,6 +145,27 @@ test("simulate forwards optional client_ref to the job and terminal receipt", ()
   assert.equal(empty.body.field, "client_ref");
 });
 
+test("simulate forwards optional proof_note to the submit job and terminal receipt", () => {
+  const released = walk({ proof_note: "Three-bullet brief attached." });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.steps[2].job.proofNote, "Three-bullet brief attached.");
+  assert.equal(released.body.job.proofNote, "Three-bullet brief attached.");
+  assert.equal(released.body.receipt.proof_note, "Three-bullet brief attached.");
+  assert.equal(released.body.steps[3].receipt.proof_note, "Three-bullet brief attached.");
+  assert.equal(released.body.fee, 5);
+
+  const camel = walk({ proofNote: "Camel proof note" });
+  assert.equal(camel.body.receipt.proof_note, "Camel proof note");
+
+  const omitted = walk();
+  assert.equal(omitted.body.job.proofNote, undefined);
+  assert.equal(omitted.body.receipt.proof_note, undefined);
+
+  const tooLong = walk({ proof_note: "x".repeat(401) });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.field, "proof_note");
+});
+
 test("simulate forwards optional release_note and dispute_reason to the terminal receipt", () => {
   const released = walk({ release_note: "Proof matches the three-bullet brief." });
   assert.equal(released.status, 200);

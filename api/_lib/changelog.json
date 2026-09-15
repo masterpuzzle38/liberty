@@ -13,6 +13,18 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "proof-note",
+      "title": "Optional proof_note on submit",
+      "href": "/"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "demo-pack",
+      "title": "Demo pack export / import",
+      "href": "/#demo-pack"
+    },
+    {
+      "date": "2026-09-15",
       "id": "changelog",
       "title": "What's new / changelog",
       "href": "/#whats-new"
@@ -70,18 +82,6 @@
       "id": "job-templates",
       "title": "Job templates",
       "href": "/#create"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "adapter-examples",
-      "title": "Adapter examples",
-      "href": "/#adapters"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "receipt-export",
-      "title": "Client-held receipt export",
-      "href": "/"
     }
   ]
 }
