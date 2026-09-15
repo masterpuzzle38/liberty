@@ -379,12 +379,17 @@
     const fee = job.status === "released" ? job.fee : 0;
     const payout = job.status === "released" ? job.agentPayout : 0;
     const refund = job.status === "disputed" ? job.amount : 0;
+    const stored = findReceipt(job.id);
+    const clientRef = (stored && stored.client_ref) || job.clientRef;
     const lines = [
       "# Agent Settlement receipt",
       "",
       "Demo — not real money. Credits were simulated in a browser.",
       "",
       `- Job ID: ${job.id}`,
+    ];
+    if (clientRef) lines.push(`- Client ref: ${clientRef}`);
+    lines.push(
       `- Title: ${job.title}`,
       `- Status: ${job.status}`,
       `- Amount: ${job.amount} credits`,
@@ -397,9 +402,8 @@
       `- Funded: ${job.fundedAt || "—"}`,
       `- Submitted: ${job.submittedAt || "—"}`,
       `- Resolved: ${job.resolvedAt || "—"}`,
-    ];
+    );
     if (job.receiptKeyId) lines.push(`- Demo key_id: ${job.receiptKeyId}`);
-    const stored = findReceipt(job.id);
     const releaseNote = (stored && stored.release_note) || job.releaseNote;
     const disputeReason = (stored && stored.dispute_reason) || job.disputeReason;
     if (job.status === "released" && releaseNote) lines.push(`- Release note: ${releaseNote}`);
@@ -672,8 +676,10 @@
     render();
   }
 
-  async function createJob({ title, amount, criteria }) {
-    const data = await postTransition({ action: "create", title, amount, criteria });
+  async function createJob({ title, amount, criteria, client_ref }) {
+    const payload = { action: "create", title, amount, criteria };
+    if (client_ref) payload.client_ref = client_ref;
+    const data = await postTransition(payload);
     if (!data) return false;
     applyResult(data);
     flash(`Job ${data.job.id} created. Fund it to hold ${data.job.amount} credits in escrow.`);
@@ -852,13 +858,17 @@
         <dt>Resolved</dt><dd>${escapeHtml(formatWhen(job.resolvedAt))}</dd>
         ${(() => {
           const stored = findReceipt(job.id);
+          const bits = [];
+          if (job.clientRef || (stored && stored.client_ref)) {
+            bits.push(`<dt>Client ref</dt><dd class="client-ref"></dd>`);
+          }
           if (job.status === "released" && (job.releaseNote || (stored && stored.release_note))) {
-            return `<dt>Release note</dt><dd class="terminal-note"></dd>`;
+            bits.push(`<dt>Release note</dt><dd class="terminal-note"></dd>`);
           }
           if (job.status === "disputed" && (job.disputeReason || (stored && stored.dispute_reason))) {
-            return `<dt>Dispute reason</dt><dd class="terminal-note"></dd>`;
+            bits.push(`<dt>Dispute reason</dt><dd class="terminal-note"></dd>`);
           }
-          return "";
+          return bits.join("");
         })()}
       </dl>
       ${actions.join("")}
@@ -882,6 +892,11 @@
     const proofDd = els.detail.querySelectorAll(".detail-meta dd")[3];
     if (criteriaDd) criteriaDd.textContent = job.criteria;
     if (proofDd) proofDd.textContent = job.proofUrl || "—";
+    const clientRefDd = els.detail.querySelector(".detail-meta .client-ref");
+    if (clientRefDd) {
+      const stored = findReceipt(job.id);
+      clientRefDd.textContent = job.clientRef || (stored && stored.client_ref) || "";
+    }
     const noteDd = els.detail.querySelector(".detail-meta .terminal-note");
     if (noteDd) {
       const stored = findReceipt(job.id);
@@ -957,8 +972,9 @@
       item.querySelector(".receipt-item-money").textContent =
         `Fee ${receipt.release_fee} · Agent payout ${receipt.agent_payout} · Returned to payer ${receipt.returned_to_payer}`;
       const note = receipt.release_note || receipt.dispute_reason;
+      const clientRef = receipt.client_ref ? ` · ${receipt.client_ref}` : "";
       item.querySelector(".receipt-item-when").textContent =
-        `${receipt.job_id} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;
+        `${receipt.job_id}${clientRef} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;
       els.receiptList.appendChild(item);
     }
     renderVerifyPick();
@@ -1160,10 +1176,16 @@
     const title = document.getElementById("job-title")?.value || "";
     const amount = parseCredits(document.getElementById("job-amount")?.value);
     const criteria = document.getElementById("job-criteria")?.value || "";
+    const clientRef = (document.getElementById("job-client-ref")?.value || "").trim();
     if (!title.trim()) return flash("Add a job title.", true);
     if (!amount) return flash("Amount must be a whole number of credits.", true);
     if (!criteria.trim()) return flash("Add success criteria so proof can be judged.", true);
-    const created = await createJob({ title, amount, criteria });
+    const created = await createJob({
+      title,
+      amount,
+      criteria,
+      ...(clientRef ? { client_ref: clientRef } : {}),
+    });
     if (created) {
       els.createForm.reset();
       clearJobTemplatePressed();

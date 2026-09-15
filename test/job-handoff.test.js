@@ -52,6 +52,19 @@ test("encode/decode round-trips a job and names the next legal actions", () => {
   assert.deepEqual(decoded.next, ["submit"]);
 });
 
+test("handoff keeps optional clientRef on an open job", () => {
+  const job = sampleJob({ status: "open", fundedAt: null, clientRef: "agent-job-42" });
+  const encoded = encodeHandoff(job);
+  assert.equal(encoded.ok, true);
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.job.cr, "agent-job-42");
+  assert.equal(payload.job.clientRef, undefined);
+  const decoded = decodeHandoff(encoded.token);
+  assert.equal(decoded.ok, true);
+  assert.equal(decoded.job.clientRef, "agent-job-42");
+});
+
 test("handoff keeps optional terminal notes on a released job", () => {
   const job = sampleJob({
     status: "released",

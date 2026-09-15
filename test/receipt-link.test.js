@@ -54,6 +54,17 @@ test("encode/decode round-trips a terminal receipt", () => {
   assert.deepEqual(decoded.receipt, receipt);
 });
 
+test("receipt-link compact payload keeps optional client_ref", () => {
+  const encoded = encodeReceipt(sampleReceipt({ client_ref: "agent-job-42" }));
+  assert.equal(encoded.ok, true);
+  assert.equal(encoded.receipt.client_ref, "agent-job-42");
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.receipt.cr, "agent-job-42");
+  assert.equal(payload.receipt.client_ref, undefined);
+  assert.equal(decodeReceipt(encoded.token).receipt.client_ref, "agent-job-42");
+});
+
 test("receipt-link compact payload keeps optional notes", () => {
   const encoded = encodeReceipt(sampleReceipt({ release_note: "Looks good." }));
   assert.equal(encoded.ok, true);

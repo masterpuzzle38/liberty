@@ -10,6 +10,7 @@ const SIMULATE_TERMINALS = ["release", "dispute"];
 const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 const TERMINAL = ["released", "disputed"];
 const NOTE_MAX_LENGTH = 400;
+const CLIENT_REF_MAX_LENGTH = 128;
 const EXPECTED_FROM = {
   fund: "open",
   submit: "funded",
@@ -221,6 +222,41 @@ function readText(value, field, { maxLength, required }) {
   return { value: text };
 }
 
+function readOptionalClientRef(input, aliases) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { value: undefined };
+  }
+  const raw = firstDefined(...aliases.map((name) => input[name]));
+  if (raw === undefined || raw === null) return { value: undefined };
+  if (typeof raw !== "string") {
+    return {
+      error: fail(400, "invalid_field", "client_ref must be a string.", { field: "client_ref" }),
+    };
+  }
+  const text = raw.trim();
+  if (!text) {
+    return {
+      error: fail(400, "invalid_field", "client_ref must not be empty.", { field: "client_ref" }),
+    };
+  }
+  if (text.length > CLIENT_REF_MAX_LENGTH) {
+    return {
+      error: fail(400, "invalid_field", `client_ref must be at most ${CLIENT_REF_MAX_LENGTH} characters.`, {
+        field: "client_ref",
+      }),
+    };
+  }
+  return { value: text };
+}
+
+function rejectForeignClientRef(input, action) {
+  if (action === "create") return null;
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const raw = firstDefined(input.client_ref, input.clientRef);
+  if (raw === undefined || raw === null) return null;
+  return fail(400, "invalid_field", "client_ref is only accepted on create.", { field: "client_ref" });
+}
+
 function readOptionalNote(input, field, aliases) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { value: undefined };
@@ -277,6 +313,10 @@ function applyReceiptNotes(receipt, job) {
   const disputed = job.status === "disputed";
   const releaseNote = firstDefined(job.releaseNote, job.release_note);
   const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
+  const clientRef = firstDefined(job.clientRef, job.client_ref);
+  if (typeof clientRef === "string" && clientRef.trim()) {
+    receipt.client_ref = clientRef.trim();
+  }
   if (released && typeof releaseNote === "string" && releaseNote.trim()) {
     receipt.release_note = releaseNote.trim();
   }
@@ -332,6 +372,9 @@ function readJob(raw) {
     };
   }
 
+  const clientRef = readOptionalClientRef(raw, ["clientRef", "client_ref"]);
+  if (clientRef.error) return clientRef;
+
   return {
     value: {
       id: raw.id,
@@ -346,6 +389,7 @@ function readJob(raw) {
       resolvedAt: firstDefined(raw.resolvedAt, raw.resolved_at, null),
       fee: 0,
       agentPayout: 0,
+      ...(clientRef.value ? { clientRef: clientRef.value } : {}),
     },
   };
 }
@@ -409,7 +453,7 @@ function asSubmittedJob(job) {
 }
 
 function jobShapeFromReceipt(raw) {
-  return {
+  const shape = {
     id: firstDefined(raw.job_id, raw.jobId, raw.id),
     title: raw.title,
     amount: raw.amount,
@@ -423,6 +467,11 @@ function jobShapeFromReceipt(raw) {
     fee: firstDefined(raw.release_fee, raw.releaseFee, raw.fee, 0),
     agentPayout: firstDefined(raw.agent_payout, raw.agentPayout, 0),
   };
+  const clientRef = firstDefined(raw.client_ref, raw.clientRef);
+  if (typeof clientRef === "string" && clientRef.trim()) {
+    shape.clientRef = clientRef.trim();
+  }
+  return shape;
 }
 
 function readClaimedMoney(source, { required } = {}) {
@@ -723,6 +772,8 @@ function transition(input, options) {
   const idem = readIdempotencyFromInput(input, opts);
   if (idem.error) return idem.error;
   const idempotencyKey = idem.value;
+  const foreignRef = rejectForeignClientRef(input, action);
+  if (foreignRef) return foreignRef;
   const note = readActionNote(input, action);
   if (note.error) return note.error;
   const stamp = now();
@@ -734,6 +785,8 @@ function transition(input, options) {
     if (amount.error) return amount.error;
     const criteria = readText(input.criteria, "criteria", { required: true });
     if (criteria.error) return criteria.error;
+    const clientRef = readOptionalClientRef(input, ["client_ref", "clientRef"]);
+    if (clientRef.error) return clientRef.error;
 
     const job = {
       title: title.value,
@@ -747,6 +800,7 @@ function transition(input, options) {
       resolvedAt: null,
       fee: 0,
       agentPayout: 0,
+      ...(clientRef.value ? { clientRef: clientRef.value } : {}),
     };
     let fromKey = false;
     if (!dryRun) {
@@ -907,6 +961,8 @@ function simulate(input, options) {
     title: title.value,
     amount: amount.value,
     criteria: criteria.value,
+    client_ref: input.client_ref,
+    clientRef: input.clientRef,
   }, nextOpts);
   if (created.status !== 200) return created;
 
@@ -1078,6 +1134,7 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
 
 module.exports = {
   ACTIONS,
+  CLIENT_REF_MAX_LENGTH,
   CORS_ALLOW_HEADERS,
   FEE_RATE,
   JOB_ID_HEX_LEN,

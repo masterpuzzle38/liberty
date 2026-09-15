@@ -118,6 +118,30 @@ test("quote and transition share fee, payout, and credit math on happy paths", (
   assert.equal(disputeQuote.body.agent_credits_delta, 0);
 });
 
+test("create quote echoes optional client_ref without assigning an id", () => {
+  const quoted = preview({
+    action: "create",
+    title: "Summarize filings",
+    amount: 100,
+    criteria: "Three-bullet brief matching the last three filings.",
+    client_ref: "agent-job-42",
+  });
+  assert.equal(quoted.status, 200);
+  assert.equal(quoted.body.quoted, true);
+  assert.equal(quoted.body.job.id, undefined);
+  assert.equal(quoted.body.job.clientRef, "agent-job-42");
+
+  const empty = preview({
+    action: "create",
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    client_ref: "   ",
+  });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.field, "client_ref");
+});
+
 test("quote dry-run echoes optional terminal notes without changing fee math", () => {
   const open = createOpen();
   const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;

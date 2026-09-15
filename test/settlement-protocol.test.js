@@ -151,7 +151,7 @@ test("receipt fields match the engine receipt plus optional notes and key_id", (
   );
   assert.deepEqual(
     SETTLEMENT.receipt_fields.filter((field) => field.optional).map((field) => field.id),
-    ["release_note", "dispute_reason", "key_id"],
+    ["client_ref", "release_note", "dispute_reason", "key_id"],
   );
   const noted = receiptFromJob({ ...job, releaseNote: "Looks good." });
   assert.equal(noted.release_note, "Looks good.");

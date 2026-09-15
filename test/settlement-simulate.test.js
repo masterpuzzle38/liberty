@@ -128,6 +128,23 @@ test("simulate dispute refunds escrow with the same math as transition", () => {
   assert.deepEqual(result.body.receipt, disputed.body.receipt);
 });
 
+test("simulate forwards optional client_ref to the job and terminal receipt", () => {
+  const result = walk({ client_ref: "  agent-job-42  " });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.job.clientRef, "agent-job-42");
+  assert.equal(result.body.receipt.client_ref, "agent-job-42");
+  assert.equal(result.body.steps[0].job.clientRef, "agent-job-42");
+  assert.equal(result.body.steps[3].receipt.client_ref, "agent-job-42");
+  assert.equal(result.body.fee, 5);
+
+  const camel = walk({ clientRef: "camel-ref" });
+  assert.equal(camel.body.receipt.client_ref, "camel-ref");
+
+  const empty = walk({ client_ref: "   " });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.field, "client_ref");
+});
+
 test("simulate forwards optional release_note and dispute_reason to the terminal receipt", () => {
   const released = walk({ release_note: "Proof matches the three-bullet brief." });
   assert.equal(released.status, 200);

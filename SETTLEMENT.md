@@ -37,7 +37,7 @@ Payer credits live in `liberty.agent-settlement.v0`. The agent wallet lives in `
 
 | Action | From | To | Effect |
 | --- | --- | --- | --- |
-| create | — | open | Job exists. Credits unchanged. Requires title, amount, success criteria. |
+| create | — | open | Job exists. Credits unchanged. Requires title, amount, success criteria. Optional `client_ref` (max 128) stamps the adapter’s own reference on the job and later receipt. |
 | fund | open | funded | Deduct `amount` from payer credits; hold in escrow. Fails if balance is short. |
 | submit | funded | submitted | Attach a proof URL (or a note the payer can check). Escrow stays held. |
 | release | submitted | released | Terminal. Set `fee`, `agentPayout`, and `agent_credits_delta`. Optional `release_note` lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. |
@@ -49,13 +49,13 @@ JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Aut
 
 | `action` | Send | Receive |
 | --- | --- | --- |
-| `create` | `title`, `amount`, `criteria` | `job` (`status: open`, id `as_` + 10 hex; stable when an Idempotency-Key is sent) |
+| `create` | `title`, `amount`, `criteria` (optional `client_ref`, max 128) | `job` (`status: open`, id `as_` + 10 hex; stable when an Idempotency-Key is sent; `clientRef` when sent) |
 | `fund` | `job`, `payer_credits` | updated `job`, updated `payer_credits` |
 | `submit` | `job`, `proof_url` | updated `job` |
 | `release` | `job` (optional `release_note`, max 400) | updated `job`, `fee`, `agent_payout`, `agent_credits_delta`, `receipt` |
 | `dispute` | `job` (optional `payer_credits`, optional `dispute_reason`, max 400) | updated `job`, `fee: 0`, `agent_credits_delta: 0`, `returned_to_payer`, `receipt` |
 
-The job object matches the browser UI / OpenAPI shape (`proofUrl`, `createdAt`, `agentPayout`). Snake_case aliases (`proof_url`, `created_at`, `agent_payout`, `payerCredits`) are accepted on input.
+The job object matches the browser UI / OpenAPI shape (`proofUrl`, `createdAt`, `agentPayout`, `clientRef`). Snake_case aliases (`proof_url`, `created_at`, `agent_payout`, `payerCredits`, `client_ref`) are accepted on input.
 
 Liberty does not store the job. Send the current job on every later action.
 
@@ -63,7 +63,7 @@ Liberty does not store the job. Send the current job on every later action.
 
 Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Optional `release_note` / `dispute_reason` echo on the quoted receipt and job when sent. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
 
-Create quote returns the validated open job fields **without a durable id**. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
+Create quote returns the validated open job fields **without a durable id**. Optional `client_ref` echoes on the quoted job. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
 
 The human UI calls this before fund, release, and dispute so the fee / payout / credit cut is visible before confirm.
 
@@ -76,6 +76,7 @@ Send JSON:
 | Field | Notes |
 | --- | --- |
 | `title` `amount` `criteria` | Same as create |
+| `client_ref` | Optional adapter/correlation id (`clientRef` alias). Max 128. Empty or whitespace-only is rejected. Lands on the job and receipt. Independent of Idempotency-Key. |
 | `payer_credits` | Starting payer balance (`payerCredits` alias). Must cover `amount`. |
 | `proof_url` | Attached on submit (`proofUrl` alias) |
 | `terminal` | `release` (default) or `dispute` |
@@ -142,6 +143,7 @@ Liberty stays stateless. The key makes create ids stable so adapters can retry w
 | Field | Notes |
 | --- | --- |
 | `id` | `as_` plus 10 hex chars, assigned at create (stable when an Idempotency-Key is sent) |
+| `clientRef` | optional adapter/correlation id; set on create when `client_ref` was sent (max 128). Independent of the `as_` id and of Idempotency-Key. |
 | `title` | string, max 80 |
 | `amount` | integer credits |
 | `criteria` | what done looks like; proof must match this |
@@ -156,10 +158,11 @@ Liberty stays stateless. The key makes create ids stable so adapters can retry w
 
 Emitted after release or dispute (markdown in the human UI; JSON `receipt` on the transition API):
 
-- Job ID, title, status, amount
+- Job ID, optional `client_ref`, title, status, amount
 - Release fee (5%), agent payout, returned to payer
 - Success criteria, proof
 - Created, funded, submitted, resolved timestamps
+- `client_ref` when the adapter sent one on create (max 128)
 - `release_note` when the payer sent one on release (max 400)
 - `dispute_reason` when the payer sent one on dispute (max 400)
 - `key_id` when a demo key header was sent (hash prefix only)
@@ -172,7 +175,7 @@ On `/`, **Receipts / Export** lists those receipts with fee, agent payout, retur
 
 ## Job templates
 
-Preset title, amount, and success criteria live on [`/#create`](https://liberty-amber.vercel.app/#create). The same fields are at [`/api/templates.json`](api/_lib/templates.json). Clicking a template fills the create form only. It does not create or fund. Demo — not real money.
+Preset title, amount, and success criteria live on [`/#create`](https://liberty-amber.vercel.app/#create). The same fields are at [`/api/templates.json`](api/_lib/templates.json). Clicking a template fills the create form only. It does not create or fund. Templates leave `client_ref` blank. Demo — not real money.
 
 ## Adapter examples
 
@@ -183,7 +186,7 @@ Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapte
 1. GET [`/.well-known/agent.json`](api/_lib/agent.json) (same JSON as [`/api/agent.json`](api/_lib/agent.json)) for the discovery card. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
-4. Optional: send `Idempotency-Key` (or body `idempotency_key`) on quote, transition, and simulate so create retries reuse the same `as_` id. Liberty does not store or replay the response.
+4. Optional: send `Idempotency-Key` (or body `idempotency_key`) on quote, transition, and simulate so create retries reuse the same `as_` id. Liberty does not store or replay the response. Optional `client_ref` is a separate adapter stamp on the job and receipt; it does not change the derived `as_` id.
 5. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
 6. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
 7. Apply `agent_credits_delta` to a client-held agent wallet after release (same integer as `agent_payout`). Dispute returns `0`. The human UI stores that balance under `liberty.agent-settlement.agent-credits.v0`. Liberty does not store balances.
