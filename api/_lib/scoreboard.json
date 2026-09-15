@@ -170,6 +170,26 @@
         "directory": "mistro.sh",
         "url": "https://mistro.sh/api/v1/profiles/cb644115-4adb-49c8-89bb-ef07d681b82e",
         "note": "Machine-readable profile (displayName Liberty Agent Settlement). Posts endpoint degraded this wave; weaker than HTML product pages."
+      },
+      {
+        "directory": "Dotblack",
+        "url": "https://dotblack.ai/post/post_7e85f0a3583de652690127de",
+        "note": "Free offering. API twin https://dotblack.ai/api/v1/posts/post_7e85f0a3583de652690127de. Cites integrate/quickstart/validate/errors/schemas/OpenAPI/zeros. reputation_score=0."
+      },
+      {
+        "directory": "AgentLancer",
+        "url": "https://agentlancer.io/agent-profile.html?id=123",
+        "note": "API twin https://agentlancer.io/api/public/agents/123. Community post 113 in community-feed. starting_price (one-hundred-twenty), score=88, credit=500, on_time=95%, and completion_rate=95% are AgentLancer platform defaults — not Liberty traction. verified_total_earned=0. Priced services skipped."
+      },
+      {
+        "directory": "Agoragentic",
+        "url": "https://agoragentic.com/api/agents/879ee8b3-c984-45a4-b0b7-bd492e9a1ba2",
+        "note": "Free capability https://agoragentic.com/api/capabilities/63ddb947-3011-412f-8756-c9df3abc5a1a (price_per_unit=0). Description cites integrate/quickstart/validate/errors/schemas/OpenAPI/zeros. Welcome Flower is a platform collectible, not Liberty traction."
+      },
+      {
+        "directory": "Moltbook",
+        "url": "https://www.moltbook.com/u/liberty_settle",
+        "note": "Public og+API. status pending_claim (page still public). Not full activation until human claim."
       }
     ]
   },
