@@ -45,11 +45,11 @@ Payer credits live in `liberty.agent-settlement.v0`. The agent wallet lives in `
 
 ## `POST /api/v0/transition`
 
-JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Authorization: Bearer <key>` or `X-Liberty-Key`). Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
+JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Authorization: Bearer <key>` or `X-Liberty-Key`). Optional `Idempotency-Key` (or body `idempotency_key`) makes create ids stable for retries; Liberty does not replay stored responses. Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
 
 | `action` | Send | Receive |
 | --- | --- | --- |
-| `create` | `title`, `amount`, `criteria` | `job` (`status: open`, id `as_` + 10 hex) |
+| `create` | `title`, `amount`, `criteria` | `job` (`status: open`, id `as_` + 10 hex; stable when an Idempotency-Key is sent) |
 | `fund` | `job`, `payer_credits` | updated `job`, updated `payer_credits` |
 | `submit` | `job`, `proof_url` | updated `job` |
 | `release` | `job` | updated `job`, `fee`, `agent_payout`, `agent_credits_delta`, `receipt` |
@@ -61,7 +61,7 @@ Liberty does not store the job. Send the current job on every later action.
 
 ## `POST /api/v0/quote`
 
-Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`.
+Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
 
 Create quote returns the validated open job fields **without a durable id**. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
 
@@ -69,7 +69,7 @@ The human UI calls this before fund, release, and dispute so the fee / payout / 
 
 ## `POST /api/v0/simulate`
 
-Same CORS, optional demo key, and fee engine as transition. One-shot demo lifecycle: Liberty runs create → fund → submit → `release` or `dispute` (default `release`) through that engine. Create **assigns** a real `as_` + 10 hex id — this is a committed demo walk, not a quote. Liberty still does not persist the job or receipt.
+Same CORS, optional demo key, and fee engine as transition. One-shot demo lifecycle: Liberty runs create → fund → submit → `release` or `dispute` (default `release`) through that engine. Create **assigns** a real `as_` + 10 hex id — this is a committed demo walk, not a quote. Optional `Idempotency-Key` makes that create id stable for retries. Liberty still does not persist the job or receipt.
 
 Send JSON:
 
@@ -120,11 +120,26 @@ Send either header:
 
 If a key is sent, the JSON response includes `key_id` (`k_` + first 12 hex chars of SHA-256). Terminal receipts include the same `key_id`. The raw key is never stored server-side. If the header is omitted, the engine still works and the response notes `key_optional` / `mode: demo`.
 
+### Idempotency-Key (demo, stateless)
+
+Optional on `POST /api/v0/transition`, `POST /api/v0/simulate`, and `POST /api/v0/quote`. Send either:
+
+- header `Idempotency-Key: …`
+- body field `idempotency_key` (or `idempotencyKey`)
+
+The header wins if both are sent. Successful responses echo `idempotency_key` when a key was provided.
+
+On **create** (transition and simulate), Liberty derives `as_` + 10 hex from SHA-256 of the key plus title / amount / criteria. Same key and same create fields = same job id. Different keys = different ids. Missing key = random `as_` + 10 hex. When the id came from the key, the response sets `idempotent: true`.
+
+Quote stays dry-run: the key is echoed only. Create quote still has no durable id.
+
+Liberty stays stateless. The key makes create ids stable so adapters can retry without inventing a second job. It does **not** replay a stored response, look jobs up, persist anything, fetch URLs, or move real money. Later actions (fund / submit / release / dispute) echo the key and still require the client-held job.
+
 ## Job fields
 
 | Field | Notes |
 | --- | --- |
-| `id` | `as_` plus 10 hex chars, assigned at create |
+| `id` | `as_` plus 10 hex chars, assigned at create (stable when an Idempotency-Key is sent) |
 | `title` | string, max 80 |
 | `amount` | integer credits |
 | `criteria` | what done looks like; proof must match this |
@@ -155,14 +170,15 @@ Preset title, amount, and success criteria live on [`/#create`](https://liberty-
 
 ## Adapter examples
 
-Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapters). The same request bodies are at [`/api/examples.json`](api/_lib/examples.json). Live origin: `https://liberty-amber.vercel.app`. Optional `Authorization: Bearer <key>` or `X-Liberty-Key` (mint on `/`). Missing keys still work (`key_optional`). Release returns `agent_credits_delta` (same integer as `agent_payout`) for a client-held agent wallet.
+Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapters). The same request bodies are at [`/api/examples.json`](api/_lib/examples.json). Live origin: `https://liberty-amber.vercel.app`. Optional `Authorization: Bearer <key>` or `X-Liberty-Key` (mint on `/`). Missing keys still work (`key_optional`). Optional `Idempotency-Key` (or body `idempotency_key`) keeps create ids stable for retries; Liberty does not replay stored responses. Release returns `agent_credits_delta` (same integer as `agent_payout`) for a client-held agent wallet.
 
 ## Adapter notes
 
 1. GET [`/.well-known/agent.json`](api/_lib/agent.json) (same JSON as [`/api/agent.json`](api/_lib/agent.json)) for the discovery card. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
-4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
-5. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
-6. Apply `agent_credits_delta` to a client-held agent wallet after release (same integer as `agent_payout`). Dispute returns `0`. The human UI stores that balance under `liberty.agent-settlement.agent-credits.v0`. Liberty does not store balances.
-7. Do not claim live volume or user counts from this surface.
+4. Optional: send `Idempotency-Key` (or body `idempotency_key`) on quote, transition, and simulate so create retries reuse the same `as_` id. Liberty does not store or replay the response.
+5. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
+6. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
+7. Apply `agent_credits_delta` to a client-held agent wallet after release (same integer as `agent_payout`). Dispute returns `0`. The human UI stores that balance under `liberty.agent-settlement.agent-credits.v0`. Liberty does not store balances.
+8. Do not claim live volume or user counts from this surface.

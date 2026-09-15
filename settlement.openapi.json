@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -177,7 +177,7 @@
       "post": {
         "tags": ["transition"],
         "summary": "Apply one demo settlement action",
-        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Stateless. Send action plus the fields the protocol requires. Clients hold the job. Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries; Liberty does not replay stored responses. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postTransition",
         "security": [
           {},
@@ -198,6 +198,13 @@
             "required": false,
             "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
             "schema": { "type": "string" }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Optional. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Same key and create fields = same job id. Liberty does not replay stored responses.",
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
@@ -210,7 +217,7 @@
         },
         "responses": {
           "200": {
-            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, receipt on release or dispute, key_id when a demo key was sent, and key_optional when it was not.",
+            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, receipt on release or dispute, idempotency_key when a key was sent, idempotent true when create derived the id from that key, key_id when a demo key was sent, and key_optional when it was not.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TransitionSuccess" }
@@ -273,7 +280,7 @@
       "post": {
         "tags": ["quote"],
         "summary": "Dry-run one demo settlement action",
-        "description": "Same request shape and engine as POST /api/v0/transition. Computes next status, fee, agent_payout, agent_credits_delta, payer_credits_after, and returned_to_payer when those apply. Does not mutate state. Create quote returns validated open job fields without a durable id. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Same request shape and engine as POST /api/v0/transition. Computes next status, fee, agent_payout, agent_credits_delta, payer_credits_after, and returned_to_payer when those apply. Does not mutate state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postQuote",
         "security": [
           {},
@@ -294,6 +301,13 @@
             "required": false,
             "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
             "schema": { "type": "string" }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Optional. Echoed on success. Create quote stays dry-run and still has no durable id. Liberty does not replay stored responses.",
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
@@ -306,7 +320,7 @@
         },
         "responses": {
           "200": {
-            "description": "Would-be next job state. quoted is true. Create omits job.id. Includes payer_credits_after when credits would change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, returned_to_payer on dispute, key_id when a demo key was sent, and key_optional when it was not.",
+            "description": "Would-be next job state. quoted is true. Create omits job.id. Includes payer_credits_after when credits would change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, returned_to_payer on dispute, idempotency_key when a key was sent, key_id when a demo key was sent, and key_optional when it was not.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/QuoteSuccess" }
@@ -465,7 +479,7 @@
       "post": {
         "tags": ["simulate"],
         "summary": "Run a full demo settlement lifecycle",
-        "description": "Same fee engine as POST /api/v0/transition. Runs create → fund → submit → release or dispute in one request. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Same fee engine as POST /api/v0/transition. Runs create → fund → submit → release or dispute in one request. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postSimulate",
         "security": [
           {},
@@ -486,6 +500,13 @@
             "required": false,
             "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
             "schema": { "type": "string" }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Optional. Create uses the same stable as_ + 10 hex derivation as transition create. Liberty does not replay stored responses.",
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
@@ -498,7 +519,7 @@
         },
         "responses": {
           "200": {
-            "description": "Full demo walk. Includes ordered steps, final job, payer_credits, agent_credits_delta, and receipt. money is always false.",
+            "description": "Full demo walk. Includes ordered steps, final job, payer_credits, agent_credits_delta, and receipt. Echoes idempotency_key and sets idempotent true when create derived the id from a key. money is always false.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SimulateSuccess" }
@@ -890,7 +911,8 @@
           "quote": { "type": "string" },
           "commit": { "type": "string" },
           "verify": { "type": "string" },
-          "simulate": { "type": "string" }
+          "simulate": { "type": "string" },
+          "idempotency": { "$ref": "#/components/schemas/IdempotencyDiscovery" }
         }
       },
       "QuoteDiscovery": {
@@ -914,7 +936,8 @@
           "quote": { "const": "/api/v0/quote" },
           "commit": { "const": "/api/v0/transition" },
           "verify": { "const": "/api/v0/verify" },
-          "simulate": { "const": "/api/v0/simulate" }
+          "simulate": { "const": "/api/v0/simulate" },
+          "idempotency": { "$ref": "#/components/schemas/IdempotencyDiscovery" }
         }
       },
       "VerifyDiscovery": {
@@ -966,7 +989,8 @@
           "quote": { "const": "/api/v0/quote" },
           "commit": { "const": "/api/v0/transition" },
           "verify": { "const": "/api/v0/verify" },
-          "simulate": { "const": "/api/v0/simulate" }
+          "simulate": { "const": "/api/v0/simulate" },
+          "idempotency": { "$ref": "#/components/schemas/IdempotencyDiscovery" }
         }
       },
       "SimulateRequest": {
@@ -980,7 +1004,9 @@
           "payerCredits": { "type": "integer", "minimum": 0 },
           "proof_url": { "type": "string" },
           "proofUrl": { "type": "string" },
-          "terminal": { "type": "string", "enum": ["release", "dispute"], "default": "release" }
+          "terminal": { "type": "string", "enum": ["release", "dispute"], "default": "release" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "SimulateStep": {
@@ -994,7 +1020,9 @@
           "agent_payout": { "type": "integer", "minimum": 0 },
           "agent_credits_delta": { "type": "integer", "minimum": 0 },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
-          "receipt": { "$ref": "#/components/schemas/Receipt" }
+          "receipt": { "$ref": "#/components/schemas/Receipt" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotent": { "type": "boolean", "description": "True when create assigned job.id from the Idempotency-Key." }
         }
       },
       "SimulateSuccess": {
@@ -1022,7 +1050,9 @@
             "description": "Present when a demo key header was sent."
           },
           "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
-          "auth": { "$ref": "#/components/schemas/DemoAuth" }
+          "auth": { "$ref": "#/components/schemas/DemoAuth" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotent": { "type": "boolean", "description": "True when create assigned job.id from the Idempotency-Key." }
         }
       },
       "VerifyMoney": {
@@ -1124,7 +1154,8 @@
             "description": "Present when a demo key header was sent."
           },
           "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
-          "auth": { "$ref": "#/components/schemas/DemoAuth" }
+          "auth": { "$ref": "#/components/schemas/DemoAuth" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "TransitionRequest": {
@@ -1143,7 +1174,9 @@
           "action": { "const": "create" },
           "title": { "type": "string", "maxLength": 80 },
           "amount": { "type": "integer", "minimum": 1 },
-          "criteria": { "type": "string" }
+          "criteria": { "type": "string" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "FundRequest": {
@@ -1153,7 +1186,9 @@
           "action": { "const": "fund" },
           "job": { "$ref": "#/components/schemas/Job" },
           "payer_credits": { "type": "integer", "minimum": 0 },
-          "payerCredits": { "type": "integer", "minimum": 0 }
+          "payerCredits": { "type": "integer", "minimum": 0 },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "SubmitRequest": {
@@ -1163,7 +1198,9 @@
           "action": { "const": "submit" },
           "job": { "$ref": "#/components/schemas/Job" },
           "proof_url": { "type": "string" },
-          "proofUrl": { "type": "string" }
+          "proofUrl": { "type": "string" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "ReleaseRequest": {
@@ -1171,7 +1208,9 @@
         "required": ["action", "job"],
         "properties": {
           "action": { "const": "release" },
-          "job": { "$ref": "#/components/schemas/Job" }
+          "job": { "$ref": "#/components/schemas/Job" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "DisputeRequest": {
@@ -1180,7 +1219,9 @@
         "properties": {
           "action": { "const": "dispute" },
           "job": { "$ref": "#/components/schemas/Job" },
-          "payer_credits": { "type": "integer", "minimum": 0 }
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
       },
       "TransitionSuccess": {
@@ -1204,7 +1245,23 @@
             "description": "Present when a demo key header was sent."
           },
           "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
-          "auth": { "$ref": "#/components/schemas/DemoAuth" }
+          "auth": { "$ref": "#/components/schemas/DemoAuth" },
+          "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
+          "idempotent": { "type": "boolean", "description": "True when create assigned job.id from the Idempotency-Key." }
+        }
+      },
+      "IdempotencyKey": {
+        "type": "string",
+        "description": "Optional. Header Idempotency-Key or body idempotency_key. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Quote echoes only. Liberty does not replay stored responses."
+      },
+      "IdempotencyDiscovery": {
+        "type": "object",
+        "properties": {
+          "header": { "const": "Idempotency-Key" },
+          "body": { "const": "idempotency_key" },
+          "persistence": { "const": false },
+          "replay": { "const": false },
+          "note": { "type": "string" }
         }
       },
       "DemoAuth": {
