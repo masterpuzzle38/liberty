@@ -2,6 +2,7 @@
 
 const HEALTH = require("./health.json");
 const SETTLEMENT = require("./settlement.json");
+const EXAMPLES = require("./examples.json");
 
 function protocolHeaders() {
   return {
@@ -42,6 +43,7 @@ function serveProtocol(doc, req, res) {
 module.exports = {
   HEALTH,
   SETTLEMENT,
+  EXAMPLES,
   protocolHeaders,
   serveProtocol,
 };

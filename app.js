@@ -1321,6 +1321,19 @@
     }
   });
 
+  document.querySelector(".adapter-examples")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-copy-example]");
+    if (!button) return;
+    const pre = button.closest(".adapter-example")?.querySelector("pre");
+    if (!pre) return;
+    try {
+      await navigator.clipboard.writeText(pre.textContent);
+      flash("Copied curl.");
+    } catch {
+      flash("Could not copy. Select the curl instead.", true);
+    }
+  });
+
   els.revokeKey?.addEventListener("click", () => {
     if (!confirm("Revoke the demo key stored in this browser? Adapters using it will still work — this is not real auth.")) return;
     saveDemoKey("");
