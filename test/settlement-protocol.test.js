@@ -98,7 +98,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.quickstart.path, "/api/quickstart.json");
   assert.equal(SETTLEMENT.quickstart.money, false);
   assert.equal(SETTLEMENT.quickstart.persistence, false);
-  assert.equal(SETTLEMENT.quickstart.human_path, "/#adapters");
+  assert.equal(SETTLEMENT.quickstart.human_path, "/#integrate");
   assert.equal(SETTLEMENT.templates.auto_create, false);
   assert.equal(SETTLEMENT.templates.auto_fund, false);
   assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");

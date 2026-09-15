@@ -719,6 +719,24 @@ body.pending textarea {
   margin: 0;
 }
 
+.integrate-related {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.integrate-related a {
+  color: var(--accent);
+}
+
+#integrate .adapter-example:first-of-type {
+  margin-top: 0.35rem;
+}
+
 .foot {
   margin-top: 1.5rem;
   padding-top: 1rem;

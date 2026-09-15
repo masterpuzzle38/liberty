@@ -66,7 +66,7 @@ test("quickstart JSON stays demo-only and lists an ordered escrow walk", () => {
   assert.equal(QUICKSTART.money, false);
   assert.equal(QUICKSTART.persistence, false);
   assert.equal(QUICKSTART.path, "/api/quickstart.json");
-  assert.equal(QUICKSTART.human, "/#adapters");
+  assert.equal(QUICKSTART.human, "/#integrate");
   assert.equal(QUICKSTART.origin, ORIGIN);
   assert.match(QUICKSTART.description, /does not persist/i);
   assert.match(QUICKSTART.description, /does not.*move real money/i);
@@ -199,7 +199,7 @@ test("discovery, protocol, and docs point at the quickstart", () => {
   assert.equal(SETTLEMENT.quickstart.path, "/api/quickstart.json");
   assert.equal(SETTLEMENT.quickstart.money, false);
   assert.equal(SETTLEMENT.quickstart.persistence, false);
-  assert.equal(SETTLEMENT.quickstart.human_path, "/#adapters");
+  assert.equal(SETTLEMENT.quickstart.human_path, "/#integrate");
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/quickstart.json")));
 
   assert.equal(AGENT.surfaces.quickstart, "/api/quickstart.json");
@@ -224,6 +224,7 @@ test("discovery, protocol, and docs point at the quickstart", () => {
   assert.equal(openapi.components.schemas.Quickstart.properties.mode.const, "demo");
   assert.equal(openapi.components.schemas.Quickstart.properties.persistence.const, false);
   assert.equal(openapi.components.schemas.Quickstart.properties.path.const, "/api/quickstart.json");
+  assert.equal(openapi.components.schemas.Quickstart.properties.human.const, "/#integrate");
 
   const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
   assert.ok(
@@ -235,6 +236,13 @@ test("discovery, protocol, and docs point at the quickstart", () => {
 
   const homepage = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(homepage.includes('href="/api/quickstart.json"'));
+  assert.ok(homepage.includes('id="integrate"'));
+  assert.ok(homepage.includes('href="#integrate"'));
+  assert.ok(homepage.includes("Honest zeros"));
+
+  const app = fs.readFileSync(path.join(ROOT, "app.js"), "utf8");
+  assert.ok(app.includes('"/api/quickstart.json"'));
+  assert.ok(app.includes("loadIntegrate"));
 
   const llms = fs.readFileSync(path.join(ROOT, "llms.txt"), "utf8");
   assert.ok(llms.includes("/api/quickstart.json"));

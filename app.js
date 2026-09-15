@@ -9,6 +9,7 @@
   const CHANGELOG_URL = "/api/changelog.json";
   const CHANGELOG_LIMIT = 12;
   const SCOREBOARD_URL = "/api/scoreboard.json";
+  const QUICKSTART_URL = "/api/quickstart.json";
   const SIMULATE_DEFAULTS = {
     title: "Summarize filings",
     amount: 100,
@@ -66,6 +67,8 @@
     scoreboardListings: document.getElementById("scoreboard-listings"),
     scoreboardListingsLabel: document.getElementById("scoreboard-listings-label"),
     scoreboardNote: document.getElementById("scoreboard-note"),
+    integrateBody: document.getElementById("integrate-body"),
+    integrateEmpty: document.getElementById("integrate-empty"),
     exportPack: document.getElementById("export-demo-pack"),
     resetPack: document.getElementById("reset-demo-pack"),
     importPackForm: document.getElementById("import-demo-pack-form"),
@@ -1718,17 +1721,19 @@
     }
   });
 
-  document.querySelector(".adapter-examples")?.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-copy-example]");
-    if (!button) return;
-    const pre = button.closest(".adapter-example")?.querySelector("pre");
-    if (!pre) return;
-    try {
-      await navigator.clipboard.writeText(pre.textContent);
-      flash("Copied curl.");
-    } catch {
-      flash("Could not copy. Select the curl instead.", true);
-    }
+  document.querySelectorAll(".adapter-examples").forEach((root) => {
+    root.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-copy-example]");
+      if (!button) return;
+      const pre = button.closest(".adapter-example")?.querySelector("pre");
+      if (!pre) return;
+      try {
+        await navigator.clipboard.writeText(pre.textContent);
+        flash("Copied curl.");
+      } catch {
+        flash("Could not copy. Select the curl instead.", true);
+      }
+    });
   });
 
   els.revokeKey?.addEventListener("click", () => {
@@ -1922,9 +1927,149 @@
     }
   }
 
+  function integrateHttpLine(row) {
+    const method = typeof row.method === "string" ? row.method : "";
+    const path = typeof row.path === "string" ? row.path : "";
+    const bits = [method, path].filter(Boolean);
+    if (row.optional === true) bits.push("optional");
+    if (row.branch === true && typeof row.instead_of === "string" && row.instead_of) {
+      bits.push(`instead of ${row.instead_of}`);
+    }
+    return bits.join(" ");
+  }
+
+  function renderIntegrateStep(row, extras) {
+    const article = document.createElement("article");
+    article.className = "adapter-example";
+    const heading = document.createElement("h3");
+    const n = Number.isInteger(row.n) ? `${row.n}. ` : "";
+    const title = typeof row.title === "string" && row.title
+      ? row.title
+      : (typeof row.path === "string" ? row.path : "Step");
+    heading.textContent = extras && extras.kicker ? `${extras.kicker}: ${title}` : `${n}${title}`;
+    article.append(heading);
+    const http = integrateHttpLine(row);
+    if (http) {
+      const meta = document.createElement("p");
+      meta.className = "hint";
+      meta.textContent = http;
+      article.append(meta);
+    }
+    if (typeof row.purpose === "string" && row.purpose) {
+      const purpose = document.createElement("p");
+      purpose.className = "hint";
+      purpose.textContent = row.purpose;
+      article.append(purpose);
+    }
+    if (typeof row.curl === "string" && row.curl) {
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      code.textContent = row.curl;
+      pre.append(code);
+      article.append(pre);
+      const actions = document.createElement("div");
+      actions.className = "action-row";
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "ghost";
+      copy.dataset.copyExample = "";
+      copy.textContent = "Copy curl";
+      actions.append(copy);
+      article.append(actions);
+    }
+    return article;
+  }
+
+  async function loadIntegrate() {
+    if (!els.integrateBody) return;
+    try {
+      const res = await fetch(QUICKSTART_URL, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("quickstart_unavailable");
+      const doc = await res.json();
+      if (!doc || doc.money !== false || doc.mode !== "demo") throw new Error("quickstart_invalid");
+      const steps = Array.isArray(doc.steps) ? doc.steps.filter((row) => row && typeof row === "object") : [];
+      if (!steps.length) throw new Error("quickstart_empty");
+
+      els.integrateBody.replaceChildren();
+
+      const facts = document.createElement("dl");
+      facts.className = "scoreboard-facts";
+      appendFact(facts, "Mode", doc.mode);
+      appendFact(facts, "Money", "false");
+      appendFact(facts, "Persistence", doc.persistence === false ? "false" : String(doc.persistence));
+      appendFact(facts, "Scoreboard", liveLink("#scoreboard", "/#scoreboard"));
+      if (typeof doc.path === "string" && doc.path.startsWith("/")) {
+        appendFact(facts, "Source", liveLink(doc.path, doc.path));
+      }
+      els.integrateBody.append(facts);
+
+      if (typeof doc.description === "string" && doc.description) {
+        const description = document.createElement("p");
+        description.className = "hint";
+        description.textContent = doc.description;
+        els.integrateBody.append(description);
+      }
+      if (typeof doc.note === "string" && doc.note) {
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = doc.note;
+        els.integrateBody.append(note);
+      }
+      if (doc.auth && typeof doc.auth.note === "string" && doc.auth.note) {
+        const auth = document.createElement("p");
+        auth.className = "hint";
+        auth.textContent = doc.auth.note;
+        els.integrateBody.append(auth);
+      }
+
+      const related = Array.isArray(doc.related)
+        ? doc.related.filter((row) => row && typeof row.path === "string" && row.path.startsWith("/"))
+        : [];
+      if (related.length) {
+        const label = document.createElement("p");
+        label.className = "hint";
+        label.textContent = "Related surfaces:";
+        const list = document.createElement("ul");
+        list.className = "integrate-related";
+        for (const row of related) {
+          const item = document.createElement("li");
+          item.append(liveLink(row.path, row.path));
+          if (typeof row.purpose === "string" && row.purpose) {
+            const purpose = document.createElement("span");
+            purpose.textContent = ` — ${row.purpose}`;
+            item.append(purpose);
+          }
+          list.append(item);
+        }
+        els.integrateBody.append(label, list);
+      }
+
+      if (doc.shortcut && typeof doc.shortcut === "object" && doc.shortcut.curl) {
+        els.integrateBody.append(renderIntegrateStep(doc.shortcut, { kicker: "Optional shortcut" }));
+      }
+
+      for (const step of steps) {
+        els.integrateBody.append(renderIntegrateStep(step));
+      }
+
+      els.integrateBody.hidden = false;
+      if (els.integrateEmpty) els.integrateEmpty.hidden = true;
+    } catch {
+      if (els.integrateEmpty) {
+        els.integrateEmpty.hidden = false;
+        els.integrateEmpty.textContent = "Could not load the integrate walk. See /api/quickstart.json.";
+      }
+      if (els.integrateBody) {
+        els.integrateBody.replaceChildren();
+        els.integrateBody.hidden = true;
+      }
+    }
+  }
+
   if (!consumeReceiptFromLocation()) consumeHandoffFromLocation();
   syncReceiptsFromJobs();
   render();
   loadWhatsNew();
   loadScoreboard();
+  loadIntegrate();
 })();

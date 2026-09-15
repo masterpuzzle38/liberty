@@ -425,8 +425,8 @@
     "mode": "demo",
     "persistence": false,
     "origin": "https://liberty-amber.vercel.app",
-    "human_path": "/#adapters",
-    "note": "Ordered ready-to-run demo escrow walk (health/discovery → quote → create → fund → prove → release; dispute optional). Absolute curls against the live origin. Client-held protocol. Liberty does not move real money. Scoreboard zeros are honest."
+    "human_path": "/#integrate",
+    "note": "Ordered ready-to-run demo escrow walk (health/discovery → quote → create → fund → prove → release; dispute optional). Absolute curls against the live origin. Human walk on /#integrate. Client-held protocol. Liberty does not move real money. Scoreboard zeros are honest."
   },
   "tools": {
     "path": "/api/tools.json",

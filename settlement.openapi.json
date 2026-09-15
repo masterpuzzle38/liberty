@@ -224,7 +224,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Settlement quickstart",
-        "description": "Ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). mode is demo. money is always false. persistence is false. Client-held protocol. Liberty does not move real money. Scoreboard zeros are honest.",
+        "description": "Ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). mode is demo. money is always false. persistence is false. Client-held protocol. Liberty does not move real money. Scoreboard zeros are honest. Human walk on /#integrate.",
         "operationId": "getSettlementQuickstart",
         "responses": {
           "200": {
@@ -1051,7 +1051,7 @@
           "title": { "type": "string" },
           "description": { "type": "string" },
           "path": { "const": "/api/quickstart.json" },
-          "human": { "const": "/#adapters" },
+          "human": { "const": "/#integrate" },
           "origin": { "const": "https://liberty-amber.vercel.app" },
           "note": { "type": "string" },
           "steps": {
