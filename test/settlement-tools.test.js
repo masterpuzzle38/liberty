@@ -67,6 +67,10 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
 
   const toolIds = TOOLS.tools.map((tool) => tool.id);
   assert.deepEqual(toolIds, ["quote", "transition", "simulate", "verify"]);
+  assert.equal(
+    TOOLS.tools.find((tool) => tool.id === "transition").schema,
+    "/api/schemas/transition.json",
+  );
   for (const tool of TOOLS.tools) {
     assert.equal(tool.method, "POST");
     assert.equal(typeof tool.path, "string");
@@ -108,6 +112,7 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     "templates",
     "agent",
     "openapi",
+    "transition_schema",
   ]);
   for (const row of TOOLS.discovery) {
     assert.equal(row.method, "GET");
@@ -121,6 +126,10 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     "/openapi.json",
     "/api/openapi.json",
   ]);
+  assert.equal(
+    TOOLS.discovery.find((row) => row.id === "transition_schema").path,
+    "/api/schemas/transition.json",
+  );
 });
 
 test("GET /api/tools.json serves the capability list", async () => {

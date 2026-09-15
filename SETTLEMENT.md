@@ -14,6 +14,7 @@ Machine-readable copies:
 - [`/api/fees.json`](api/_lib/fees.json) — demo fee schedule (release 5% rounded `Math.round(amount * 0.05)`, dispute no release fee, top-up/fund none). Same facts as `/#fees`
 - [`/api/tools.json`](api/_lib/tools.json) — callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin
 - [`/api/quickstart.json`](api/_lib/quickstart.json) — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Client-held. Liberty does not move real money
+- [`/api/schemas/transition.json`](api/_lib/transition.schema.json) — JSON Schema (2020-12) for `POST /api/v0/transition` bodies. Client-held demo protocol; Liberty does not move real money
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute
@@ -53,7 +54,7 @@ Machine-readable copy: [`/api/fees.json`](api/_lib/fees.json). Same math as the 
 
 ## `POST /api/v0/transition`
 
-JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Authorization: Bearer <key>` or `X-Liberty-Key`). Optional `Idempotency-Key` (or body `idempotency_key`) makes create ids stable for retries; Liberty does not replay stored responses. Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
+JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Authorization: Bearer <key>` or `X-Liberty-Key`). Optional `Idempotency-Key` (or body `idempotency_key`) makes create ids stable for retries; Liberty does not replay stored responses. Validate the body against [`/api/schemas/transition.json`](api/_lib/transition.schema.json) before calling. Illegal transitions return 4xx JSON (`error`, `message`; `money` stays false).
 
 | `action` | Send | Receive |
 | --- | --- | --- |

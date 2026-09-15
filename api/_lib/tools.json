@@ -51,6 +51,7 @@
       "id": "transition",
       "method": "POST",
       "path": "/api/v0/transition",
+      "schema": "/api/schemas/transition.json",
       "purpose": "Commit one demo action. Client holds the job. Returns next state and fee math. Receipt on release or dispute.",
       "body": ["action"],
       "actions": [
@@ -162,6 +163,12 @@
       "path": "/settlement.openapi.json",
       "aliases": ["/openapi.json", "/api/openapi.json"],
       "purpose": "OpenAPI 3.1 of the same surface. Same JSON at /openapi.json and /api/openapi.json."
+    },
+    {
+      "id": "transition_schema",
+      "method": "GET",
+      "path": "/api/schemas/transition.json",
+      "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
     }
   ]
 }

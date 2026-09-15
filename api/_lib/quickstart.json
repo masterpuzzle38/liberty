@@ -58,6 +58,13 @@
       "purpose": "Callable Settlement surfaces plus read-only discovery URLs. Not an MCP server."
     },
     {
+      "id": "transition_schema",
+      "method": "GET",
+      "path": "/api/schemas/transition.json",
+      "url": "https://liberty-amber.vercel.app/api/schemas/transition.json",
+      "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
+    },
+    {
       "id": "scoreboard",
       "method": "GET",
       "path": "/api/scoreboard.json",

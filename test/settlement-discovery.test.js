@@ -66,6 +66,7 @@ test("agent discovery card stays demo-only and points at the real surfaces", () 
   assert.equal(AGENT.surfaces.fees, "/api/fees.json");
   assert.equal(AGENT.surfaces.tools, "/api/tools.json");
   assert.equal(AGENT.surfaces.quickstart, "/api/quickstart.json");
+  assert.equal(AGENT.surfaces.transition_schema, "/api/schemas/transition.json");
   assert.equal(AGENT.surfaces.openapi, "/settlement.openapi.json");
   assert.deepEqual(AGENT.surfaces.openapi_aliases, ["/openapi.json", "/api/openapi.json"]);
   assert.equal(AGENT.surfaces.llms, "/llms.txt");

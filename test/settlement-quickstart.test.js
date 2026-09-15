@@ -107,7 +107,7 @@ test("quickstart JSON stays demo-only and lists an ordered escrow walk", () => {
 
   assert.deepEqual(
     QUICKSTART.related.map((row) => row.id),
-    ["openapi", "examples", "templates", "tools", "scoreboard"],
+    ["openapi", "examples", "templates", "tools", "transition_schema", "scoreboard"],
   );
   for (const row of QUICKSTART.related) {
     assert.equal(row.method, "GET");

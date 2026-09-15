@@ -21,6 +21,10 @@
     {
       "source": "/api/quickstart.json",
       "destination": "/api/agent.json?doc=quickstart"
+    },
+    {
+      "source": "/api/schemas/transition.json",
+      "destination": "/api/agent.json?doc=transition-schema"
     }
   ],
   "headers": [
