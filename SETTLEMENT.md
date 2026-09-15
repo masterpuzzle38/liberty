@@ -10,7 +10,7 @@ Machine-readable copies:
 - [`/api/examples.json`](api/_lib/examples.json) — copy-ready request bodies (same curls as `/#adapters`)
 - [`/api/templates.json`](api/_lib/templates.json) — preset create-job fields (same buttons as `/#create`; fill only)
 - [`/api/changelog.json`](api/_lib/changelog.json) — recent shipped slices (newest first; dates and titles only; no user counts or revenue). Same list as `/#whats-new`
-- [`/api/scoreboard.json`](api/_lib/scoreboard.json) — honest zeros (`external_users`, `paid_pilots`, `revenue_usd`). Listings are not users. Same facts as `/#scoreboard`
+- [`/api/scoreboard.json`](api/_lib/scoreboard.json) — honest zeros (`external_users`, `paid_pilots`, `revenue_usd`) plus curated listing URLs. Listings are not users. Same facts as `/#scoreboard`
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute

@@ -71,6 +71,8 @@
       <p class="hint">Challenge evidence. Zeros stay zeros. Listings are not users. Machine-readable: <a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a>.</p>
       <p id="scoreboard-empty" class="hint">Loading honest zeros…</p>
       <dl id="scoreboard-facts" class="scoreboard-facts" hidden></dl>
+      <p id="scoreboard-listings-label" class="hint" hidden>Public listing URLs (not users):</p>
+      <ul id="scoreboard-listings" class="scoreboard-listings" hidden></ul>
       <p id="scoreboard-note" class="hint" hidden></p>
     </section>
 
@@ -337,7 +339,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>
         <li><a href="/api/templates.json"><code>/api/templates.json</code></a> — preset create-job fields (same buttons as <a href="#create">/#create</a>; fill only)</li>
         <li><a href="/api/changelog.json"><code>/api/changelog.json</code></a> — recent shipped slices (newest first; same list as <a href="#whats-new">/#whats-new</a>)</li>
-        <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue). Same facts as <a href="#scoreboard">/#scoreboard</a></li>
+        <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Same facts as <a href="#scoreboard">/#scoreboard</a></li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

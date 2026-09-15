@@ -5,7 +5,7 @@
   "mode": "demo",
   "money": false,
   "title": "Scoreboard",
-  "description": "Honest challenge evidence. Zeros stay zeros. Listings are not users.",
+  "description": "Honest challenge evidence. Zeros stay zeros. Curated listing URLs are not users.",
   "path": "/api/scoreboard.json",
   "human": "/#scoreboard",
   "origin": "https://liberty-amber.vercel.app",
@@ -13,7 +13,45 @@
   "paid_pilots": 0,
   "revenue_usd": 0,
   "directory_listings": {
-    "note": "No verified public listing URLs are curated in this repo. Shared-board mentions of directory submits are not listings and not users."
+    "note": "Curated public listing URLs Liberty submitted. Listings are not users, not paid pilots, and not revenue. Agent Reputation, AgentIndex, and MCP.Directory are omitted — no durable public Liberty URL found.",
+    "entries": [
+      {
+        "directory": "Meshkore",
+        "url": "https://meshkore.com/agent/liberty-agent-settlement"
+      },
+      {
+        "directory": "AgentConnex",
+        "url": "https://agentconnex.com/agents/liberty-agent-settlement-a3102d"
+      },
+      {
+        "directory": "For You",
+        "url": "https://for.you.com/agents/liberty-agent-settlement"
+      },
+      {
+        "directory": "AgentBazaar",
+        "url": "https://agentbazaar.tech/agent/ag_67487308",
+        "agent_id": "ag_67487308"
+      },
+      {
+        "directory": "AgentMesh",
+        "url": "https://agentmesh.help/agents/agt_6f8323b9f3a6"
+      },
+      {
+        "directory": "AgentStore",
+        "url": "https://api.agentstore.tools/api/agents/liberty-agent-settlement.liberty-agent-settlement",
+        "note": "Machine-readable listing. https://agentstore.tools is the marketplace; no dedicated public HTML agent page found."
+      },
+      {
+        "directory": "FloweringAgents",
+        "url": "https://floweringagents.ai.in.rs/agents/f08bf12a-b57c-4d69-bd6a-a2c7b4b86c61",
+        "note": "Registered path. HTML is a client-rendered shell; machine JSON at /api/agents/{id} names Liberty Agent Settlement."
+      },
+      {
+        "directory": "AgentLair",
+        "url": "https://agentlair.dev/agents/liberty-agent-settlement",
+        "note": "Registered path. Lookup is x402-gated (HTTP 402), not a freely readable page."
+      }
+    ]
   },
   "live": {
     "ui": "https://liberty-amber.vercel.app",
