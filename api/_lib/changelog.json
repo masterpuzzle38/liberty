@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-15",
+      "title": "Scoreboard curated listings + wave 15",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "quote-schema",
       "title": "JSON Schema for quote payloads",
       "href": "/api/schemas/quote.json"
@@ -76,12 +82,6 @@
       "id": "validate",
       "title": "Dry-check validate for transition bodies",
       "href": "/api/v0/validate"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard-wave-9",
-      "title": "Scoreboard curated listings + wave 9",
-      "href": "/#scoreboard"
     }
   ]
 }
