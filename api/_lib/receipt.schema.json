@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/receipt.json",
+  "title": "Liberty Agent Settlement receipt",
+  "description": "JSON Schema for a client-held terminal Settlement receipt (status released or disputed). Same expanded object as receipt export JSON, POST /api/v0/verify `receipt`, and the payload decoded from a shareable `#receipt/r1.…` or `?receipt=` link (compact short keys expand to these fields). Client-held demo; Liberty does not persist receipts, take custody, or move real money. A receipt is not proof of payment.",
+  "type": "object",
+  "$ref": "#/$defs/Receipt",
+  "$defs": {
+    "JobId": {
+      "type": "string",
+      "pattern": "^as_[0-9a-f]{10}$",
+      "description": "Job id assigned at create. as_ plus 10 hex characters."
+    },
+    "KeyId": {
+      "type": "string",
+      "pattern": "^k_[0-9a-f]{12}$",
+      "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+    },
+    "Title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "Amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Job amount in integer demo credits. Not real money."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Integer demo credits. Not real money. Not proof of payment."
+    },
+    "Criteria": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Success criteria. Same text as the job."
+    },
+    "Proof": {
+      "type": "string",
+      "description": "Proof URL or text. May be empty until submit; terminal receipts usually have a string."
+    },
+    "Created": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Created stamp from the job. Live receipts use ISO-8601 UTC."
+    },
+    "Stamp": {
+      "type": ["string", "null"],
+      "description": "Funded, submitted, or resolved stamp. Null if that step has no time. Live receipts use ISO-8601 UTC or null."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id stamped on create. Empty or whitespace-only is rejected."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Adapter-owned https URL stamped on create (notify_url alias). Liberty never HTTP-fetches or calls it."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim. proof_note from submit; release_note only on released; dispute_reason only on disputed."
+    },
+    "Status": {
+      "type": "string",
+      "enum": ["released", "disputed"],
+      "description": "Terminal only. Verify and receipt export reject open, funded, and submitted."
+    },
+    "Receipt": {
+      "type": "object",
+      "description": "Expanded receipt. Canonical snake_case matches export, verify examples, and receiptFromJob. camelCase and a few aliases are accepted by verify and receipt-export. Compact short keys (j, t, s, …) are encoding-only inside an r1. token — expand them before POST /api/v0/verify.",
+      "required": [
+        "job_id",
+        "title",
+        "status",
+        "amount",
+        "release_fee",
+        "agent_payout",
+        "returned_to_payer",
+        "success_criteria",
+        "proof",
+        "created",
+        "funded",
+        "submitted",
+        "resolved"
+      ],
+      "properties": {
+        "job_id": { "$ref": "#/$defs/JobId" },
+        "jobId": { "$ref": "#/$defs/JobId" },
+        "title": { "$ref": "#/$defs/Title" },
+        "status": { "$ref": "#/$defs/Status" },
+        "amount": { "$ref": "#/$defs/Amount" },
+        "release_fee": { "$ref": "#/$defs/Credits" },
+        "releaseFee": { "$ref": "#/$defs/Credits" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" },
+        "returnedToPayer": { "$ref": "#/$defs/Credits" },
+        "success_criteria": { "$ref": "#/$defs/Criteria" },
+        "successCriteria": { "$ref": "#/$defs/Criteria" },
+        "criteria": { "$ref": "#/$defs/Criteria" },
+        "proof": { "$ref": "#/$defs/Proof" },
+        "proofUrl": { "$ref": "#/$defs/Proof" },
+        "proof_url": { "$ref": "#/$defs/Proof" },
+        "created": { "$ref": "#/$defs/Created" },
+        "createdAt": { "$ref": "#/$defs/Created" },
+        "created_at": { "$ref": "#/$defs/Created" },
+        "funded": { "$ref": "#/$defs/Stamp" },
+        "fundedAt": { "$ref": "#/$defs/Stamp" },
+        "funded_at": { "$ref": "#/$defs/Stamp" },
+        "submitted": { "$ref": "#/$defs/Stamp" },
+        "submittedAt": { "$ref": "#/$defs/Stamp" },
+        "submitted_at": { "$ref": "#/$defs/Stamp" },
+        "resolved": { "$ref": "#/$defs/Stamp" },
+        "resolvedAt": { "$ref": "#/$defs/Stamp" },
+        "resolved_at": { "$ref": "#/$defs/Stamp" },
+        "key_id": { "$ref": "#/$defs/KeyId" },
+        "keyId": { "$ref": "#/$defs/KeyId" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "dispute_reason": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "CompactReceipt": {
+      "type": "object",
+      "description": "Packed receipt inside an r1. token ({ v: 1, receipt }). Short keys only. Clients expand these to the Receipt fields before verify. Not a second public API.",
+      "properties": {
+        "j": { "$ref": "#/$defs/JobId" },
+        "t": { "$ref": "#/$defs/Title" },
+        "s": { "$ref": "#/$defs/Status" },
+        "a": { "$ref": "#/$defs/Amount" },
+        "f": { "$ref": "#/$defs/Credits" },
+        "ap": { "$ref": "#/$defs/Credits" },
+        "rp": { "$ref": "#/$defs/Credits" },
+        "c": { "$ref": "#/$defs/Criteria" },
+        "p": { "$ref": "#/$defs/Proof" },
+        "ca": { "$ref": "#/$defs/Created" },
+        "fa": { "$ref": "#/$defs/Stamp" },
+        "sa": { "$ref": "#/$defs/Stamp" },
+        "ra": { "$ref": "#/$defs/Stamp" },
+        "k": { "$ref": "#/$defs/KeyId" },
+        "cr": { "$ref": "#/$defs/ClientRef" },
+        "cb": { "$ref": "#/$defs/CallbackUrl" },
+        "pn": { "$ref": "#/$defs/Note" },
+        "rn": { "$ref": "#/$defs/Note" },
+        "dr": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "ReceiptLinkPayload": {
+      "type": "object",
+      "description": "JSON inside an r1. base64url token before expand. Hash form is #receipt/<token>. Query form is ?receipt=<token>. Credits, jobs, and the demo API key are not in this payload. Not proof of payment.",
+      "required": ["v", "receipt"],
+      "properties": {
+        "v": {
+          "const": 1,
+          "description": "Receipt-link version. Only v=1 is accepted."
+        },
+        "receipt": { "$ref": "#/$defs/CompactReceipt" }
+      }
+    }
+  }
+}

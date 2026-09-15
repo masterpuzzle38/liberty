@@ -27,6 +27,10 @@
       "destination": "/api/agent.json?doc=transition-schema"
     },
     {
+      "source": "/api/schemas/receipt.json",
+      "destination": "/api/agent.json?doc=receipt-schema"
+    },
+    {
       "source": "/api/errors.json",
       "destination": "/api/agent.json?doc=errors"
     },
