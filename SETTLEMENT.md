@@ -4,6 +4,7 @@ Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The huma
 
 Machine-readable copies:
 
+- [`/.well-known/agent.json`](api/_lib/agent.json) — discovery card (`mode: demo`, `money: false`; same JSON as `/api/agent.json`). Not an A2A Agent Card. Not a ChatGPT plugin
 - [`/api/health.json`](api/_lib/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
 - [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`/api/examples.json`](api/_lib/examples.json) — copy-ready request bodies (same curls as `/#adapters`)
@@ -158,7 +159,7 @@ Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapte
 
 ## Adapter notes
 
-1. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
+1. GET [`/.well-known/agent.json`](api/_lib/agent.json) (same JSON as [`/api/agent.json`](api/_lib/agent.json)) for the discovery card. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.

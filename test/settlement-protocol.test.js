@@ -63,6 +63,11 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.surfaces.quote, "/api/v0/quote");
   assert.equal(SETTLEMENT.surfaces.verify, "/api/v0/verify");
   assert.equal(SETTLEMENT.surfaces.simulate, "/api/v0/simulate");
+  assert.equal(SETTLEMENT.surfaces.discovery, "/.well-known/agent.json");
+  assert.equal(SETTLEMENT.surfaces.agent, "/api/agent.json");
+  assert.equal(SETTLEMENT.discovery.path, "/.well-known/agent.json");
+  assert.equal(SETTLEMENT.discovery.alias, "/api/agent.json");
+  assert.equal(SETTLEMENT.discovery.money, false);
   assert.equal(SETTLEMENT.surfaces.examples, "/api/examples.json");
   assert.equal(SETTLEMENT.examples.path, "/api/examples.json");
   assert.equal(SETTLEMENT.examples.money, false);
@@ -116,6 +121,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/quote")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/verify")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/simulate")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/.well-known/agent.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/examples.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/templates.json")));
 });
