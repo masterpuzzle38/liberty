@@ -39,9 +39,9 @@ function mockRes() {
 }
 
 async function invoke(req) {
-  const handler = require("../api/tools.json.js");
+  const handler = require("../api/agent.json.js");
   const res = mockRes();
-  await handler(req, res);
+  await handler({ url: "/api/agent.json?doc=tools", ...req }, res);
   return res;
 }
 
@@ -165,6 +165,13 @@ test("discovery, protocol, and docs point at the tools list", () => {
   assert.equal(openapi.components.schemas.Tools.properties.mode.const, "demo");
   assert.equal(openapi.components.schemas.Tools.properties.persistence.const, false);
   assert.equal(openapi.components.schemas.Tools.properties.path.const, "/api/tools.json");
+
+  const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
+  assert.ok(
+    vercel.rewrites.some(
+      (row) => row.source === "/api/tools.json" && row.destination === "/api/agent.json?doc=tools",
+    ),
+  );
 
   const homepage = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(homepage.includes('href="/api/tools.json"'));

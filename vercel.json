@@ -5,6 +5,10 @@
     {
       "source": "/.well-known/agent.json",
       "destination": "/api/agent.json"
+    },
+    {
+      "source": "/api/tools.json",
+      "destination": "/api/agent.json?doc=tools"
     }
   ],
   "headers": [
