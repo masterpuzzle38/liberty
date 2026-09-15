@@ -8,6 +8,7 @@
   <title>Agent Settlement — Liberty</title>
   <meta name="description" content="Escrow and credits for agent jobs. Demo — not real money." />
   <link rel="describedby" href="/llms.txt" />
+  <link rel="alternate" type="application/json" href="/.well-known/agent.json" title="Agent Settlement discovery" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -275,6 +276,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
       <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="#adapters">Try as an adapter</a> — copy-ready curls for quote, transition, simulate, and verify</li>
+        <li><a href="/.well-known/agent.json"><code>/.well-known/agent.json</code></a> — discovery card (same JSON as <a href="/api/agent.json"><code>/api/agent.json</code></a>; demo / <code>money: false</code>)</li>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
         <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>

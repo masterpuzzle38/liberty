@@ -568,6 +568,7 @@ function discovery(kind) {
           ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
           : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     protocol: "/api/settlement.json",
+    discovery: "/.well-known/agent.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",
     verify: "/api/v0/verify",
