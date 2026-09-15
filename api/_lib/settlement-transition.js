@@ -11,6 +11,8 @@ const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 const TERMINAL = ["released", "disputed"];
 const NOTE_MAX_LENGTH = 400;
 const CLIENT_REF_MAX_LENGTH = 128;
+const CALLBACK_URL_MAX_LENGTH = 512;
+const CALLBACK_URL_ALIASES = ["callback_url", "callbackUrl", "notify_url", "notifyUrl"];
 const EXPECTED_FROM = {
   fund: "open",
   submit: "funded",
@@ -257,6 +259,54 @@ function rejectForeignClientRef(input, action) {
   return fail(400, "invalid_field", "client_ref is only accepted on create.", { field: "client_ref" });
 }
 
+function readOptionalCallbackUrl(input, aliases) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { value: undefined };
+  }
+  const raw = firstDefined(...aliases.map((name) => input[name]));
+  if (raw === undefined || raw === null) return { value: undefined };
+  if (typeof raw !== "string") {
+    return {
+      error: fail(400, "invalid_field", "callback_url must be a string.", { field: "callback_url" }),
+    };
+  }
+  const text = raw.trim();
+  if (!text) {
+    return {
+      error: fail(400, "invalid_field", "callback_url must not be empty.", { field: "callback_url" }),
+    };
+  }
+  if (text.length > CALLBACK_URL_MAX_LENGTH) {
+    return {
+      error: fail(400, "invalid_field", `callback_url must be at most ${CALLBACK_URL_MAX_LENGTH} characters.`, {
+        field: "callback_url",
+      }),
+    };
+  }
+  let parsed;
+  try {
+    parsed = new URL(text);
+  } catch {
+    return {
+      error: fail(400, "invalid_field", "callback_url must be an https URL.", { field: "callback_url" }),
+    };
+  }
+  if (parsed.protocol !== "https:") {
+    return {
+      error: fail(400, "invalid_field", "callback_url must be an https URL.", { field: "callback_url" }),
+    };
+  }
+  return { value: text };
+}
+
+function rejectForeignCallbackUrl(input, action) {
+  if (action === "create") return null;
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const raw = firstDefined(...CALLBACK_URL_ALIASES.map((name) => input[name]));
+  if (raw === undefined || raw === null) return null;
+  return fail(400, "invalid_field", "callback_url is only accepted on create.", { field: "callback_url" });
+}
+
 function readOptionalNote(input, field, aliases) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { value: undefined };
@@ -326,6 +376,10 @@ function applyReceiptNotes(receipt, job) {
   if (typeof clientRef === "string" && clientRef.trim()) {
     receipt.client_ref = clientRef.trim();
   }
+  const callbackUrl = firstDefined(job.callbackUrl, job.callback_url, job.notifyUrl, job.notify_url);
+  if (typeof callbackUrl === "string" && callbackUrl.trim()) {
+    receipt.callback_url = callbackUrl.trim();
+  }
   if (typeof proofNote === "string" && proofNote.trim()) {
     receipt.proof_note = proofNote.trim();
   }
@@ -387,6 +441,9 @@ function readJob(raw) {
   const clientRef = readOptionalClientRef(raw, ["clientRef", "client_ref"]);
   if (clientRef.error) return clientRef;
 
+  const callbackUrl = readOptionalCallbackUrl(raw, ["callbackUrl", "callback_url", "notifyUrl", "notify_url"]);
+  if (callbackUrl.error) return callbackUrl;
+
   const proofNote = readOptionalNote(raw, "proof_note", ["proofNote", "proof_note"]);
   if (proofNote.error) return proofNote;
 
@@ -405,6 +462,7 @@ function readJob(raw) {
       fee: 0,
       agentPayout: 0,
       ...(clientRef.value ? { clientRef: clientRef.value } : {}),
+      ...(callbackUrl.value ? { callbackUrl: callbackUrl.value } : {}),
       ...(proofNote.value ? { proofNote: proofNote.value } : {}),
     },
   };
@@ -486,6 +544,10 @@ function jobShapeFromReceipt(raw) {
   const clientRef = firstDefined(raw.client_ref, raw.clientRef);
   if (typeof clientRef === "string" && clientRef.trim()) {
     shape.clientRef = clientRef.trim();
+  }
+  const callbackUrl = firstDefined(raw.callback_url, raw.callbackUrl, raw.notify_url, raw.notifyUrl);
+  if (typeof callbackUrl === "string" && callbackUrl.trim()) {
+    shape.callbackUrl = callbackUrl.trim();
   }
   const proofNote = firstDefined(raw.proof_note, raw.proofNote);
   if (typeof proofNote === "string" && proofNote.trim()) {
@@ -794,6 +856,8 @@ function transition(input, options) {
   const idempotencyKey = idem.value;
   const foreignRef = rejectForeignClientRef(input, action);
   if (foreignRef) return foreignRef;
+  const foreignCallback = rejectForeignCallbackUrl(input, action);
+  if (foreignCallback) return foreignCallback;
   const note = readActionNote(input, action);
   if (note.error) return note.error;
   const stamp = now();
@@ -807,6 +871,8 @@ function transition(input, options) {
     if (criteria.error) return criteria.error;
     const clientRef = readOptionalClientRef(input, ["client_ref", "clientRef"]);
     if (clientRef.error) return clientRef.error;
+    const callbackUrl = readOptionalCallbackUrl(input, CALLBACK_URL_ALIASES);
+    if (callbackUrl.error) return callbackUrl.error;
 
     const job = {
       title: title.value,
@@ -821,6 +887,7 @@ function transition(input, options) {
       fee: 0,
       agentPayout: 0,
       ...(clientRef.value ? { clientRef: clientRef.value } : {}),
+      ...(callbackUrl.value ? { callbackUrl: callbackUrl.value } : {}),
     };
     let fromKey = false;
     if (!dryRun) {
@@ -984,6 +1051,10 @@ function simulate(input, options) {
     criteria: criteria.value,
     client_ref: input.client_ref,
     clientRef: input.clientRef,
+    callback_url: input.callback_url,
+    callbackUrl: input.callbackUrl,
+    notify_url: input.notify_url,
+    notifyUrl: input.notifyUrl,
   }, nextOpts);
   if (created.status !== 200) return created;
 
@@ -1157,6 +1228,8 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
 
 module.exports = {
   ACTIONS,
+  CALLBACK_URL_ALIASES,
+  CALLBACK_URL_MAX_LENGTH,
   CLIENT_REF_MAX_LENGTH,
   CORS_ALLOW_HEADERS,
   FEE_RATE,

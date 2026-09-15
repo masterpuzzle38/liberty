@@ -139,6 +139,8 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/templates.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/changelog.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("Idempotency-Key")));
+  assert.match(SETTLEMENT.job.callback_url.note, /never HTTP-fetches/i);
+  assert.match(SETTLEMENT.transition_api.note, /never HTTP-fetches/i);
   assert.equal(SETTLEMENT.transition_api.idempotency.replay, false);
   assert.equal(SETTLEMENT.quote_api.idempotency.replay, false);
   assert.equal(SETTLEMENT.simulate_api.idempotency.replay, false);
@@ -165,12 +167,14 @@ test("receipt fields match the engine receipt plus optional notes and key_id", (
   );
   assert.deepEqual(
     SETTLEMENT.receipt_fields.filter((field) => field.optional).map((field) => field.id),
-    ["client_ref", "proof_note", "release_note", "dispute_reason", "key_id"],
+    ["client_ref", "callback_url", "proof_note", "release_note", "dispute_reason", "key_id"],
   );
   const noted = receiptFromJob({ ...job, releaseNote: "Looks good." });
   assert.equal(noted.release_note, "Looks good.");
   const proofNoted = receiptFromJob({ ...job, proofNote: "Three-bullet brief attached." });
   assert.equal(proofNoted.proof_note, "Three-bullet brief attached.");
+  const withCallback = receiptFromJob({ ...job, callbackUrl: "https://your-adapter.example/notify" });
+  assert.equal(withCallback.callback_url, "https://your-adapter.example/notify");
 });
 
 test("GET /api/health.json and /api/settlement.json handlers serve the protocol docs", async () => {

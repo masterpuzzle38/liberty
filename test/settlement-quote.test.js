@@ -142,6 +142,40 @@ test("create quote echoes optional client_ref without assigning an id", () => {
   assert.equal(empty.body.field, "client_ref");
 });
 
+test("create quote echoes optional callback_url without assigning an id", () => {
+  const quoted = preview({
+    action: "create",
+    title: "Summarize filings",
+    amount: 100,
+    criteria: "Three-bullet brief matching the last three filings.",
+    callback_url: "https://your-adapter.example/notify",
+  });
+  assert.equal(quoted.status, 200);
+  assert.equal(quoted.body.quoted, true);
+  assert.equal(quoted.body.job.id, undefined);
+  assert.equal(quoted.body.job.callbackUrl, "https://your-adapter.example/notify");
+  assert.equal(quoted.body.money, false);
+
+  const alias = preview({
+    action: "create",
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    notify_url: "https://hooks.example/done",
+  });
+  assert.equal(alias.body.job.callbackUrl, "https://hooks.example/done");
+
+  const empty = preview({
+    action: "create",
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    callback_url: "   ",
+  });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.field, "callback_url");
+});
+
 test("quote dry-run echoes optional proof_note on submit without committing", () => {
   const open = createOpen();
   const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;

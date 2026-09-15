@@ -488,6 +488,7 @@
     const refund = job.status === "disputed" ? job.amount : 0;
     const stored = findReceipt(job.id);
     const clientRef = (stored && stored.client_ref) || job.clientRef;
+    const callbackUrl = (stored && stored.callback_url) || job.callbackUrl;
     const lines = [
       "# Agent Settlement receipt",
       "",
@@ -496,6 +497,7 @@
       `- Job ID: ${job.id}`,
     ];
     if (clientRef) lines.push(`- Client ref: ${clientRef}`);
+    if (callbackUrl) lines.push(`- Callback URL: ${callbackUrl} (Liberty never fetches this)`);
     lines.push(
       `- Title: ${job.title}`,
       `- Status: ${job.status}`,
@@ -788,9 +790,10 @@
     render();
   }
 
-  async function createJob({ title, amount, criteria, client_ref }) {
+  async function createJob({ title, amount, criteria, client_ref, callback_url }) {
     const payload = { action: "create", title, amount, criteria };
     if (client_ref) payload.client_ref = client_ref;
+    if (callback_url) payload.callback_url = callback_url;
     const data = await postTransition(payload);
     if (!data) return false;
     applyResult(data);
@@ -980,6 +983,9 @@
           if (job.clientRef || (stored && stored.client_ref)) {
             bits.push(`<dt>Client ref</dt><dd class="client-ref"></dd>`);
           }
+          if (job.callbackUrl || (stored && stored.callback_url)) {
+            bits.push(`<dt>Callback URL</dt><dd class="callback-url"></dd>`);
+          }
           if (job.proofNote || (stored && stored.proof_note)) {
             bits.push(`<dt>Proof note</dt><dd class="proof-note"></dd>`);
           }
@@ -1017,6 +1023,11 @@
     if (clientRefDd) {
       const stored = findReceipt(job.id);
       clientRefDd.textContent = job.clientRef || (stored && stored.client_ref) || "";
+    }
+    const callbackUrlDd = els.detail.querySelector(".detail-meta .callback-url");
+    if (callbackUrlDd) {
+      const stored = findReceipt(job.id);
+      callbackUrlDd.textContent = job.callbackUrl || (stored && stored.callback_url) || "";
     }
     const proofNoteDd = els.detail.querySelector(".detail-meta .proof-note");
     if (proofNoteDd) {
@@ -1102,8 +1113,9 @@
         .filter(Boolean)
         .join(" · ");
       const clientRef = receipt.client_ref ? ` · ${receipt.client_ref}` : "";
+      const callbackUrl = receipt.callback_url ? ` · ${receipt.callback_url}` : "";
       item.querySelector(".receipt-item-when").textContent =
-        `${receipt.job_id}${clientRef} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;
+        `${receipt.job_id}${clientRef}${callbackUrl} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;
       els.receiptList.appendChild(item);
     }
     renderVerifyPick();
@@ -1306,6 +1318,7 @@
     const amount = parseCredits(document.getElementById("job-amount")?.value);
     const criteria = document.getElementById("job-criteria")?.value || "";
     const clientRef = (document.getElementById("job-client-ref")?.value || "").trim();
+    const callbackUrl = (document.getElementById("job-callback-url")?.value || "").trim();
     if (!title.trim()) return flash("Add a job title.", true);
     if (!amount) return flash("Amount must be a whole number of credits.", true);
     if (!criteria.trim()) return flash("Add success criteria so proof can be judged.", true);
@@ -1314,6 +1327,7 @@
       amount,
       criteria,
       ...(clientRef ? { client_ref: clientRef } : {}),
+      ...(callbackUrl ? { callback_url: callbackUrl } : {}),
     });
     if (created) {
       els.createForm.reset();

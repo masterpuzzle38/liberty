@@ -29,6 +29,7 @@
     ["fee", "f"],
     ["agentPayout", "ap"],
     ["clientRef", "cr"],
+    ["callbackUrl", "cb"],
     ["proofNote", "pn"],
     ["releaseNote", "rn"],
     ["disputeReason", "dr"],
@@ -142,6 +143,12 @@
     }
     if (clientRef) job.clientRef = clientRef;
 
+    const callbackUrl = readText(firstDefined(raw.callbackUrl, raw.callback_url, raw.notifyUrl, raw.notify_url));
+    if (callbackUrl && callbackUrl.length > 512) {
+      return fail("invalid_job", "job.callbackUrl must be at most 512 characters.");
+    }
+    if (callbackUrl) job.callbackUrl = callbackUrl;
+
     const proofNote = readText(firstDefined(raw.proofNote, raw.proof_note));
     const releaseNote = readText(firstDefined(raw.releaseNote, raw.release_note));
     const disputeReason = readText(firstDefined(raw.disputeReason, raw.dispute_reason));
@@ -185,6 +192,8 @@
     if (packed.resolved_at !== undefined && job.resolvedAt === undefined) job.resolvedAt = packed.resolved_at;
     if (packed.agent_payout !== undefined && job.agentPayout === undefined) job.agentPayout = packed.agent_payout;
     if (packed.client_ref !== undefined && job.clientRef === undefined) job.clientRef = packed.client_ref;
+    if (packed.callback_url !== undefined && job.callbackUrl === undefined) job.callbackUrl = packed.callback_url;
+    if (packed.notify_url !== undefined && job.callbackUrl === undefined) job.callbackUrl = packed.notify_url;
     if (packed.proof_note !== undefined && job.proofNote === undefined) job.proofNote = packed.proof_note;
     if (packed.release_note !== undefined && job.releaseNote === undefined) job.releaseNote = packed.release_note;
     if (packed.dispute_reason !== undefined && job.disputeReason === undefined) job.disputeReason = packed.dispute_reason;
