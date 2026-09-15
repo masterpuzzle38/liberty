@@ -21,27 +21,27 @@
       "body": ["action"],
       "actions": [
         {
-          "id": "create",
+          "action": "create",
           "body": ["action", "title", "amount", "criteria"],
           "optional": ["client_ref", "callback_url", "idempotency_key"]
         },
         {
-          "id": "fund",
+          "action": "fund",
           "body": ["action", "job", "payer_credits"],
           "optional": ["idempotency_key"]
         },
         {
-          "id": "submit",
+          "action": "submit",
           "body": ["action", "job", "proof_url"],
           "optional": ["proof_note", "idempotency_key"]
         },
         {
-          "id": "release",
+          "action": "release",
           "body": ["action", "job"],
           "optional": ["release_note", "idempotency_key"]
         },
         {
-          "id": "dispute",
+          "action": "dispute",
           "body": ["action", "job"],
           "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
         }
@@ -55,27 +55,27 @@
       "body": ["action"],
       "actions": [
         {
-          "id": "create",
+          "action": "create",
           "body": ["action", "title", "amount", "criteria"],
           "optional": ["client_ref", "callback_url", "idempotency_key"]
         },
         {
-          "id": "fund",
+          "action": "fund",
           "body": ["action", "job", "payer_credits"],
           "optional": ["idempotency_key"]
         },
         {
-          "id": "submit",
+          "action": "submit",
           "body": ["action", "job", "proof_url"],
           "optional": ["proof_note", "idempotency_key"]
         },
         {
-          "id": "release",
+          "action": "release",
           "body": ["action", "job"],
           "optional": ["release_note", "idempotency_key"]
         },
         {
-          "id": "dispute",
+          "action": "dispute",
           "body": ["action", "job"],
           "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
         }
