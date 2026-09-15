@@ -686,6 +686,8 @@
               "openapi": { "const": "/settlement.openapi.json" },
               "markdown": { "const": "/SETTLEMENT.md" },
               "llms": { "const": "/llms.txt" },
+              "robots": { "const": "/robots.txt" },
+              "sitemap": { "const": "/sitemap.xml" },
               "quote": { "const": "/api/v0/quote" },
               "transition": { "const": "/api/v0/transition" },
               "simulate": { "const": "/api/v0/simulate" },

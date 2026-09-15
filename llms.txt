@@ -22,6 +22,8 @@ Human demo: https://liberty-amber.vercel.app
 - [Verify](/api/v0/verify): `POST` recompute fee math for a receipt or proposed release/dispute
 - [OpenAPI 3.1](/settlement.openapi.json): same surface
 - [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
+- [robots.txt](/robots.txt): crawler allow list
+- [sitemap.xml](/sitemap.xml): same discovery URLs (hash UI states are `/` once)
 
 ## Optional
 

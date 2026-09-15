@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "robots-sitemap",
+      "title": "robots.txt and sitemap",
+      "href": "/sitemap.xml"
+    },
+    {
+      "date": "2026-09-15",
       "id": "fees",
       "title": "Machine-readable fee schedule",
       "href": "/#fees"
@@ -76,12 +82,6 @@
       "id": "agent-discovery",
       "title": "Agent discovery card",
       "href": "/.well-known/agent.json"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "agent-wallet",
-      "title": "Agent wallet credits",
-      "href": "/"
     }
   ]
 }
