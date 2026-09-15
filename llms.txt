@@ -21,7 +21,7 @@ Human demo: https://liberty-amber.vercel.app
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow; optional Idempotency-Key stabilizes create ids)
 - [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute (same optional Idempotency-Key)
 - [Verify](/api/v0/verify): `POST` recompute fee math for a receipt or proposed release/dispute
-- [OpenAPI 3.1](/settlement.openapi.json): same surface
+- [OpenAPI 3.1](/settlement.openapi.json): same surface. Same JSON at `/openapi.json` and `/api/openapi.json`
 - [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
 - [robots.txt](/robots.txt): crawler allow list
 - [sitemap.xml](/sitemap.xml): same discovery URLs (hash UI states are `/` once)

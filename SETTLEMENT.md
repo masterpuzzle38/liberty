@@ -17,7 +17,7 @@ Machine-readable copies:
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute
 - [`POST /api/v0/verify`](api/v0/verify.js) — recompute fee math for a receipt or proposed release/dispute
-- [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1
+- [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1 (same JSON at [`/openapi.json`](/openapi.json) and [`/api/openapi.json`](/api/openapi.json))
 - [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)
 - [`/robots.txt`](robots.txt) / [`/sitemap.xml`](sitemap.xml) — crawler allow list and the same discovery URLs (hash UI states are `/` once)
 

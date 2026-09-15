@@ -23,6 +23,8 @@ const SITEMAP_PATHS = [
   "/SETTLEMENT.md",
   "/llms.txt",
   "/settlement.openapi.json",
+  "/openapi.json",
+  "/api/openapi.json",
 ];
 
 test("robots.txt and sitemap.xml list the real discovery URLs", () => {

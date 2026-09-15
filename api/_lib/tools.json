@@ -154,7 +154,8 @@
       "id": "openapi",
       "method": "GET",
       "path": "/settlement.openapi.json",
-      "purpose": "OpenAPI 3.1 of the same surface."
+      "aliases": ["/openapi.json", "/api/openapi.json"],
+      "purpose": "OpenAPI 3.1 of the same surface. Same JSON at /openapi.json and /api/openapi.json."
     }
   ]
 }

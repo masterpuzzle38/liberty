@@ -39,4 +39,10 @@
   <url>
     <loc>https://liberty-amber.vercel.app/settlement.openapi.json</loc>
   </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/openapi.json</loc>
+  </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/api/openapi.json</loc>
+  </url>
 </urlset>

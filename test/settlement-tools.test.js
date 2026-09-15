@@ -115,6 +115,11 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     assert.equal(typeof row.purpose, "string");
   }
   assert.equal(TOOLS.discovery.find((row) => row.id === "agent").alias, "/.well-known/agent.json");
+  assert.equal(TOOLS.discovery.find((row) => row.id === "openapi").path, "/settlement.openapi.json");
+  assert.deepEqual(TOOLS.discovery.find((row) => row.id === "openapi").aliases, [
+    "/openapi.json",
+    "/api/openapi.json",
+  ]);
 });
 
 test("GET /api/tools.json serves the capability list", async () => {

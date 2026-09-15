@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "openapi-aliases",
+      "title": "OpenAPI also at /openapi.json",
+      "href": "/settlement.openapi.json"
+    },
+    {
+      "date": "2026-09-15",
       "id": "tools",
       "title": "Machine-readable adapter tools list",
       "href": "/api/tools.json"
@@ -76,12 +82,6 @@
       "id": "changelog",
       "title": "What's new / changelog",
       "href": "/#whats-new"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "client-ref",
-      "title": "Optional client_ref on create",
-      "href": "/#create"
     }
   ]
 }

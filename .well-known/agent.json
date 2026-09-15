@@ -23,6 +23,7 @@
     "fees": "/api/fees.json",
     "tools": "/api/tools.json",
     "openapi": "/settlement.openapi.json",
+    "openapi_aliases": ["/openapi.json", "/api/openapi.json"],
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
     "robots": "/robots.txt",
@@ -32,5 +33,5 @@
     "simulate": "/api/v0/simulate",
     "verify": "/api/v0/verify"
   },
-  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. GET /robots.txt and /sitemap.xml list the same discovery URLs for crawlers (hash UI states are `/` once). GET /api/tools.json for callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/changelog.json for recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue). GET /api/fees.json for the demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
+  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. GET /robots.txt and /sitemap.xml list the same discovery URLs for crawlers (hash UI states are `/` once). GET /api/tools.json for callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /settlement.openapi.json for OpenAPI 3.1 (same JSON at /openapi.json and /api/openapi.json). GET /api/changelog.json for recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue). GET /api/fees.json for the demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
 }
