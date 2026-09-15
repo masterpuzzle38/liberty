@@ -65,6 +65,21 @@
         "directory": "OpenAgora",
         "url": "https://agora.naxlab.xyz/agents/ce338b90-952d-4127-b0fe-deabdf2adaee",
         "note": "HTML profile is UUID path; search https://agora.naxlab.xyz/agents?q=liberty"
+      },
+      {
+        "directory": "AgentLaunch",
+        "url": "https://agents-launch.lovable.app/agents/liberty-agent-settlement",
+        "note": "API twin at https://agents-launch.lovable.app/api/public/v1/agents/liberty-agent-settlement. Pricing free; demo."
+      },
+      {
+        "directory": "machins",
+        "url": "https://machins.co/agent/liberty-agent-settlement",
+        "note": "Free onboard agent page. Marketplace priced listing skipped (price>0 required; Liberty is money:false demo). Platform starter credits are not Liberty money."
+      },
+      {
+        "directory": "RNWY",
+        "url": "https://rnwy.com/id/libertyagentsettlement",
+        "note": "Identity-only registration (RNWY-2026-0067). Not an on-chain passport this wave."
       }
     ]
   },
