@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard",
+      "title": "Honest scoreboard",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "callback-url",
       "title": "Optional callback_url on create",
       "href": "/#create"
@@ -76,12 +82,6 @@
       "id": "receipt-link",
       "title": "Shareable receipt links",
       "href": "/"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "receipt-verify",
-      "title": "Receipt / settlement verify",
-      "href": "/api/v0/verify"
     }
   ]
 }

@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, and /api/changelog.json for recent shipped slices. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, and /api/scoreboard.json for honest zeros. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -160,6 +160,24 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Changelog" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scoreboard.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Honest scoreboard",
+        "description": "Challenge evidence. mode is demo. money is always false. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. Listings are not users. Same facts as /#scoreboard.",
+        "operationId": "getScoreboard",
+        "responses": {
+          "200": {
+            "description": "Scoreboard. Honest zeros. Not traction. Not real money.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Scoreboard" }
               }
             }
           }
@@ -645,6 +663,7 @@
               "examples": { "const": "/api/examples.json" },
               "templates": { "const": "/api/templates.json" },
               "changelog": { "const": "/api/changelog.json" },
+              "scoreboard": { "const": "/api/scoreboard.json" },
               "openapi": { "const": "/settlement.openapi.json" },
               "markdown": { "const": "/SETTLEMENT.md" },
               "llms": { "const": "/llms.txt" },
@@ -688,6 +707,7 @@
           "examples": { "type": "object" },
           "templates": { "type": "object" },
           "changelog": { "type": "object" },
+          "scoreboard": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
@@ -724,6 +744,29 @@
               }
             }
           }
+        }
+      },
+      "Scoreboard": {
+        "type": "object",
+        "description": "Shape of /api/scoreboard.json. Honest zeros. Not traction.",
+        "required": ["service", "kind", "mode", "money", "path", "external_users", "paid_pilots", "revenue_usd"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "kind": { "const": "liberty-agent-settlement-scoreboard" },
+          "version": { "type": "string" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "path": { "const": "/api/scoreboard.json" },
+          "human": { "const": "/#scoreboard" },
+          "origin": { "const": "https://liberty-amber.vercel.app" },
+          "external_users": { "const": 0 },
+          "paid_pilots": { "const": 0 },
+          "revenue_usd": { "const": 0 },
+          "directory_listings": { "type": "object" },
+          "live": { "type": "object" },
+          "note": { "type": "string" }
         }
       },
       "AdapterExamples": {

@@ -8,6 +8,7 @@
   const VERIFY_URL = "/api/v0/verify";
   const CHANGELOG_URL = "/api/changelog.json";
   const CHANGELOG_LIMIT = 12;
+  const SCOREBOARD_URL = "/api/scoreboard.json";
   const SIMULATE_DEFAULTS = {
     title: "Summarize filings",
     amount: 100,
@@ -60,6 +61,9 @@
     simulateResult: document.getElementById("simulate-result"),
     whatsNewList: document.getElementById("whats-new-list"),
     whatsNewEmpty: document.getElementById("whats-new-empty"),
+    scoreboardFacts: document.getElementById("scoreboard-facts"),
+    scoreboardEmpty: document.getElementById("scoreboard-empty"),
+    scoreboardNote: document.getElementById("scoreboard-note"),
     exportPack: document.getElementById("export-demo-pack"),
     resetPack: document.getElementById("reset-demo-pack"),
     importPackForm: document.getElementById("import-demo-pack-form"),
@@ -1658,8 +1662,78 @@
     }
   }
 
+  function appendFact(dl, term, value) {
+    const row = document.createElement("div");
+    const dt = document.createElement("dt");
+    dt.textContent = term;
+    const dd = document.createElement("dd");
+    if (value instanceof Node) {
+      dd.append(value);
+    } else {
+      dd.textContent = String(value);
+    }
+    row.append(dt, dd);
+    dl.append(row);
+  }
+
+  function liveLink(href, label) {
+    const a = document.createElement("a");
+    a.href = href;
+    a.textContent = label;
+    return a;
+  }
+
+  async function loadScoreboard() {
+    if (!els.scoreboardFacts) return;
+    try {
+      const res = await fetch(SCOREBOARD_URL, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("scoreboard_unavailable");
+      const doc = await res.json();
+      if (!doc || doc.money !== false || doc.mode !== "demo") throw new Error("scoreboard_invalid");
+      if (doc.external_users !== 0 || doc.paid_pilots !== 0 || doc.revenue_usd !== 0) {
+        throw new Error("scoreboard_inflated");
+      }
+      els.scoreboardFacts.replaceChildren();
+      appendFact(els.scoreboardFacts, "Mode", doc.mode);
+      appendFact(els.scoreboardFacts, "Money", "false");
+      appendFact(els.scoreboardFacts, "External users", doc.external_users);
+      appendFact(els.scoreboardFacts, "Paid pilots", doc.paid_pilots);
+      appendFact(els.scoreboardFacts, "Revenue (USD)", doc.revenue_usd);
+      if (doc.live && typeof doc.live === "object") {
+        if (typeof doc.live.ui === "string") {
+          appendFact(els.scoreboardFacts, "Live", liveLink(doc.live.ui, doc.live.ui));
+        }
+        if (typeof doc.live.discovery === "string") {
+          appendFact(els.scoreboardFacts, "Discovery", liveLink(doc.live.discovery, doc.live.discovery));
+        }
+        if (typeof doc.live.changelog === "string") {
+          appendFact(els.scoreboardFacts, "Changelog", liveLink(doc.live.changelog, doc.live.changelog));
+        }
+      }
+      els.scoreboardFacts.hidden = false;
+      if (els.scoreboardEmpty) els.scoreboardEmpty.hidden = true;
+      if (els.scoreboardNote) {
+        const listingNote =
+          doc.directory_listings && typeof doc.directory_listings.note === "string"
+            ? doc.directory_listings.note
+            : "";
+        const parts = [typeof doc.note === "string" ? doc.note : "", listingNote].filter(Boolean);
+        els.scoreboardNote.textContent = parts.join(" ");
+        els.scoreboardNote.hidden = parts.length === 0;
+      }
+    } catch {
+      if (els.scoreboardEmpty) {
+        els.scoreboardEmpty.hidden = false;
+        els.scoreboardEmpty.textContent = "Could not load the scoreboard. See /api/scoreboard.json.";
+      }
+      if (els.scoreboardFacts) els.scoreboardFacts.hidden = true;
+      if (els.scoreboardNote) els.scoreboardNote.hidden = true;
+    }
+  }
+
   if (!consumeReceiptFromLocation()) consumeHandoffFromLocation();
   syncReceiptsFromJobs();
   render();
   loadWhatsNew();
+  loadScoreboard();
 })();
