@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; verify checks claimed money fields. None persist jobs or receipts, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. **Run a full demo settlement** POSTs `/api/v0/simulate` and walks create → fund → submit → release (or dispute) in one request. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; simulate commits the full walk; verify checks claimed money fields. None persist jobs or receipts, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
 
 Machine-readable copies:
 
@@ -8,6 +8,7 @@ Machine-readable copies:
 - [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
+- [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute
 - [`POST /api/v0/verify`](api/v0/verify.js) — recompute fee math for a receipt or proposed release/dispute
 - [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1
 - [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)
@@ -60,6 +61,23 @@ Same request shape, CORS, optional demo key, and engine as transition. Dry-run o
 Create quote returns the validated open job fields **without a durable id**. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
 
 The human UI calls this before fund, release, and dispute so the fee / payout / credit cut is visible before confirm.
+
+## `POST /api/v0/simulate`
+
+Same CORS, optional demo key, and fee engine as transition. One-shot demo lifecycle: Liberty runs create → fund → submit → `release` or `dispute` (default `release`) through that engine. Create **assigns** a real `as_` + 10 hex id — this is a committed demo walk, not a quote. Liberty still does not persist the job or receipt.
+
+Send JSON:
+
+| Field | Notes |
+| --- | --- |
+| `title` `amount` `criteria` | Same as create |
+| `payer_credits` | Starting payer balance (`payerCredits` alias). Must cover `amount`. |
+| `proof_url` | Attached on submit (`proofUrl` alias) |
+| `terminal` | `release` (default) or `dispute` |
+
+A completed walk returns `200` with `ok: true`, `mode: "demo"`, `money: false`, ordered `steps` (each action’s job and money impact), final `job`, final `payer_credits`, and `receipt`. Illegal or incomplete input — and a short fund — return the same style 4xx JSON as transition (`error`, `message`; `money` stays false).
+
+The human UI on `/` can run this with safe demo defaults in one click.
 
 ## `POST /api/v0/verify`
 
@@ -116,15 +134,15 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 
 ### Client-held receipt export
 
-The human UI keeps terminal receipts in this browser after a successful `release` or `dispute` (the same JSON object the transition API returns). Quote dry-runs are not stored. There is no server ledger and no receipt GET.
+The human UI keeps terminal receipts in this browser after a successful `release` or `dispute` (the same JSON object the transition and simulate APIs return). Quote dry-runs are not stored. There is no server ledger and no receipt GET.
 
 On `/`, **Receipts / Export** lists those receipts with fee, agent payout, returned to payer, status, job id, and timestamps. Download one as JSON, or download all as a JSON array or NDJSON. Copy-to-clipboard is also available. Paste a receipt (or pick a stored one) to verify it against `POST /api/v0/verify`. Demo — not real money. Liberty does not store receipts.
 
 ## Adapter notes
 
-1. GET the JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
+1. GET the JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
-5. Keep a terminal receipt yourself. The transition API returns `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
+5. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
 6. Do not claim live volume or user counts from this surface.

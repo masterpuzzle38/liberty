@@ -62,6 +62,11 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.quote_api.engine, "/api/v0/transition");
   assert.equal(SETTLEMENT.surfaces.quote, "/api/v0/quote");
   assert.equal(SETTLEMENT.surfaces.verify, "/api/v0/verify");
+  assert.equal(SETTLEMENT.surfaces.simulate, "/api/v0/simulate");
+  assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");
+  assert.equal(SETTLEMENT.simulate_api.money, false);
+  assert.equal(SETTLEMENT.simulate_api.persistence, false);
+  assert.equal(SETTLEMENT.simulate_api.engine, "/api/v0/transition");
   assert.equal(SETTLEMENT.verify_api.path, "/api/v0/verify");
   assert.equal(SETTLEMENT.verify_api.money, false);
   assert.equal(SETTLEMENT.verify_api.persistence, false);
@@ -88,6 +93,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("handoff")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/quote")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/verify")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/simulate")));
 });
 
 test("receipt fields match the engine receipt plus optional key_id", () => {

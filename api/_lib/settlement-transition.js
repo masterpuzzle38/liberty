@@ -6,6 +6,7 @@ const FEE_RATE = 0.05;
 const JOB_ID_PATTERN = /^as_[0-9a-f]{10}$/;
 const ACTIONS = ["create", "fund", "submit", "release", "dispute"];
 const VERIFY_ACTIONS = ["release", "dispute"];
+const SIMULATE_TERMINALS = ["release", "dispute"];
 const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
 const TERMINAL = ["released", "disputed"];
 const EXPECTED_FROM = {
@@ -92,6 +93,14 @@ function applyDemoAuth(body, headers) {
     next.key_id = auth.key_id;
     if (body.receipt && typeof body.receipt === "object") {
       next.receipt = { ...body.receipt, key_id: auth.key_id };
+    }
+    if (Array.isArray(body.steps)) {
+      next.steps = body.steps.map((step) => {
+        if (!step || typeof step !== "object" || !step.receipt || typeof step.receipt !== "object") {
+          return step;
+        }
+        return { ...step, receipt: { ...step.receipt, key_id: auth.key_id } };
+      });
     }
   } else {
     next.key_optional = true;
@@ -527,7 +536,14 @@ function verify(input, options) {
 function discovery(kind) {
   const quote = kind === "quote";
   const verifyMode = kind === "verify";
-  const path = verifyMode ? "/api/v0/verify" : quote ? "/api/v0/quote" : "/api/v0/transition";
+  const simulateMode = kind === "simulate";
+  const path = verifyMode
+    ? "/api/v0/verify"
+    : simulateMode
+      ? "/api/v0/simulate"
+      : quote
+        ? "/api/v0/quote"
+        : "/api/v0/transition";
   return {
     service: "liberty-agent-settlement",
     mode: "demo",
@@ -546,13 +562,17 @@ function discovery(kind) {
     actions: verifyMode ? VERIFY_ACTIONS : ACTIONS,
     note: verifyMode
       ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-      : quote
-        ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-        : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+      : simulateMode
+        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+        : quote
+          ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+          : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     protocol: "/api/settlement.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",
     verify: "/api/v0/verify",
+    simulate: "/api/v0/simulate",
+    ...(simulateMode ? { terminals: SIMULATE_TERMINALS } : {}),
   };
 }
 
@@ -689,6 +709,101 @@ function quote(input, options) {
   return transition(input, { ...(options || {}), dryRun: true });
 }
 
+function stepFromResult(result) {
+  const body = result.body || {};
+  const step = { action: body.action, job: body.job };
+  if (Number.isInteger(body.payer_credits)) step.payer_credits = body.payer_credits;
+  if (Number.isInteger(body.fee)) step.fee = body.fee;
+  if (Number.isInteger(body.agent_payout)) step.agent_payout = body.agent_payout;
+  if (Number.isInteger(body.returned_to_payer)) step.returned_to_payer = body.returned_to_payer;
+  if (body.receipt && typeof body.receipt === "object") step.receipt = body.receipt;
+  return step;
+}
+
+function simulate(input, options) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fail(400, "invalid_json", "Body must be a JSON object.");
+  }
+
+  const title = readText(input.title, "title", { maxLength: 80, required: true });
+  if (title.error) return title.error;
+  const amount = readInteger(input.amount, "amount", { min: 1 });
+  if (amount.error) return amount.error;
+  const criteria = readText(input.criteria, "criteria", { required: true });
+  if (criteria.error) return criteria.error;
+  const credits = readCredits(
+    firstDefined(input.payer_credits, input.payerCredits),
+    "payer_credits",
+    true,
+  );
+  if (credits.error) return credits.error;
+  const proof = readText(firstDefined(input.proof_url, input.proofUrl), "proof_url", {
+    required: true,
+  });
+  if (proof.error) return proof.error;
+
+  const rawTerminal = firstDefined(input.terminal, "release");
+  if (typeof rawTerminal !== "string" || !SIMULATE_TERMINALS.includes(rawTerminal)) {
+    return fail(400, "invalid_field", "terminal must be release or dispute.", {
+      field: "terminal",
+      terminals: SIMULATE_TERMINALS,
+    });
+  }
+  const terminal = rawTerminal;
+
+  const created = transition({
+    action: "create",
+    title: title.value,
+    amount: amount.value,
+    criteria: criteria.value,
+  }, options);
+  if (created.status !== 200) return created;
+
+  const steps = [stepFromResult(created)];
+
+  const funded = transition({
+    action: "fund",
+    job: created.body.job,
+    payer_credits: credits.value,
+  }, options);
+  if (funded.status !== 200) return funded;
+  steps.push(stepFromResult(funded));
+
+  const submitted = transition({
+    action: "submit",
+    job: funded.body.job,
+    proof_url: proof.value,
+  }, options);
+  if (submitted.status !== 200) return submitted;
+  steps.push(stepFromResult(submitted));
+
+  const finished = transition(
+    terminal === "release"
+      ? { action: "release", job: submitted.body.job }
+      : { action: "dispute", job: submitted.body.job, payer_credits: funded.body.payer_credits },
+    options,
+  );
+  if (finished.status !== 200) return finished;
+  steps.push(stepFromResult(finished));
+
+  const payerCredits = Number.isInteger(finished.body.payer_credits)
+    ? finished.body.payer_credits
+    : funded.body.payer_credits;
+
+  return ok({
+    terminal,
+    job: finished.body.job,
+    payer_credits: payerCredits,
+    fee: finished.body.fee,
+    agent_payout: finished.body.agent_payout,
+    ...(Number.isInteger(finished.body.returned_to_payer)
+      ? { returned_to_payer: finished.body.returned_to_payer }
+      : {}),
+    receipt: finished.body.receipt,
+    steps,
+  });
+}
+
 function parseBody(raw) {
   if (raw == null || raw === "") return {};
   if (Buffer.isBuffer(raw)) {
@@ -707,7 +822,7 @@ function parseBody(raw) {
   throw error;
 }
 
-function createVercelHandler({ dryRun, verify: verifyMode } = {}) {
+function createVercelHandler({ dryRun, verify: verifyMode, simulate: simulateMode } = {}) {
   return async function handler(req, res) {
     let body;
     try {
@@ -732,6 +847,7 @@ function createVercelHandler({ dryRun, verify: verifyMode } = {}) {
       headers: req.headers,
       dryRun: Boolean(dryRun),
       verify: Boolean(verifyMode),
+      simulate: Boolean(simulateMode),
     });
     for (const [key, value] of Object.entries(result.headers)) {
       res.setHeader(key, value);
@@ -741,11 +857,12 @@ function createVercelHandler({ dryRun, verify: verifyMode } = {}) {
   };
 }
 
-function handleHttp({ method, body, headers, dryRun, verify: verifyMode }) {
+function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulate: simulateMode }) {
   const cors = corsHeaders();
   const verb = (method || "").toUpperCase();
   const quoteMode = Boolean(dryRun);
   const checking = Boolean(verifyMode);
+  const walking = Boolean(simulateMode);
 
   if (verb === "OPTIONS") {
     return { status: 204, headers: cors, body: null };
@@ -755,7 +872,7 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode }) {
     return {
       status: 200,
       headers: { ...cors, "Content-Type": "application/json" },
-      body: discovery(checking ? "verify" : quoteMode ? "quote" : "transition"),
+      body: discovery(checking ? "verify" : walking ? "simulate" : quoteMode ? "quote" : "transition"),
     };
   }
 
@@ -774,7 +891,11 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode }) {
     };
   }
 
-  const result = checking ? verify(body) : transition(body, { dryRun: quoteMode });
+  const result = checking
+    ? verify(body)
+    : walking
+      ? simulate(body)
+      : transition(body, { dryRun: quoteMode });
   return {
     status: result.status,
     headers: { ...cors, "Content-Type": "application/json" },
@@ -787,6 +908,7 @@ module.exports = {
   CORS_ALLOW_HEADERS,
   FEE_RATE,
   JOB_ID_PATTERN,
+  SIMULATE_TERMINALS,
   STATUSES,
   TERMINAL,
   VERIFY_ACTIONS,
@@ -801,6 +923,7 @@ module.exports = {
   readDemoAuth,
   receiptFromJob,
   releaseFee,
+  simulate,
   transition,
   verify,
 };

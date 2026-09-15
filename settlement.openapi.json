@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -25,6 +25,10 @@
     {
       "name": "transition",
       "description": "Stateless demo engine. Client holds state. money is always false. Demo API key is optional."
+    },
+    {
+      "name": "simulate",
+      "description": "One-shot demo lifecycle through the same engine as transition. money is always false. Demo API key is optional."
     },
     {
       "name": "verify",
@@ -360,6 +364,102 @@
         }
       }
     },
+    "/api/v0/simulate": {
+      "get": {
+        "tags": ["simulate"],
+        "summary": "Discovery for the demo simulate engine",
+        "operationId": "getSimulateDiscovery",
+        "responses": {
+          "200": {
+            "description": "Path, actions, terminals, and demo caveats. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimulateDiscovery" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["simulate"],
+        "summary": "CORS preflight",
+        "operationId": "optionsSimulate",
+        "responses": {
+          "204": {
+            "description": "Allow POST and OPTIONS from any origin."
+          }
+        }
+      },
+      "post": {
+        "tags": ["simulate"],
+        "summary": "Run a full demo settlement lifecycle",
+        "description": "Same fee engine as POST /api/v0/transition. Runs create → fund → submit → release or dispute in one request. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, and the terminal receipt. Does not persist jobs or receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "operationId": "postSimulate",
+        "security": [
+          {},
+          { "bearerDemo": [] },
+          { "libertyKey": [] }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "description": "Bearer demo API key minted on the human UI. Not production auth.",
+            "schema": { "type": "string", "example": "Bearer lib_demo_…" }
+          },
+          {
+            "name": "X-Liberty-Key",
+            "in": "header",
+            "required": false,
+            "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SimulateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Full demo walk. Includes ordered steps, final job, payer_credits, and receipt. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SimulateSuccess" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON or fields.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Insufficient credits to fund.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settlement.openapi.json": {
       "get": {
         "tags": ["surface"],
@@ -428,6 +528,7 @@
           },
           "transition_api": { "type": "object" },
           "quote_api": { "type": "object" },
+          "simulate_api": { "type": "object" },
           "verify_api": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" }
@@ -599,7 +700,8 @@
           "dry_run": { "type": "boolean" },
           "quote": { "type": "string" },
           "commit": { "type": "string" },
-          "verify": { "type": "string" }
+          "verify": { "type": "string" },
+          "simulate": { "type": "string" }
         }
       },
       "QuoteDiscovery": {
@@ -622,7 +724,8 @@
           "protocol": { "type": "string" },
           "quote": { "const": "/api/v0/quote" },
           "commit": { "const": "/api/v0/transition" },
-          "verify": { "const": "/api/v0/verify" }
+          "verify": { "const": "/api/v0/verify" },
+          "simulate": { "const": "/api/v0/simulate" }
         }
       },
       "VerifyDiscovery": {
@@ -645,7 +748,90 @@
           "protocol": { "type": "string" },
           "quote": { "const": "/api/v0/quote" },
           "commit": { "const": "/api/v0/transition" },
-          "verify": { "const": "/api/v0/verify" }
+          "verify": { "const": "/api/v0/verify" },
+          "simulate": { "const": "/api/v0/simulate" }
+        }
+      },
+      "SimulateDiscovery": {
+        "type": "object",
+        "required": ["service", "mode", "money", "path", "methods", "auth", "persistence", "actions"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "path": { "const": "/api/v0/simulate" },
+          "methods": { "type": "array", "items": { "type": "string" } },
+          "auth": { "$ref": "#/components/schemas/DemoAuthDiscovery" },
+          "persistence": { "const": false },
+          "dry_run": { "const": false },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] }
+          },
+          "terminals": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["release", "dispute"] }
+          },
+          "note": { "type": "string" },
+          "protocol": { "type": "string" },
+          "quote": { "const": "/api/v0/quote" },
+          "commit": { "const": "/api/v0/transition" },
+          "verify": { "const": "/api/v0/verify" },
+          "simulate": { "const": "/api/v0/simulate" }
+        }
+      },
+      "SimulateRequest": {
+        "type": "object",
+        "required": ["title", "amount", "criteria", "payer_credits", "proof_url"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 80 },
+          "amount": { "type": "integer", "minimum": 1 },
+          "criteria": { "type": "string" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "payerCredits": { "type": "integer", "minimum": 0 },
+          "proof_url": { "type": "string" },
+          "proofUrl": { "type": "string" },
+          "terminal": { "type": "string", "enum": ["release", "dispute"], "default": "release" }
+        }
+      },
+      "SimulateStep": {
+        "type": "object",
+        "required": ["action", "job"],
+        "properties": {
+          "action": { "type": "string", "enum": ["create", "fund", "submit", "release", "dispute"] },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agent_payout": { "type": "integer", "minimum": 0 },
+          "returned_to_payer": { "type": "integer", "minimum": 0 },
+          "receipt": { "$ref": "#/components/schemas/Receipt" }
+        }
+      },
+      "SimulateSuccess": {
+        "type": "object",
+        "required": ["ok", "mode", "money", "steps", "job", "payer_credits"],
+        "properties": {
+          "ok": { "const": true },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "terminal": { "type": "string", "enum": ["release", "dispute"] },
+          "steps": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SimulateStep" }
+          },
+          "job": { "$ref": "#/components/schemas/Job" },
+          "payer_credits": { "type": "integer", "minimum": 0 },
+          "fee": { "type": "integer", "minimum": 0 },
+          "agent_payout": { "type": "integer", "minimum": 0 },
+          "returned_to_payer": { "type": "integer", "minimum": 0 },
+          "receipt": { "$ref": "#/components/schemas/Receipt" },
+          "key_id": {
+            "type": "string",
+            "pattern": "^k_[0-9a-f]{12}$",
+            "description": "Present when a demo key header was sent."
+          },
+          "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
+          "auth": { "$ref": "#/components/schemas/DemoAuth" }
         }
       },
       "VerifyMoney": {
