@@ -983,7 +983,7 @@ function discovery(kind) {
         : validateMode
           ? "Dry-check of the same engine and JSON Schema as POST /api/v0/transition. Same request shape as quote and transition. Returns { ok: true } when the body would be accepted, or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits, hold_expired) with kind: state. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
           : quote
-            ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+            ? "Dry-run of the same engine as POST /api/v0/transition. Validate the body against GET /api/schemas/quote.json. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. A quote is not an invoice and not proof of payment. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
             : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     ...(verifyMode
       ? {}
@@ -1000,7 +1000,11 @@ function discovery(kind) {
         }),
     protocol: "/api/settlement.json",
     discovery: "/.well-known/agent.json",
-    schema: verifyMode ? "/api/schemas/receipt.json" : "/api/schemas/transition.json",
+    schema: verifyMode
+      ? "/api/schemas/receipt.json"
+      : quote
+        ? "/api/schemas/quote.json"
+        : "/api/schemas/transition.json",
     errors: "/api/errors.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",

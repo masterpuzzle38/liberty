@@ -72,6 +72,13 @@
       "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
     },
     {
+      "id": "quote_schema",
+      "method": "GET",
+      "path": "/api/schemas/quote.json",
+      "url": "https://liberty-amber.vercel.app/api/schemas/quote.json",
+      "purpose": "JSON Schema (2020-12) for POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. Client-held demo; Liberty does not move real money."
+    },
+    {
       "id": "receipt_schema",
       "method": "GET",
       "path": "/api/schemas/receipt.json",
