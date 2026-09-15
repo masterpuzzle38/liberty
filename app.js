@@ -17,9 +17,12 @@
 
   const els = {
     balance: document.getElementById("credit-balance"),
+    agentBalance: document.getElementById("agent-credit-balance"),
     flash: document.getElementById("flash"),
     topupForm: document.getElementById("topup-form"),
     topupAmount: document.getElementById("topup-amount"),
+    agentTopupForm: document.getElementById("agent-topup-form"),
+    agentTopupAmount: document.getElementById("agent-topup-amount"),
     createForm: document.getElementById("create-form"),
     jobList: document.getElementById("job-list"),
     jobsEmpty: document.getElementById("jobs-empty"),
@@ -55,6 +58,7 @@
 
   const handoff = window.LibertyJobHandoff;
   const receiptsApi = window.LibertyReceiptExport;
+  const walletApi = window.LibertyAgentWallet;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -84,6 +88,20 @@
 
   function save(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadAgentCredits() {
+    if (!walletApi) return 0;
+    try {
+      return walletApi.readCredits(localStorage.getItem(walletApi.STORAGE_KEY));
+    } catch {
+      return 0;
+    }
+  }
+
+  function saveAgentCredits() {
+    if (!walletApi) return;
+    localStorage.setItem(walletApi.STORAGE_KEY, walletApi.writeCredits(agentCredits));
   }
 
   function loadReceipts() {
@@ -186,6 +204,7 @@
 
   let state = load();
   let receipts = loadReceipts();
+  let agentCredits = loadAgentCredits();
   let inflight = false;
   let pendingQuote = null;
 
@@ -397,6 +416,10 @@
     if (Number.isFinite(data.payer_credits)) {
       state.credits = Math.max(0, Math.floor(data.payer_credits));
     }
+    if (walletApi) {
+      agentCredits = walletApi.applyEngineResult(agentCredits, data);
+      saveAgentCredits();
+    }
     save(state);
     if (data.receipt) {
       rememberReceipt(data.receipt, { key_id: data.receipt.key_id || data.key_id });
@@ -455,9 +478,10 @@
     const job = data.job || {};
     const receipt = data.receipt || {};
     if (job.status === "disputed") {
-      return `Disputed ${job.id}. Returned to payer ${receipt.returned_to_payer}. Fee 0. Payer credits: ${data.payer_credits}.`;
+      return `Disputed ${job.id}. Returned to payer ${receipt.returned_to_payer}. Fee 0. Agent wallet unchanged. Payer credits: ${data.payer_credits}.`;
     }
-    return `Released ${job.id}. Fee ${receipt.release_fee}. Agent payout ${receipt.agent_payout}. Payer credits: ${data.payer_credits}.`;
+    const delta = Number.isInteger(data.agent_credits_delta) ? data.agent_credits_delta : receipt.agent_payout;
+    return `Released ${job.id}. Fee ${receipt.release_fee}. Agent payout ${receipt.agent_payout}. Agent wallet +${delta}. Payer credits: ${data.payer_credits}.`;
   }
 
   function renderSimulateResult(data) {
@@ -501,8 +525,8 @@
     renderSimulateResult(data);
     flash(
       data.job && data.job.status === "disputed"
-        ? `Full demo walk disputed. ${data.returned_to_payer} credits returned. Fee 0. Receipt saved. Demo — not real money.`
-        : `Full demo walk released. Agent payout ${data.agent_payout} credits. Fee ${data.fee} credits. Receipt saved. Demo — not real money.`,
+        ? `Full demo walk disputed. ${data.returned_to_payer} credits returned. Fee 0. Agent wallet unchanged. Receipt saved. Demo — not real money.`
+        : `Full demo walk released. Agent wallet +${data.agent_payout} credits. Fee ${data.fee} credits. Receipt saved. Demo — not real money.`,
     );
     selectJob(data.job.id);
   }
@@ -550,13 +574,14 @@
       return `Hold ${data.job.amount} credits. Fee 0. Payer credits after: ${data.payer_credits_after}.`;
     }
     if (action === "release") {
-      return `Fee ${data.fee}. Agent payout ${data.agent_payout}. Payer credits stay ${state.credits}.`;
+      const delta = Number.isInteger(data.agent_credits_delta) ? data.agent_credits_delta : data.agent_payout;
+      return `Fee ${data.fee}. Agent payout ${data.agent_payout}. Agent wallet +${delta}. Payer credits stay ${state.credits}.`;
     }
     if (action === "dispute") {
       const after = Number.isFinite(data.payer_credits_after)
         ? ` Payer credits after: ${data.payer_credits_after}.`
         : "";
-      return `Returned to payer: ${data.returned_to_payer}. Fee 0.${after}`;
+      return `Returned to payer: ${data.returned_to_payer}. Fee 0. Agent wallet unchanged.${after}`;
     }
     return `Next status: ${data.job.status}.`;
   }
@@ -605,7 +630,14 @@
     state.credits += amount;
     save(state);
     pendingQuote = null;
-    flash(`Added ${amount} demo credits. Not real money.`);
+    flash(`Added ${amount} payer demo credits. Not real money.`);
+    render();
+  }
+
+  function topUpAgent(amount) {
+    agentCredits += amount;
+    saveAgentCredits();
+    flash(`Added ${amount} agent demo credits. localStorage only — not real money.`);
     render();
   }
 
@@ -652,7 +684,7 @@
     const data = await postTransition({ action: "release", job });
     if (!data) return;
     applyResult(data);
-    flash(`Released. Agent payout ${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Receipt saved in this browser. Demo only.`);
+    flash(`Released. Agent wallet +${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Receipt saved in this browser. Demo only.`);
     render();
   }
 
@@ -666,12 +698,13 @@
     });
     if (!data) return;
     applyResult(data);
-    flash(`Disputed. ${data.job.amount} credits returned to the payer. No release fee. Receipt saved in this browser.`);
+    flash(`Disputed. ${data.job.amount} credits returned to the payer. Agent wallet unchanged. Receipt saved in this browser.`);
     render();
   }
 
   function renderBalance() {
     if (els.balance) els.balance.textContent = String(state.credits);
+    if (els.agentBalance) els.agentBalance.textContent = String(agentCredits);
   }
 
   function renderList() {
@@ -1032,6 +1065,23 @@
     });
   });
 
+  els.agentTopupForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const amount = parseCredits(els.agentTopupAmount.value);
+    if (!amount) return flash("Agent top-up amount must be a whole number of credits.", true);
+    topUpAgent(amount);
+  });
+
+  document.querySelectorAll("[data-agent-topup]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const amount = parseCredits(button.getAttribute("data-agent-topup"));
+      if (amount) {
+        if (els.agentTopupAmount) els.agentTopupAmount.value = String(amount);
+        topUpAgent(amount);
+      }
+    });
+  });
+
   els.simulateDemo?.addEventListener("click", () => runSimulate("release"));
   els.simulateDispute?.addEventListener("click", () => runSimulate("dispute"));
 
@@ -1279,12 +1329,14 @@
   });
 
   els.reset?.addEventListener("click", () => {
-    if (!confirm("Clear all demo credits, jobs, and receipts in this browser?")) return;
+    if (!confirm("Clear all demo credits (payer and agent), jobs, and receipts in this browser?")) return;
     state = emptyState();
     receipts = [];
+    agentCredits = 0;
     pendingQuote = null;
     localStorage.removeItem(STORAGE_KEY);
     if (receiptsApi) localStorage.removeItem(receiptsApi.STORAGE_KEY);
+    if (walletApi) localStorage.removeItem(walletApi.STORAGE_KEY);
     flash("Demo reset. The demo API key was left in place — revoke it separately if you want.");
     selectJob(null);
   });

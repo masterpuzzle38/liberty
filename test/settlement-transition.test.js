@@ -99,6 +99,7 @@ test("submit attaches proof; release and dispute are terminal with protocol math
   assert.equal(released.body.job.status, "released");
   assert.equal(released.body.fee, 5);
   assert.equal(released.body.agent_payout, 95);
+  assert.equal(released.body.agent_credits_delta, 95);
   assert.equal(released.body.job.fee, 5);
   assert.equal(released.body.job.agentPayout, 95);
   assert.deepEqual(released.body.receipt, {
@@ -122,6 +123,7 @@ test("submit attaches proof; release and dispute are terminal with protocol math
   assert.equal(disputed.body.job.status, "disputed");
   assert.equal(disputed.body.fee, 0);
   assert.equal(disputed.body.agent_payout, 0);
+  assert.equal(disputed.body.agent_credits_delta, 0);
   assert.equal(disputed.body.returned_to_payer, 100);
   assert.equal(disputed.body.payer_credits, 100);
   assert.equal(disputed.body.receipt.release_fee, 0);

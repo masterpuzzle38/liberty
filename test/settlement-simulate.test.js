@@ -49,6 +49,7 @@ test("simulate release walks create-fund-submit-release with a real id and share
   assert.equal(result.body.agent_payout, 100 - releaseFee(100));
   assert.equal(result.body.fee, 5);
   assert.equal(result.body.agent_payout, 95);
+  assert.equal(result.body.agent_credits_delta, 95);
   assert.equal(result.body.payer_credits, 50);
   assert.equal(result.body.receipt.status, "released");
   assert.equal(result.body.receipt.release_fee, 5);
@@ -63,6 +64,7 @@ test("simulate release walks create-fund-submit-release with a real id and share
   assert.equal(result.body.steps[1].payer_credits, 50);
   assert.equal(result.body.steps[2].job.status, "submitted");
   assert.equal(result.body.steps[3].fee, 5);
+  assert.equal(result.body.steps[3].agent_credits_delta, 95);
   assert.equal(result.body.steps[3].receipt.job_id, "as_0123456789");
 
   const open = commit({
@@ -93,6 +95,7 @@ test("simulate dispute refunds escrow with the same math as transition", () => {
   assert.equal(result.body.job.status, "disputed");
   assert.equal(result.body.fee, 0);
   assert.equal(result.body.agent_payout, 0);
+  assert.equal(result.body.agent_credits_delta, 0);
   assert.equal(result.body.returned_to_payer, 100);
   assert.equal(result.body.payer_credits, 150);
   assert.equal(result.body.receipt.returned_to_payer, 100);
@@ -215,6 +218,7 @@ test("simulate HTTP wrapper: OPTIONS, GET discovery, POST, optional key, and 405
   assert.match(posted.body.job.id, JOB_ID_PATTERN);
   assert.equal(posted.body.steps.length, 4);
   assert.equal(posted.body.receipt.release_fee, releaseFee(20));
+  assert.equal(posted.body.agent_credits_delta, 20 - releaseFee(20));
   assert.equal(posted.body.key_optional, true);
   assert.equal(posted.body.auth.status, "key_optional");
 

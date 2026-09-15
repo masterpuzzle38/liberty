@@ -83,7 +83,14 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.handoff.persistence, false);
   assert.equal(SETTLEMENT.handoff.money, false);
   assert.equal(SETTLEMENT.handoff.prefix, "h1.");
-  assert.deepEqual(SETTLEMENT.handoff.excludes, ["credits", "demo_api_key", "receipts"]);
+  assert.deepEqual(SETTLEMENT.handoff.excludes, ["credits", "agent_credits", "demo_api_key", "receipts"]);
+  assert.equal(SETTLEMENT.agent_wallet.persistence, false);
+  assert.equal(SETTLEMENT.agent_wallet.money, false);
+  assert.equal(SETTLEMENT.agent_wallet.mode, "client");
+  assert.equal(SETTLEMENT.agent_wallet.storage_key, "liberty.agent-settlement.agent-credits.v0");
+  assert.equal(SETTLEMENT.agent_wallet.delta_field, "agent_credits_delta");
+  assert.equal(SETTLEMENT.human_path.agent_credits_storage_key, "liberty.agent-settlement.agent-credits.v0");
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("agent_credits_delta")));
   assert.equal(SETTLEMENT.receipt_export.persistence, false);
   assert.equal(SETTLEMENT.receipt_export.money, false);
   assert.equal(SETTLEMENT.receipt_export.mode, "client");
@@ -91,6 +98,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.receipt_link.persistence, false);
   assert.equal(SETTLEMENT.receipt_link.money, false);
   assert.equal(SETTLEMENT.receipt_link.prefix, "r1.");
+  assert.deepEqual(SETTLEMENT.receipt_link.excludes, ["credits", "agent_credits", "demo_api_key", "jobs"]);
   assert.equal(SETTLEMENT.receipt_link.hash, "#receipt/<token>");
   assert.equal(SETTLEMENT.surfaces.receipt_link, "/#receipt/<token>");
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("receipt")));

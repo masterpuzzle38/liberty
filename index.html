@@ -18,10 +18,18 @@
     </div>
     <div class="top-row">
       <h1>Agent Settlement</h1>
-      <p class="balance" aria-live="polite">
-        <span id="credit-balance">0</span>
-        <span class="balance-unit">credits</span>
-      </p>
+      <div class="balances" aria-live="polite">
+        <p class="balance">
+          <span class="balance-role">Payer</span>
+          <span id="credit-balance">0</span>
+          <span class="balance-unit">credits</span>
+        </p>
+        <p class="balance">
+          <span class="balance-role">Agent</span>
+          <span id="agent-credit-balance">0</span>
+          <span class="balance-unit">credits</span>
+        </p>
+      </div>
     </div>
   </header>
 
@@ -51,20 +59,40 @@
     <p id="flash" class="flash" role="status" aria-live="polite" hidden></p>
 
     <section class="panel" aria-labelledby="wallet-heading">
-      <h2 id="wallet-heading">Demo credits</h2>
-      <p class="hint">Top up simulated credits stored in this browser. Nothing is charged.</p>
-      <form id="topup-form" class="row-form">
-        <label class="field grow">
-          <span>Amount</span>
-          <input id="topup-amount" name="amount" type="number" inputmode="numeric" min="1" step="1" value="100" required />
-        </label>
-        <button type="submit">Top up</button>
-      </form>
-      <p class="presets" role="group" aria-label="Quick top-up amounts">
-        <button type="button" class="ghost" data-topup="50">+50</button>
-        <button type="button" class="ghost" data-topup="100">+100</button>
-        <button type="button" class="ghost" data-topup="250">+250</button>
-      </p>
+      <h2 id="wallet-heading">Demo wallets</h2>
+      <p class="hint">Two-sided demo money in this browser only. Payer credits fund escrow. A successful <strong>release</strong> credits the agent wallet by <code>agent_payout</code>. <strong>Dispute</strong> refunds the payer and does not credit the agent. Both balances are localStorage — not real money, not custody.</p>
+      <div class="wallets">
+        <div class="wallet">
+          <h3>Payer</h3>
+          <form id="topup-form" class="row-form">
+            <label class="field grow">
+              <span>Amount</span>
+              <input id="topup-amount" name="amount" type="number" inputmode="numeric" min="1" step="1" value="100" required />
+            </label>
+            <button type="submit">Top up payer</button>
+          </form>
+          <p class="presets" role="group" aria-label="Quick payer top-up amounts">
+            <button type="button" class="ghost" data-topup="50">+50</button>
+            <button type="button" class="ghost" data-topup="100">+100</button>
+            <button type="button" class="ghost" data-topup="250">+250</button>
+          </p>
+        </div>
+        <div class="wallet">
+          <h3>Agent</h3>
+          <form id="agent-topup-form" class="row-form">
+            <label class="field grow">
+              <span>Amount</span>
+              <input id="agent-topup-amount" name="agent_amount" type="number" inputmode="numeric" min="1" step="1" value="50" required />
+            </label>
+            <button type="submit">Top up agent</button>
+          </form>
+          <p class="presets" role="group" aria-label="Quick agent top-up amounts">
+            <button type="button" class="ghost" data-agent-topup="50">+50</button>
+            <button type="button" class="ghost" data-agent-topup="100">+100</button>
+          </p>
+          <p class="hint">Optional demo top-up. Same localStorage-only credits as the payer wallet (<code>liberty.agent-settlement.agent-credits.v0</code>).</p>
+        </div>
+      </div>
     </section>
 
     <section class="panel" aria-labelledby="create-heading">
@@ -172,10 +200,10 @@
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page stores credits and jobs in localStorage. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or receipts or take custody. Not a live escrow service. Not real money. Not production auth.</p>
+      <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
-        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify</li>
+        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>
@@ -188,7 +216,7 @@
   </main>
 
   <footer class="foot">
-    <p>LIBERTY · Agent Settlement v0 · demo credits, demo key, and receipts in localStorage · jobs shareable by handoff link · receipts shareable by receipt link · not real money</p>
+    <p>LIBERTY · Agent Settlement v0 · payer and agent demo credits, demo key, and receipts in localStorage · jobs shareable by handoff link · receipts shareable by receipt link · not real money</p>
     <button type="button" id="reset-demo" class="text-btn">Reset this browser’s demo</button>
   </footer>
 
@@ -197,6 +225,7 @@
   </noscript>
   <script src="job-handoff.js"></script>
   <script src="receipt-export.js"></script>
+  <script src="agent-wallet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

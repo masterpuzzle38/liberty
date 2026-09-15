@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -138,7 +138,7 @@
         },
         "responses": {
           "200": {
-            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout on release, receipt on release or dispute, key_id when a demo key was sent, and key_optional when it was not.",
+            "description": "Next job state. Includes payer_credits when credits change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, receipt on release or dispute, key_id when a demo key was sent, and key_optional when it was not.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TransitionSuccess" }
@@ -201,7 +201,7 @@
       "post": {
         "tags": ["quote"],
         "summary": "Dry-run one demo settlement action",
-        "description": "Same request shape and engine as POST /api/v0/transition. Computes next status, fee, agent_payout, payer_credits_after, and returned_to_payer when those apply. Does not mutate state. Create quote returns validated open job fields without a durable id. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Same request shape and engine as POST /api/v0/transition. Computes next status, fee, agent_payout, agent_credits_delta, payer_credits_after, and returned_to_payer when those apply. Does not mutate state. Create quote returns validated open job fields without a durable id. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postQuote",
         "security": [
           {},
@@ -234,7 +234,7 @@
         },
         "responses": {
           "200": {
-            "description": "Would-be next job state. quoted is true. Create omits job.id. Includes payer_credits_after when credits would change, fee/agent_payout on release, returned_to_payer on dispute, key_id when a demo key was sent, and key_optional when it was not.",
+            "description": "Would-be next job state. quoted is true. Create omits job.id. Includes payer_credits_after when credits would change, fee/agent_payout/agent_credits_delta on release, agent_credits_delta: 0 on dispute, returned_to_payer on dispute, key_id when a demo key was sent, and key_optional when it was not.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/QuoteSuccess" }
@@ -393,7 +393,7 @@
       "post": {
         "tags": ["simulate"],
         "summary": "Run a full demo settlement lifecycle",
-        "description": "Same fee engine as POST /api/v0/transition. Runs create → fund → submit → release or dispute in one request. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, and the terminal receipt. Does not persist jobs or receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "description": "Same fee engine as POST /api/v0/transition. Runs create → fund → submit → release or dispute in one request. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response and receipt include key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
         "operationId": "postSimulate",
         "security": [
           {},
@@ -426,7 +426,7 @@
         },
         "responses": {
           "200": {
-            "description": "Full demo walk. Includes ordered steps, final job, payer_credits, and receipt. money is always false.",
+            "description": "Full demo walk. Includes ordered steps, final job, payer_credits, agent_credits_delta, and receipt. money is always false.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SimulateSuccess" }
@@ -532,7 +532,8 @@
           "verify_api": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
-          "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" }
+          "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
+          "agent_wallet": { "$ref": "#/components/schemas/AgentWalletProtocol" }
         }
       },
       "HandoffProtocol": {
@@ -561,6 +562,18 @@
             "type": "array",
             "items": { "type": "string", "enum": ["json", "ndjson"] }
           }
+        }
+      },
+      "AgentWalletProtocol": {
+        "type": "object",
+        "description": "Client-held agent credits. Credited on release. Not a server ledger.",
+        "properties": {
+          "mode": { "const": "client" },
+          "persistence": { "const": false },
+          "money": { "const": false },
+          "storage": { "const": "localStorage" },
+          "storage_key": { "const": "liberty.agent-settlement.agent-credits.v0" },
+          "delta_field": { "const": "agent_credits_delta" }
         }
       },
       "ReceiptLinkProtocol": {
@@ -826,6 +839,7 @@
           "payer_credits": { "type": "integer", "minimum": 0 },
           "fee": { "type": "integer", "minimum": 0 },
           "agent_payout": { "type": "integer", "minimum": 0 },
+          "agent_credits_delta": { "type": "integer", "minimum": 0 },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
           "receipt": { "$ref": "#/components/schemas/Receipt" }
         }
@@ -846,6 +860,7 @@
           "payer_credits": { "type": "integer", "minimum": 0 },
           "fee": { "type": "integer", "minimum": 0 },
           "agent_payout": { "type": "integer", "minimum": 0 },
+          "agent_credits_delta": { "type": "integer", "minimum": 0, "description": "Credits to add to a client-held agent wallet. Same as agent_payout on release; 0 on dispute." },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
           "receipt": { "$ref": "#/components/schemas/Receipt" },
           "key_id": {
@@ -947,6 +962,7 @@
           "payer_credits_after": { "type": "integer", "minimum": 0 },
           "fee": { "type": "integer", "minimum": 0 },
           "agent_payout": { "type": "integer", "minimum": 0 },
+          "agent_credits_delta": { "type": "integer", "minimum": 0, "description": "Credits to add to a client-held agent wallet. Same as agent_payout on release; 0 on dispute." },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
           "receipt": { "$ref": "#/components/schemas/Receipt" },
           "key_id": {
@@ -1026,6 +1042,7 @@
           "payer_credits": { "type": "integer", "minimum": 0 },
           "fee": { "type": "integer", "minimum": 0 },
           "agent_payout": { "type": "integer", "minimum": 0 },
+          "agent_credits_delta": { "type": "integer", "minimum": 0, "description": "Credits to add to a client-held agent wallet. Same as agent_payout on release; 0 on dispute." },
           "returned_to_payer": { "type": "integer", "minimum": 0 },
           "receipt": { "$ref": "#/components/schemas/Receipt" },
           "key_id": {
