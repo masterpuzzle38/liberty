@@ -125,7 +125,11 @@
 
     <section class="panel" aria-labelledby="simulate-heading">
       <h2 id="simulate-heading">Run a full demo settlement</h2>
-      <p class="hint">One click POSTs <code>/api/v0/simulate</code> — create → fund → submit → release (or dispute) through the same fee engine. Safe demo defaults. Demo — not real money. Liberty does not store the job.</p>
+      <p class="hint">One click POSTs <code>/api/v0/simulate</code> — create → fund → submit → release (or dispute) through the same fee engine. Safe demo defaults. Optional note below lands on the receipt. Demo — not real money. Liberty does not store the job.</p>
+      <label class="field">
+        <span>Optional receipt note</span>
+        <textarea id="simulate-note" name="simulate-note" rows="2" maxlength="400" placeholder="Why released or disputed — appears on the receipt"></textarea>
+      </label>
       <div class="action-row">
         <button type="button" id="simulate-demo">Run a full demo settlement</button>
         <button type="button" class="secondary" id="simulate-dispute">Run a dispute walk</button>
@@ -226,7 +230,7 @@
 
       <article class="adapter-example">
         <h3>POST /api/v0/transition</h3>
-        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Optional <code>release_note</code> or <code>dispute_reason</code> on the terminal action. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
@@ -242,7 +246,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -d '{"action":"submit","proof_url":"https://example.com/proof","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"funded","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
 curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
-  -d '{"action":"release","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"https://example.com/proof","status":"submitted","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":"2026-09-15T00:00:00.000Z","resolvedAt":null,"fee":0,"agentPayout":0}}'</code></pre>
+  -d '{"action":"release","release_note":"Proof matches the three-bullet brief.","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"https://example.com/proof","status":"submitted","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":"2026-09-15T00:00:00.000Z","resolvedAt":null,"fee":0,"agentPayout":0}}'</code></pre>
         <div class="action-row">
           <button type="button" class="ghost" data-copy-example>Copy curl</button>
         </div>
@@ -250,10 +254,10 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
 
       <article class="adapter-example">
         <h3>POST /api/v0/simulate</h3>
-        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Optional <code>release_note</code> or <code>dispute_reason</code> lands on the receipt. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
   -H 'content-type: application/json' \
-  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release"}'
+  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release","release_note":"Proof matches the three-bullet brief."}'
 # optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
 # optional: -H 'Idempotency-Key: retry-create-1' (stable create id; no stored replay)</code></pre>
         <div class="action-row">

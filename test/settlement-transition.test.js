@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const {
   CORS_ALLOW_HEADERS,
   JOB_ID_PATTERN,
+  NOTE_MAX_LENGTH,
   handleHttp,
   keyIdFromSecret,
   releaseFee,
@@ -319,4 +320,76 @@ test("protocol files describe optional demo keys and stay valid JSON", () => {
     simulateHeaders.headers.find((h) => h.key === "Access-Control-Allow-Headers").value,
     CORS_ALLOW_HEADERS,
   );
+});
+
+test("optional release_note and dispute_reason land on the job and receipt", () => {
+  const open = createJob();
+  const funded = step("fund", { job: open, payer_credits: 100 }).body.job;
+  const submitted = step("submit", { job: funded, proof_url: "https://example.com/proof" }).body.job;
+
+  const released = step("release", {
+    job: submitted,
+    release_note: "  Proof matches the three-bullet brief.  ",
+  });
+  assert.equal(released.status, 200);
+  assert.equal(released.body.job.releaseNote, "Proof matches the three-bullet brief.");
+  assert.equal(released.body.receipt.release_note, "Proof matches the three-bullet brief.");
+  assert.equal(released.body.receipt.dispute_reason, undefined);
+  assert.equal(released.body.fee, 5);
+  assert.equal(released.body.agent_credits_delta, 95);
+
+  const camel = step("release", {
+    job: submitted,
+    releaseNote: "Camel note",
+  });
+  assert.equal(camel.body.receipt.release_note, "Camel note");
+
+  const disputed = step("dispute", {
+    job: submitted,
+    payer_credits: 0,
+    dispute_reason: "Proof does not match the criteria.",
+  });
+  assert.equal(disputed.status, 200);
+  assert.equal(disputed.body.job.disputeReason, "Proof does not match the criteria.");
+  assert.equal(disputed.body.receipt.dispute_reason, "Proof does not match the criteria.");
+  assert.equal(disputed.body.receipt.release_note, undefined);
+  assert.equal(disputed.body.fee, 0);
+  assert.equal(disputed.body.returned_to_payer, 100);
+});
+
+test("terminal notes stay optional, bounded, and action-specific", () => {
+  const open = createJob();
+  const funded = step("fund", { job: open, payer_credits: 100 }).body.job;
+  const submitted = step("submit", { job: funded, proof_url: "https://example.com/proof" }).body.job;
+
+  const omitted = step("release", { job: submitted });
+  assert.equal(omitted.body.job.releaseNote, undefined);
+  assert.equal(omitted.body.receipt.release_note, undefined);
+
+  const blank = step("release", { job: submitted, release_note: "   " });
+  assert.equal(blank.status, 200);
+  assert.equal(blank.body.receipt.release_note, undefined);
+
+  const tooLong = step("release", { job: submitted, release_note: "x".repeat(NOTE_MAX_LENGTH + 1) });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.error, "invalid_field");
+  assert.equal(tooLong.body.field, "release_note");
+
+  const wrongField = step("release", { job: submitted, dispute_reason: "Not for release." });
+  assert.equal(wrongField.status, 400);
+  assert.equal(wrongField.body.error, "invalid_field");
+  assert.equal(wrongField.body.field, "dispute_reason");
+
+  const onCreate = step("create", {
+    title: "x",
+    amount: 1,
+    criteria: "done",
+    release_note: "No.",
+  });
+  assert.equal(onCreate.status, 400);
+  assert.equal(onCreate.body.field, "release_note");
+
+  const notString = step("dispute", { job: submitted, dispute_reason: 12 });
+  assert.equal(notString.status, 400);
+  assert.equal(notString.body.field, "dispute_reason");
 });

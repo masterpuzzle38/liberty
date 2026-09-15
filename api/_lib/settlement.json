@@ -55,7 +55,7 @@
     "storage_key": "liberty.agent-settlement.receipts.v0",
     "when": "successful release or dispute (transition or simulate receipt; quote dry-runs are not stored)",
     "formats": ["json", "ndjson"],
-    "fields": ["job_id", "status", "release_fee", "agent_payout", "returned_to_payer", "created", "funded", "submitted", "resolved"],
+    "fields": ["job_id", "status", "release_fee", "agent_payout", "returned_to_payer", "release_note", "dispute_reason", "created", "funded", "submitted", "resolved"],
     "note": "The human UI keeps the transition or simulate receipt in this browser so a human or adapter can download or share proof. Copy a receipt link (#receipt/r1.…) to load it into Verify on another device. POST /api/v0/verify to check that receipt against the fee engine. Liberty does not store receipts. Not a server ledger. Not real money."
   },
   "receipt_link": {
@@ -99,7 +99,7 @@
     "persistence": false,
     "money": false,
     "mode": "demo",
-    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Dispute returns agent_credits_delta: 0. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody.",
+    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Optional release_note / dispute_reason (max 400) echo on the terminal receipt and job. Dispute returns agent_credits_delta: 0. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody.",
     "job_object": {
       "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout)",
       "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl"]
@@ -123,12 +123,12 @@
       {
         "action": "release",
         "body": ["action", "job"],
-        "optional": ["idempotency_key"]
+        "optional": ["release_note", "idempotency_key"]
       },
       {
         "action": "dispute",
         "body": ["action", "job"],
-        "optional": ["payer_credits", "idempotency_key"]
+        "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
       }
     ]
   },
@@ -151,7 +151,7 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
+    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Optional release_note / dispute_reason echo on the quoted receipt and job. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
     "create_job": "Validated open job fields only. No durable id.",
     "requests": [
       {
@@ -172,12 +172,12 @@
       {
         "action": "release",
         "body": ["action", "job"],
-        "optional": ["idempotency_key"]
+        "optional": ["release_note", "idempotency_key"]
       },
       {
         "action": "dispute",
         "body": ["action", "job"],
-        "optional": ["payer_credits", "idempotency_key"]
+        "optional": ["payer_credits", "dispute_reason", "idempotency_key"]
       }
     ]
   },
@@ -199,14 +199,14 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
+    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional release_note / dispute_reason (max 400) land on the terminal receipt and job. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
     "create_job": "Committed demo walk. Assigns as_ + 10 hex. Stable when Idempotency-Key is sent.",
     "terminals": ["release", "dispute"],
     "default_terminal": "release",
     "requests": [
       {
         "body": ["title", "amount", "criteria", "payer_credits", "proof_url"],
-        "optional": ["terminal", "idempotency_key"]
+        "optional": ["terminal", "release_note", "dispute_reason", "idempotency_key"]
       }
     ]
   },
@@ -288,14 +288,16 @@
       "from": "submitted",
       "to": "released",
       "requires": ["job"],
-      "effect": "Computes fee, agent_payout, and agent_credits_delta. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. Terminal."
+      "optional": ["release_note"],
+      "effect": "Computes fee, agent_payout, and agent_credits_delta. Optional release_note (max 400) lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. Terminal."
     },
     {
       "id": "dispute",
       "from": "submitted",
       "to": "disputed",
       "requires": ["job"],
-      "effect": "Returns the full amount to the payer. fee=0, agent_payout=0, agent_credits_delta=0. Terminal."
+      "optional": ["dispute_reason"],
+      "effect": "Returns the full amount to the payer. Optional dispute_reason (max 400) lands on the job and receipt. fee=0, agent_payout=0, agent_credits_delta=0. Terminal."
     }
   ],
   "job": {
@@ -314,7 +316,9 @@
     "submitted_at": { "type": ["string", "null"], "format": "date-time" },
     "resolved_at": { "type": ["string", "null"], "format": "date-time" },
     "fee": { "type": "integer", "unit": "credits", "zero_until": "release" },
-    "agent_payout": { "type": "integer", "unit": "credits", "zero_until": "release" }
+    "agent_payout": { "type": "integer", "unit": "credits", "zero_until": "release" },
+    "release_note": { "type": "string", "maxLength": 400, "optional": true, "when": "release" },
+    "dispute_reason": { "type": "string", "maxLength": 400, "optional": true, "when": "dispute" }
   },
   "receipt_fields": [
     { "id": "job_id", "source": "job.id" },
@@ -330,6 +334,8 @@
     { "id": "funded", "source": "job.fundedAt" },
     { "id": "submitted", "source": "job.submittedAt" },
     { "id": "resolved", "source": "job.resolvedAt" },
+    { "id": "release_note", "source": "request.release_note on release", "optional": true, "maxLength": 400 },
+    { "id": "dispute_reason", "source": "request.dispute_reason on dispute", "optional": true, "maxLength": 400 },
     { "id": "key_id", "source": "sha256(demo_key) prefix when Authorization or X-Liberty-Key is sent", "optional": true }
   ],
   "discovery": {

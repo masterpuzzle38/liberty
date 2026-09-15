@@ -54,6 +54,26 @@ test("encode/decode round-trips a terminal receipt", () => {
   assert.deepEqual(decoded.receipt, receipt);
 });
 
+test("receipt-link compact payload keeps optional notes", () => {
+  const encoded = encodeReceipt(sampleReceipt({ release_note: "Looks good." }));
+  assert.equal(encoded.ok, true);
+  assert.equal(encoded.receipt.release_note, "Looks good.");
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.receipt.rn, "Looks good.");
+  assert.equal(payload.receipt.release_note, undefined);
+  assert.equal(decodeReceipt(encoded.token).receipt.release_note, "Looks good.");
+
+  const disputed = encodeReceipt(sampleReceipt({
+    status: "disputed",
+    release_fee: 0,
+    agent_payout: 0,
+    returned_to_payer: 100,
+    dispute_reason: "Not done.",
+  }));
+  assert.equal(decodeReceipt(disputed.token).receipt.dispute_reason, "Not done.");
+});
+
 test("receipt-link payload is compact and does not include credits or API keys", () => {
   const encoded = encodeReceipt(sampleReceipt({ key_id: "k_deadbeef0000" }));
   const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");

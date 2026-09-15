@@ -118,6 +118,37 @@ test("quote and transition share fee, payout, and credit math on happy paths", (
   assert.equal(disputeQuote.body.agent_credits_delta, 0);
 });
 
+test("quote dry-run echoes optional terminal notes without changing fee math", () => {
+  const open = createOpen();
+  const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;
+  const submitted = commit({
+    action: "submit",
+    job: funded,
+    proof_url: "https://example.com/proof",
+  }).body.job;
+
+  const quoted = preview({
+    action: "release",
+    job: submitted,
+    release_note: "Looks good.",
+  });
+  assert.equal(quoted.status, 200);
+  assert.equal(quoted.body.quoted, true);
+  assert.equal(quoted.body.receipt.release_note, "Looks good.");
+  assert.equal(quoted.body.job.releaseNote, "Looks good.");
+  assert.equal(quoted.body.fee, 5);
+  assert.equal(quoted.body.agent_payout, 95);
+
+  const disputeQuote = preview({
+    action: "dispute",
+    job: submitted,
+    disputeReason: "Not done.",
+  });
+  assert.equal(disputeQuote.body.quoted, true);
+  assert.equal(disputeQuote.body.receipt.dispute_reason, "Not done.");
+  assert.equal(disputeQuote.body.returned_to_payer, 100);
+});
+
 test("illegal quote matches illegal transition and does not invent a next job", () => {
   const open = createOpen();
   const funded = commit({ action: "fund", job: open, payer_credits: 100 }).body.job;

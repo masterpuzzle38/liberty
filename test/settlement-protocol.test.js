@@ -130,7 +130,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.simulate_api.idempotency.replay, false);
 });
 
-test("receipt fields match the engine receipt plus optional key_id", () => {
+test("receipt fields match the engine receipt plus optional notes and key_id", () => {
   const job = {
     id: "as_0123456789",
     title: "Receipt check",
@@ -145,9 +145,16 @@ test("receipt fields match the engine receipt plus optional key_id", () => {
     fee: 1,
     agentPayout: 19,
   };
-  const receiptIds = SETTLEMENT.receipt_fields.map((field) => field.id);
-  assert.deepEqual(receiptIds, [...Object.keys(receiptFromJob(job)), "key_id"]);
-  assert.equal(SETTLEMENT.receipt_fields.at(-1).optional, true);
+  assert.deepEqual(
+    SETTLEMENT.receipt_fields.filter((field) => !field.optional).map((field) => field.id),
+    Object.keys(receiptFromJob(job)),
+  );
+  assert.deepEqual(
+    SETTLEMENT.receipt_fields.filter((field) => field.optional).map((field) => field.id),
+    ["release_note", "dispute_reason", "key_id"],
+  );
+  const noted = receiptFromJob({ ...job, releaseNote: "Looks good." });
+  assert.equal(noted.release_note, "Looks good.");
 });
 
 test("GET /api/health.json and /api/settlement.json handlers serve the protocol docs", async () => {

@@ -53,6 +53,7 @@
     verifyResult: document.getElementById("verify-result"),
     simulateDemo: document.getElementById("simulate-demo"),
     simulateDispute: document.getElementById("simulate-dispute"),
+    simulateNote: document.getElementById("simulate-note"),
     simulateResult: document.getElementById("simulate-result"),
   };
 
@@ -398,6 +399,11 @@
       `- Resolved: ${job.resolvedAt || "—"}`,
     ];
     if (job.receiptKeyId) lines.push(`- Demo key_id: ${job.receiptKeyId}`);
+    const stored = findReceipt(job.id);
+    const releaseNote = (stored && stored.release_note) || job.releaseNote;
+    const disputeReason = (stored && stored.dispute_reason) || job.disputeReason;
+    if (job.status === "released" && releaseNote) lines.push(`- Release note: ${releaseNote}`);
+    if (job.status === "disputed" && disputeReason) lines.push(`- Dispute reason: ${disputeReason}`);
     lines.push("");
     return lines.join("\n");
   }
@@ -509,6 +515,7 @@
   async function runSimulate(terminal) {
     const amount = SIMULATE_DEFAULTS.amount;
     const starting = state.credits < amount ? state.credits + amount : state.credits;
+    const note = els.simulateNote ? els.simulateNote.value.trim() : "";
     const data = await postSimulate({
       title: SIMULATE_DEFAULTS.title,
       amount,
@@ -516,6 +523,9 @@
       payer_credits: starting,
       proof_url: SIMULATE_DEFAULTS.proof_url,
       terminal,
+      ...(note
+        ? (terminal === "dispute" ? { dispute_reason: note } : { release_note: note })
+        : {}),
     });
     if (!data) {
       renderSimulateResult(null);
@@ -561,12 +571,25 @@
     }
   }
 
-  function moneyActionPayload(action, job) {
+  function moneyActionPayload(action, job, note) {
     if (action === "fund") return { action, job, payer_credits: state.credits };
     if (action === "submit") return { action, job };
-    if (action === "release") return { action, job };
-    if (action === "dispute") return { action, job, payer_credits: state.credits };
+    if (action === "release") {
+      const payload = { action, job };
+      if (note) payload.release_note = note;
+      return payload;
+    }
+    if (action === "dispute") {
+      const payload = { action, job, payer_credits: state.credits };
+      if (note) payload.dispute_reason = note;
+      return payload;
+    }
     return { action, job };
+  }
+
+  function readTerminalNote() {
+    const field = els.detail && els.detail.querySelector("#terminal-note");
+    return field ? field.value.trim() : "";
   }
 
   function quoteImpactLine(action, data) {
@@ -589,11 +612,18 @@
   function quotePreviewHtml(quote) {
     const data = quote.data;
     const next = data.job && data.job.status ? data.job.status : quote.action;
+    const noteField = quote.action === "release" || quote.action === "dispute"
+      ? `<label class="field">
+          <span>${quote.action === "release" ? "Release note (optional)" : "Dispute reason (optional)"}</span>
+          <textarea id="terminal-note" name="terminal-note" rows="2" maxlength="400" placeholder="${quote.action === "release" ? "Why this work is done — appears on the receipt" : "Why this is disputed — appears on the receipt"}">${escapeHtml(quote.note || "")}</textarea>
+        </label>`
+      : "";
     return `
       <aside class="quote-preview" aria-live="polite">
         <p class="quote-kicker">Demo quote — not real money</p>
         <p class="quote-impact">${escapeHtml(quoteImpactLine(quote.action, data))}</p>
         <p class="hint">Next status: ${escapeHtml(next)}. Nothing is committed until you confirm.</p>
+        ${noteField}
       </aside>
       <div class="action-row">
         <button type="button" data-action="confirm-quote"${quote.action === "dispute" ? " class=\"warn\"" : ""}>Confirm ${escapeHtml(quote.action)}</button>
@@ -614,10 +644,11 @@
   async function confirmQuotedAction() {
     if (!pendingQuote) return;
     const { action, jobId } = pendingQuote;
+    const note = readTerminalNote();
     pendingQuote = null;
     if (action === "fund") return fundJob(jobId);
-    if (action === "release") return releaseJob(jobId);
-    if (action === "dispute") return disputeJob(jobId);
+    if (action === "release") return releaseJob(jobId, note);
+    if (action === "dispute") return disputeJob(jobId, note);
   }
 
   function cancelQuote() {
@@ -678,24 +709,20 @@
     render();
   }
 
-  async function releaseJob(id) {
+  async function releaseJob(id, note) {
     const job = findJob(id);
     if (!job) return;
-    const data = await postTransition({ action: "release", job });
+    const data = await postTransition(moneyActionPayload("release", job, note));
     if (!data) return;
     applyResult(data);
     flash(`Released. Agent wallet +${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Receipt saved in this browser. Demo only.`);
     render();
   }
 
-  async function disputeJob(id) {
+  async function disputeJob(id, note) {
     const job = findJob(id);
     if (!job) return;
-    const data = await postTransition({
-      action: "dispute",
-      job,
-      payer_credits: state.credits,
-    });
+    const data = await postTransition(moneyActionPayload("dispute", job, note));
     if (!data) return;
     applyResult(data);
     flash(`Disputed. ${data.job.amount} credits returned to the payer. Agent wallet unchanged. Receipt saved in this browser.`);
@@ -823,6 +850,16 @@
         <dt>Funded</dt><dd>${escapeHtml(formatWhen(job.fundedAt))}</dd>
         <dt>Submitted</dt><dd>${escapeHtml(formatWhen(job.submittedAt))}</dd>
         <dt>Resolved</dt><dd>${escapeHtml(formatWhen(job.resolvedAt))}</dd>
+        ${(() => {
+          const stored = findReceipt(job.id);
+          if (job.status === "released" && (job.releaseNote || (stored && stored.release_note))) {
+            return `<dt>Release note</dt><dd class="terminal-note"></dd>`;
+          }
+          if (job.status === "disputed" && (job.disputeReason || (stored && stored.dispute_reason))) {
+            return `<dt>Dispute reason</dt><dd class="terminal-note"></dd>`;
+          }
+          return "";
+        })()}
       </dl>
       ${actions.join("")}
       <div class="handoff-share">
@@ -845,6 +882,13 @@
     const proofDd = els.detail.querySelectorAll(".detail-meta dd")[3];
     if (criteriaDd) criteriaDd.textContent = job.criteria;
     if (proofDd) proofDd.textContent = job.proofUrl || "—";
+    const noteDd = els.detail.querySelector(".detail-meta .terminal-note");
+    if (noteDd) {
+      const stored = findReceipt(job.id);
+      noteDd.textContent = job.status === "released"
+        ? (job.releaseNote || (stored && stored.release_note) || "")
+        : (job.disputeReason || (stored && stored.dispute_reason) || "");
+    }
 
     const receiptPre = els.detail.querySelector("#receipt-md");
     if (receiptPre) receiptPre.textContent = receiptMarkdown(job);
@@ -912,8 +956,9 @@
       item.querySelector("code").textContent = receipt.job_id;
       item.querySelector(".receipt-item-money").textContent =
         `Fee ${receipt.release_fee} · Agent payout ${receipt.agent_payout} · Returned to payer ${receipt.returned_to_payer}`;
+      const note = receipt.release_note || receipt.dispute_reason;
       item.querySelector(".receipt-item-when").textContent =
-        `${receipt.job_id} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}`;
+        `${receipt.job_id} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}${note ? ` · ${note}` : ""}`;
       els.receiptList.appendChild(item);
     }
     renderVerifyPick();

@@ -13,6 +13,7 @@
   const JOB_ID_PATTERN = /^as_[0-9a-f]{10}$/;
   const KEY_ID_PATTERN = /^k_[0-9a-f]{12}$/;
   const TERMINAL = ["released", "disputed"];
+  const NOTE_MAX_LENGTH = 400;
   const VERSION = 1;
   const PREFIX = "r1.";
   const HASH_RE = /^#receipt\/(.+)$/i;
@@ -32,6 +33,8 @@
     ["submitted", "sa"],
     ["resolved", "ra"],
     ["key_id", "k"],
+    ["release_note", "rn"],
+    ["dispute_reason", "dr"],
   ];
 
   function fail(error, message) {
@@ -114,6 +117,14 @@
     };
     const keyId = extras && extras.key_id ? extras.key_id : job.receiptKeyId;
     if (keyId) receipt.key_id = keyId;
+    const releaseNote = firstDefined(job.releaseNote, job.release_note);
+    const disputeReason = firstDefined(job.disputeReason, job.dispute_reason);
+    if (released && typeof releaseNote === "string" && releaseNote.trim()) {
+      receipt.release_note = releaseNote.trim();
+    }
+    if (disputed && typeof disputeReason === "string" && disputeReason.trim()) {
+      receipt.dispute_reason = disputeReason.trim();
+    }
     return readReceipt(receipt);
   }
 
@@ -201,6 +212,30 @@
         return fail("invalid_receipt", "key_id must match k_ plus 12 hex characters.");
       }
       receipt.key_id = keyId;
+    }
+
+    const releaseNote = readText(
+      firstDefined(raw.release_note, raw.releaseNote),
+      "release_note",
+    );
+    if (!releaseNote.ok) return releaseNote;
+    if (releaseNote.value) {
+      if (releaseNote.value.length > NOTE_MAX_LENGTH) {
+        return fail("invalid_receipt", `release_note must be at most ${NOTE_MAX_LENGTH} characters.`);
+      }
+      if (status.value === "released") receipt.release_note = releaseNote.value;
+    }
+
+    const disputeReason = readText(
+      firstDefined(raw.dispute_reason, raw.disputeReason),
+      "dispute_reason",
+    );
+    if (!disputeReason.ok) return disputeReason;
+    if (disputeReason.value) {
+      if (disputeReason.value.length > NOTE_MAX_LENGTH) {
+        return fail("invalid_receipt", `dispute_reason must be at most ${NOTE_MAX_LENGTH} characters.`);
+      }
+      if (status.value === "disputed") receipt.dispute_reason = disputeReason.value;
     }
 
     return { ok: true, receipt };
@@ -442,6 +477,7 @@
   return {
     JOB_ID_PATTERN,
     KEY_ID_PATTERN,
+    NOTE_MAX_LENGTH,
     PREFIX,
     STORAGE_KEY,
     TERMINAL,
