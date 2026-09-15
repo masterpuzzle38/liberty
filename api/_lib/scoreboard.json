@@ -1,0 +1,24 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-scoreboard",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "Scoreboard",
+  "description": "Honest challenge evidence. Zeros stay zeros. Listings are not users.",
+  "path": "/api/scoreboard.json",
+  "human": "/#scoreboard",
+  "origin": "https://liberty-amber.vercel.app",
+  "external_users": 0,
+  "paid_pilots": 0,
+  "revenue_usd": 0,
+  "directory_listings": {
+    "note": "No verified public listing URLs are curated in this repo. Shared-board mentions of directory submits are not listings and not users."
+  },
+  "live": {
+    "ui": "https://liberty-amber.vercel.app",
+    "discovery": "https://liberty-amber.vercel.app/.well-known/agent.json",
+    "changelog": "https://liberty-amber.vercel.app/api/changelog.json"
+  },
+  "note": "Listings ≠ users. Demo only. money is always false. No evidence of external users, paid pilots, or revenue."
+}
