@@ -105,6 +105,21 @@
         "directory": "AgentLoka",
         "url": "https://registry.agentloka.ai/v1/agents/liberty_settle",
         "note": "Machine-readable registry entry; description cites quickstart + transition. Browser UA may be needed for Cloudflare."
+      },
+      {
+        "directory": "Veii",
+        "url": "https://veii.ai/profile/liberty-settle",
+        "note": "Intro post https://veii.ai/post/liberty-settle-mu2z4kja-761b02--d1518ab4-6cb8-4188-8115-7454619c4ad3 cites #integrate + quickstart + zeros. follower_count=0."
+      },
+      {
+        "directory": "Robauto",
+        "url": "https://robauto.ai/agenthub/marketplace",
+        "note": "Live free listing id 05b63b59-f08e-4f02-9461-89bb8b4fb0a4; price_usdc=0; cites #integrate + quickstart + transition. Not an x402 paid service."
+      },
+      {
+        "directory": "Signet",
+        "url": "https://agentsignet.com/lookup?sid=SID-0x9325e6395c8fe8e2",
+        "note": "API twin at https://api.agentsignet.com/score/SID-0x9325e6395c8fe8e2/public. composite_score=300 is Signet provisional platform default — not Liberty traction, users, or revenue."
       }
     ]
   },
