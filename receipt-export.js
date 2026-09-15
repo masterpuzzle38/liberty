@@ -13,6 +13,26 @@
   const JOB_ID_PATTERN = /^as_[0-9a-f]{10}$/;
   const KEY_ID_PATTERN = /^k_[0-9a-f]{12}$/;
   const TERMINAL = ["released", "disputed"];
+  const VERSION = 1;
+  const PREFIX = "r1.";
+  const HASH_RE = /^#receipt\/(.+)$/i;
+
+  const RECEIPT_KEYS = [
+    ["job_id", "j"],
+    ["title", "t"],
+    ["status", "s"],
+    ["amount", "a"],
+    ["release_fee", "f"],
+    ["agent_payout", "ap"],
+    ["returned_to_payer", "rp"],
+    ["success_criteria", "c"],
+    ["proof", "p"],
+    ["created", "ca"],
+    ["funded", "fa"],
+    ["submitted", "sa"],
+    ["resolved", "ra"],
+    ["key_id", "k"],
+  ];
 
   function fail(error, message) {
     return { ok: false, error, message };
@@ -247,15 +267,195 @@
     return `liberty-receipt-${id}.json`;
   }
 
+  function compactReceipt(receipt) {
+    const packed = {};
+    for (const [from, to] of RECEIPT_KEYS) {
+      if (receipt[from] !== undefined) packed[to] = receipt[from];
+    }
+    return packed;
+  }
+
+  function expandReceipt(packed) {
+    if (!packed || typeof packed !== "object") return packed;
+    const receipt = {};
+    for (const [from, to] of RECEIPT_KEYS) {
+      if (packed[from] !== undefined) receipt[from] = packed[from];
+      else if (packed[to] !== undefined) receipt[from] = packed[to];
+    }
+    return receipt;
+  }
+
+  function bytesToBase64Url(bytes) {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+    const base64 = typeof btoa === "function"
+      ? btoa(binary)
+      : Buffer.from(bytes).toString("base64");
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function base64UrlToBytes(token) {
+    const padded = token.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+    const base64 = padded + pad;
+    if (typeof atob === "function") {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+    return Uint8Array.from(Buffer.from(base64, "base64"));
+  }
+
+  function utf8ToBytes(text) {
+    if (typeof TextEncoder === "function") return new TextEncoder().encode(text);
+    return Uint8Array.from(Buffer.from(text, "utf8"));
+  }
+
+  function bytesToUtf8(bytes) {
+    if (typeof TextDecoder === "function") return new TextDecoder().decode(bytes);
+    return Buffer.from(bytes).toString("utf8");
+  }
+
+  function encodeReceipt(source, extras) {
+    const parsed = readReceipt(source, extras);
+    if (!parsed.ok) return parsed;
+    const payload = {
+      v: VERSION,
+      receipt: compactReceipt(parsed.receipt),
+    };
+    const token = PREFIX + bytesToBase64Url(utf8ToBytes(JSON.stringify(payload)));
+    return { ok: true, token, receipt: parsed.receipt };
+  }
+
+  function decodeTokenBytes(raw) {
+    const text = String(raw || "").trim();
+    if (!text.startsWith(PREFIX)) {
+      return fail("invalid_receipt_link", "Receipt code must start with r1.");
+    }
+    const body = text.slice(PREFIX.length);
+    if (!body) return fail("invalid_receipt_link", "Receipt code is empty.");
+    try {
+      return { ok: true, text: bytesToUtf8(base64UrlToBytes(body)) };
+    } catch {
+      return fail("invalid_receipt_link", "Receipt code is not valid base64url.");
+    }
+  }
+
+  function decodeReceipt(raw) {
+    const decoded = decodeTokenBytes(raw);
+    if (!decoded.ok) return decoded;
+    let payload;
+    try {
+      payload = JSON.parse(decoded.text);
+    } catch {
+      return fail("invalid_receipt_link", "Receipt payload is not JSON.");
+    }
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return fail("invalid_receipt_link", "Receipt payload must be a JSON object.");
+    }
+    if (payload.v !== VERSION) {
+      return fail("invalid_receipt_link", "Unsupported receipt-link version.");
+    }
+    return readReceipt(expandReceipt(payload.receipt));
+  }
+
+  function extractReceiptToken(input) {
+    const text = String(input || "").trim();
+    if (!text) return "";
+
+    try {
+      const url = new URL(text);
+      const hash = url.hash.match(HASH_RE);
+      if (hash) return decodeURIComponent(hash[1]);
+      const query = url.searchParams.get("receipt");
+      if (query) return query.trim();
+    } catch {
+      /* not an absolute URL */
+    }
+
+    const hashOnly = text.match(HASH_RE) || text.match(/#receipt\/([^\s#]+)/i);
+    if (hashOnly) {
+      try {
+        return decodeURIComponent(hashOnly[1]);
+      } catch {
+        return hashOnly[1];
+      }
+    }
+
+    const queryOnly = text.match(/[?&]receipt=([^&\s#]+)/i);
+    if (queryOnly) {
+      try {
+        return decodeURIComponent(queryOnly[1]);
+      } catch {
+        return queryOnly[1];
+      }
+    }
+
+    return text;
+  }
+
+  function decodeReceiptInput(input) {
+    const token = extractReceiptToken(input);
+    if (!token) return fail("invalid_receipt_link", "Paste a receipt link or r1. code.");
+    return decodeReceipt(token);
+  }
+
+  function buildReceiptHref(source, baseUrl, extras) {
+    const encoded = encodeReceipt(source, extras);
+    if (!encoded.ok) return encoded;
+    let url;
+    try {
+      url = new URL(baseUrl);
+    } catch {
+      return fail("invalid_receipt_link", "Need an absolute URL to build a receipt link.");
+    }
+    url.search = "";
+    url.hash = `receipt/${encoded.token}`;
+    return {
+      ok: true,
+      href: url.toString(),
+      token: encoded.token,
+      receipt: encoded.receipt,
+    };
+  }
+
+  function readLocationReceipt(locationLike) {
+    const loc = locationLike || {};
+    const hash = String(loc.hash || "");
+    const search = String(loc.search || "");
+    const hashMatch = hash.match(HASH_RE);
+    if (hashMatch) {
+      try {
+        return decodeURIComponent(hashMatch[1]);
+      } catch {
+        return hashMatch[1];
+      }
+    }
+    try {
+      return new URLSearchParams(search).get("receipt") || "";
+    } catch {
+      return "";
+    }
+  }
+
   return {
     JOB_ID_PATTERN,
     KEY_ID_PATTERN,
+    PREFIX,
     STORAGE_KEY,
     TERMINAL,
+    VERSION,
+    buildReceiptHref,
+    decodeReceipt,
+    decodeReceiptInput,
+    encodeReceipt,
     exportAllJson,
     exportAllNdjson,
     exportOneJson,
+    extractReceiptToken,
     filenameForOne,
+    readLocationReceipt,
     readReceipt,
     readReceiptList,
     receiptFromJob,

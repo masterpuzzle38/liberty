@@ -41,6 +41,8 @@
     downloadReceipts: document.getElementById("download-receipts"),
     downloadReceiptsNdjson: document.getElementById("download-receipts-ndjson"),
     copyReceipts: document.getElementById("copy-receipts"),
+    receiptForm: document.getElementById("receipt-form"),
+    receiptInput: document.getElementById("receipt-input"),
     verifyForm: document.getElementById("verify-form"),
     verifyPick: document.getElementById("verify-pick"),
     verifyPickWrap: document.getElementById("verify-pick-wrap"),
@@ -227,6 +229,13 @@
     return handoff.buildHandoffHref(job, location.origin + location.pathname);
   }
 
+  function receiptHref(source, extras) {
+    if (!receiptsApi || !receiptsApi.buildReceiptHref) {
+      return { ok: false, message: "Receipt helper failed to load." };
+    }
+    return receiptsApi.buildReceiptHref(source, location.origin + location.pathname, extras);
+  }
+
   function applyHandoffInput(raw, { fromLink } = {}) {
     if (!handoff) {
       flash("Handoff helper failed to load.", true);
@@ -261,6 +270,57 @@
     }
     history.replaceState(null, "", location.pathname);
     return true;
+  }
+
+  function applyReceiptInput(raw, { fromLink } = {}) {
+    if (!receiptsApi || !receiptsApi.decodeReceiptInput) {
+      flash("Receipt helper failed to load.", true);
+      return null;
+    }
+    const decoded = receiptsApi.decodeReceiptInput(raw);
+    if (!decoded.ok) {
+      flash(decoded.message || "Could not read that receipt link.", true);
+      return null;
+    }
+    const receipt = rememberReceipt(decoded.receipt);
+    if (!receipt) {
+      flash("That receipt is not valid.", true);
+      return null;
+    }
+    const source = fromLink ? "receipt link" : "receipt code";
+    flash(`Loaded receipt ${receipt.job_id} (${receipt.status}) from a ${source}. Inspect it or verify with the engine. Liberty did not store it. Demo only.`);
+    return receipt;
+  }
+
+  function consumeReceiptFromLocation() {
+    if (!receiptsApi || !receiptsApi.readLocationReceipt) return false;
+    const token = receiptsApi.readLocationReceipt(location);
+    if (!token) return false;
+    const receipt = applyReceiptInput(token, { fromLink: true });
+    history.replaceState(null, "", location.pathname);
+    if (receipt) {
+      render();
+      fillVerifyInput(receipt);
+      if (els.verifyInput) els.verifyInput.scrollIntoView({ block: "nearest" });
+    }
+    return true;
+  }
+
+  async function copyReceiptLink(source, extras) {
+    const built = receiptHref(source, extras);
+    if (!built.ok) {
+      flash(built.message || "Could not encode that receipt.", true);
+      return false;
+    }
+    try {
+      await navigator.clipboard.writeText(built.href);
+      flash("Receipt link copied. Another device can open it to inspect or verify. Demo only.");
+      return true;
+    } catch {
+      if (els.receiptInput) els.receiptInput.value = built.href;
+      flash("Could not copy. The receipt link is in Open a receipt link — copy it from there.", true);
+      return false;
+    }
   }
 
   function flash(message, isError) {
@@ -415,10 +475,11 @@
       <p class="quote-kicker">Demo — not real money</p>
       <p class="quote-impact"></p>
       <p class="hint"></p>
+      ${data.receipt ? `<div class="action-row"><button type="button" class="secondary" data-simulate-action="copy-receipt-link">Copy receipt link</button></div>` : ""}
     `;
     els.simulateResult.querySelector(".quote-impact").textContent = simulateImpactLine(data);
     els.simulateResult.querySelector(".hint").textContent =
-      `Full walk: ${path}. Receipt saved in this browser. Liberty did not store the job.`;
+      `Full walk: ${path}. Receipt saved in this browser. Copy a receipt link to inspect or verify on another device. Liberty did not store the job.`;
   }
 
   async function runSimulate(terminal) {
@@ -694,9 +755,15 @@
       ? `<div class="receipt">
           <h3>Receipt</h3>
           <pre id="receipt-md"></pre>
+          <label class="field">
+            <span>Receipt link</span>
+            <input id="receipt-link" class="apikey-value" type="text" readonly autocomplete="off" spellcheck="false" />
+          </label>
           <div class="action-row">
             <button type="button" data-action="copy">Copy markdown</button>
             <button type="button" class="secondary" data-action="download">Download .md</button>
+            <button type="button" class="ghost" data-action="copy-receipt-link">Copy receipt link</button>
+            <button type="button" class="ghost" data-action="copy-receipt-code">Copy compact code</button>
             <button type="button" class="ghost" data-action="download-json">Download JSON</button>
             <button type="button" class="ghost" data-action="copy-json">Copy JSON</button>
             <button type="button" class="ghost" data-action="verify">Verify with engine</button>
@@ -755,6 +822,13 @@
       linkInput.value = built.ok ? built.href : "";
     }
 
+    const receiptLinkInput = els.detail.querySelector("#receipt-link");
+    if (receiptLinkInput) {
+      const stored = findReceipt(job.id) || job;
+      const built = receiptHref(stored, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
+      receiptLinkInput.value = built.ok ? built.href : "";
+    }
+
     const proofForm = els.detail.querySelector("#proof-form");
     if (proofForm) {
       proofForm.addEventListener("submit", (event) => {
@@ -797,6 +871,7 @@
         <div class="action-row">
           <button type="button" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="download-json">Download JSON</button>
           <button type="button" class="secondary" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="copy-json">Copy JSON</button>
+          <button type="button" class="ghost" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="copy-link">Copy link</button>
           <button type="button" class="ghost" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="verify">Verify</button>
         </div>
       `;
@@ -916,6 +991,10 @@
     try {
       parsed = JSON.parse(text);
     } catch {
+      if (receiptsApi && receiptsApi.decodeReceiptInput) {
+        const decoded = receiptsApi.decodeReceiptInput(text);
+        if (decoded.ok) return { ok: true, payload: { receipt: decoded.receipt } };
+      }
       return { ok: false, message: "Receipt JSON is not valid JSON." };
     }
     if (Array.isArray(parsed)) {
@@ -982,6 +1061,28 @@
     selectJob(job.id);
   });
 
+  els.receiptForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const raw = els.receiptInput ? els.receiptInput.value : "";
+    const receipt = applyReceiptInput(raw, {
+      fromLink: /#receipt\/|\?receipt=|^https?:\/\//i.test(raw),
+    });
+    if (!receipt) return;
+    if (els.receiptInput) els.receiptInput.value = "";
+    fillVerifyInput(receipt);
+    renderReceipts();
+    if (els.verifyInput) els.verifyInput.scrollIntoView({ block: "nearest" });
+  });
+
+  els.simulateResult?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-simulate-action]");
+    if (!button || button.dataset.simulateAction !== "copy-receipt-link") return;
+    const job = findJob(selectedId());
+    const stored = (job && findReceipt(job.id)) || receipts[0];
+    if (!stored) return flash("Could not build a receipt for that walk.", true);
+    await copyReceiptLink(stored);
+  });
+
   els.detail?.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -1012,6 +1113,22 @@
       } catch {
         if (els.handoffInput) els.handoffInput.value = text;
         flash("Could not copy. The handoff is in Open a handoff — copy it from there.", true);
+      }
+      return;
+    }
+    if (action === "copy-receipt-link" || action === "copy-receipt-code") {
+      const stored = findReceipt(job.id) || rememberReceipt(job, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
+      const built = stored ? receiptHref(stored) : { ok: false, message: "Could not build a receipt for that job." };
+      if (!built.ok) return flash(built.message || "Could not encode that receipt.", true);
+      const text = action === "copy-receipt-link" ? built.href : built.token;
+      try {
+        await navigator.clipboard.writeText(text);
+        flash(action === "copy-receipt-link"
+          ? "Receipt link copied. Another device can open it to inspect or verify."
+          : "Compact receipt code copied.");
+      } catch {
+        if (els.receiptInput) els.receiptInput.value = text;
+        flash("Could not copy. The receipt link is in Open a receipt link — copy it from there.", true);
       }
       return;
     }
@@ -1093,7 +1210,7 @@
     }
   }
 
-  els.receiptList?.addEventListener("click", (event) => {
+  els.receiptList?.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-receipt-action]");
     if (!button) return;
     if (button.dataset.receiptAction === "verify") {
@@ -1101,6 +1218,12 @@
       if (!receipt) return flash("That receipt is not in this browser.", true);
       fillVerifyInput(receipt);
       runVerify({ receipt });
+      return;
+    }
+    if (button.dataset.receiptAction === "copy-link") {
+      const receipt = findReceipt(button.dataset.receiptId);
+      if (!receipt) return flash("That receipt is not in this browser.", true);
+      await copyReceiptLink(receipt);
       return;
     }
     exportReceiptById(button.dataset.receiptId, button.dataset.receiptAction);
@@ -1167,13 +1290,17 @@
   });
 
   window.addEventListener("hashchange", () => {
+    if (receiptsApi && receiptsApi.readLocationReceipt && receiptsApi.readLocationReceipt(location)) {
+      consumeReceiptFromLocation();
+      return;
+    }
     if (handoff && handoff.readLocationHandoff(location)) {
       consumeHandoffFromLocation();
     }
     render();
   });
 
-  consumeHandoffFromLocation();
+  if (!consumeReceiptFromLocation()) consumeHandoffFromLocation();
   syncReceiptsFromJobs();
   render();
 })();

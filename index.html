@@ -115,7 +115,15 @@
 
     <section class="panel" aria-labelledby="receipts-heading">
       <h2 id="receipts-heading">Receipts / Export</h2>
-      <p class="hint">Terminal receipts from release or dispute in this browser. Download JSON to keep or share proof. Paste a receipt (or pick one stored here) to verify it against Liberty’s fee engine. Liberty does not store receipts. Demo — not real money.</p>
+      <p class="hint">Terminal receipts from release or dispute in this browser. Download JSON, or copy a receipt link (<code>#receipt/r1.…</code>) so another device can inspect or POST <code>/api/v0/verify</code> without pasting JSON. Liberty does not store receipts. Demo — not real money.</p>
+      <form id="receipt-form" class="stack-form handoff-form">
+        <label class="field">
+          <span>Open a receipt link</span>
+          <input id="receipt-input" name="receipt" type="text" autocomplete="off" spellcheck="false" placeholder="Paste a receipt link or r1. code" />
+        </label>
+        <button type="submit" class="secondary">Load receipt</button>
+      </form>
+      <p class="hint">Loads the receipt into Verify below. Credits and jobs stay here. Liberty does not store the receipt.</p>
       <p id="receipts-empty" class="hint">No receipts yet. Release or dispute a submitted job, or run a full demo settlement.</p>
       <ul id="receipt-list" class="receipt-list"></ul>
       <div id="receipts-actions" class="action-row" hidden>
@@ -164,10 +172,10 @@
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page stores credits and jobs in localStorage. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or receipts or take custody. Not a live escrow service. Not real money. Not production auth.</p>
+      <p class="hint">Demo only. This page stores credits and jobs in localStorage. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or receipts or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
-        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export, verify</li>
+        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>
@@ -180,7 +188,7 @@
   </main>
 
   <footer class="foot">
-    <p>LIBERTY · Agent Settlement v0 · demo credits, demo key, and receipts in localStorage · jobs shareable by handoff link · not real money</p>
+    <p>LIBERTY · Agent Settlement v0 · demo credits, demo key, and receipts in localStorage · jobs shareable by handoff link · receipts shareable by receipt link · not real money</p>
     <button type="button" id="reset-demo" class="text-btn">Reset this browser’s demo</button>
   </footer>
 
