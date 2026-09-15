@@ -15,6 +15,7 @@ Try the demo: https://liberty-amber.vercel.app
 ```bash
 curl https://liberty-amber.vercel.app/api/health.json
 curl https://liberty-amber.vercel.app/api/settlement.json
+curl https://liberty-amber.vercel.app/api/examples.json
 curl -X POST https://liberty-amber.vercel.app/api/v0/quote \
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
@@ -35,7 +36,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
 ```
 
-`health.json` reports `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`. `settlement.json` describes the state machine, fee schedule, receipt fields, client-held receipt export, shareable receipt links, receipt verify, and the client-held agent wallet. `POST /api/v0/quote` dry-runs one action (create quote has no durable id). `POST /api/v0/transition` commits it and returns the updated job (plus credits / fee / `agent_credits_delta` / receipt when those apply). `POST /api/v0/simulate` runs create → fund → submit → release|dispute in one request (real `as_…` id; still not stored). `POST /api/v0/verify` checks a client-held receipt (or proposed release/dispute) against that same fee engine. Keep the receipt yourself — Liberty does not store it. A present demo key adds `key_id`; a missing key adds `key_optional`.
+`health.json` reports `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`. `settlement.json` describes the state machine, fee schedule, receipt fields, client-held receipt export, shareable receipt links, receipt verify, and the client-held agent wallet. `examples.json` lists the same copy-ready bodies as **Try as an adapter** on `/#adapters`. `POST /api/v0/quote` dry-runs one action (create quote has no durable id). `POST /api/v0/transition` commits it and returns the updated job (plus credits / fee / `agent_credits_delta` / receipt when those apply). `POST /api/v0/simulate` runs create → fund → submit → release|dispute in one request (real `as_…` id; still not stored). `POST /api/v0/verify` checks a client-held receipt (or proposed release/dispute) against that same fee engine. Keep the receipt yourself — Liberty does not store it. A present demo key adds `key_id`; a missing key adds `key_optional`.
 
 Same protocol in [`SETTLEMENT.md`](SETTLEMENT.md). OpenAPI at [`/settlement.openapi.json`](settlement.openapi.json). [`/llms.txt`](llms.txt) is a short pointer in the [llms.txt](https://llmstxt.org/) convention — not a new standard.
 

@@ -198,12 +198,78 @@
       </div>
     </section>
 
+    <section id="adapters" class="panel adapter-examples" aria-labelledby="adapter-heading">
+      <h2 id="adapter-heading">Try as an adapter</h2>
+      <p class="hint">Copy-ready curls against the live demo. Optional <code>Authorization: Bearer</code> or <code>X-Liberty-Key</code> — mint a key above. Missing keys still work (<code>key_optional</code>). Release returns <code>agent_credits_delta</code> (same as <code>agent_payout</code>); apply it to a client-held agent wallet. Demo only. <code>money: false</code>. Liberty does not persist jobs or receipts. Same bodies: <a href="/api/examples.json"><code>/api/examples.json</code></a>.</p>
+
+      <article class="adapter-example">
+        <h3>POST /api/v0/quote</h3>
+        <p class="hint">Dry-run. No state change. Create quote has no durable id.</p>
+        <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/quote \
+  -H 'content-type: application/json' \
+  -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'</code></pre>
+        <div class="action-row">
+          <button type="button" class="ghost" data-copy-example>Copy curl</button>
+        </div>
+      </article>
+
+      <article class="adapter-example">
+        <h3>POST /api/v0/transition</h3>
+        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Release returns <code>agent_credits_delta</code>.</p>
+        <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
+  -H 'content-type: application/json' \
+  -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
+
+# fund → submit → release sketch (send the job from create, or these sample jobs)
+curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
+  -H 'content-type: application/json' \
+  -d '{"action":"fund","payer_credits":100,"job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"open","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":null,"submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
+curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
+  -H 'content-type: application/json' \
+  -d '{"action":"submit","proof_url":"https://example.com/proof","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"","status":"funded","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":null,"resolvedAt":null,"fee":0,"agentPayout":0}}'
+curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
+  -H 'content-type: application/json' \
+  -d '{"action":"release","job":{"id":"as_0123456789","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","proofUrl":"https://example.com/proof","status":"submitted","createdAt":"2026-09-15T00:00:00.000Z","fundedAt":"2026-09-15T00:00:00.000Z","submittedAt":"2026-09-15T00:00:00.000Z","resolvedAt":null,"fee":0,"agentPayout":0}}'</code></pre>
+        <div class="action-row">
+          <button type="button" class="ghost" data-copy-example>Copy curl</button>
+        </div>
+      </article>
+
+      <article class="adapter-example">
+        <h3>POST /api/v0/simulate</h3>
+        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Release returns <code>agent_credits_delta</code>.</p>
+        <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
+  -H 'content-type: application/json' \
+  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release"}'
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'</code></pre>
+        <div class="action-row">
+          <button type="button" class="ghost" data-copy-example>Copy curl</button>
+        </div>
+      </article>
+
+      <article class="adapter-example">
+        <h3>POST /api/v0/verify</h3>
+        <p class="hint">Stateless receipt check. A wrong fee is still 200 with <code>valid: false</code>.</p>
+        <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/verify \
+  -H 'content-type: application/json' \
+  -d '{"receipt":{"job_id":"as_0123456789","title":"Summarize filings","status":"released","amount":100,"release_fee":5,"agent_payout":95,"returned_to_payer":0,"success_criteria":"Three-bullet brief","proof":"https://example.com/proof","created":"2026-09-15T00:00:00.000Z","funded":"2026-09-15T00:00:00.000Z","submitted":"2026-09-15T00:00:00.000Z","resolved":"2026-09-15T00:00:00.000Z"}}'
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'</code></pre>
+        <div class="action-row">
+          <button type="button" class="ghost" data-copy-example>Copy curl</button>
+        </div>
+      </article>
+    </section>
+
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
       <p class="hint">Demo only. This page stores payer credits and jobs in localStorage, and a separate agent wallet under <code>liberty.agent-settlement.agent-credits.v0</code>. A successful release (via <code>/api/v0/transition</code> or <code>/api/v0/simulate</code>) credits that agent wallet by <code>agent_credits_delta</code> / <code>agent_payout</code>. Dispute refunds the payer and does not credit the agent. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. Run a full demo settlement POSTs <code>/api/v0/simulate</code> and walks that engine end-to-end in one request. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Share a terminal receipt via a receipt link (<code>#receipt/r1.…</code> base64url JSON of the receipt) so another device can inspect or verify without pasting JSON. Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs, receipts, or balances or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
+        <li><a href="#adapters">Try as an adapter</a> — copy-ready curls for quote, transition, simulate, and verify</li>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
+        <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

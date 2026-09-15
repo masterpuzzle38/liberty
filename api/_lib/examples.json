@@ -1,0 +1,163 @@
+{
+  "service": "liberty-agent-settlement",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "Adapter examples",
+  "description": "Copy-ready request bodies for Agent Settlement. Demo only. Not real money. Live origin https://liberty-amber.vercel.app. Optional Authorization: Bearer <key> or X-Liberty-Key (mint on /). Missing keys still work (key_optional). Release returns agent_credits_delta (same integer as agent_payout) for a client-held agent wallet. Liberty does not persist jobs, receipts, or balances.",
+  "origin": "https://liberty-amber.vercel.app",
+  "human_path": "/#adapters",
+  "auth": {
+    "required": false,
+    "headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
+    "note": "Optional demo API key. Mint on /. Not production auth. Not an account. If omitted, the engine notes key_optional and still works."
+  },
+  "surfaces": {
+    "ui": "/#adapters",
+    "examples": "/api/examples.json",
+    "protocol": "/api/settlement.json",
+    "quote": "/api/v0/quote",
+    "transition": "/api/v0/transition",
+    "simulate": "/api/v0/simulate",
+    "verify": "/api/v0/verify"
+  },
+  "examples": [
+    {
+      "id": "quote",
+      "method": "POST",
+      "path": "/api/v0/quote",
+      "url": "https://liberty-amber.vercel.app/api/v0/quote",
+      "title": "Dry-run quote",
+      "note": "Same engine as transition. No state change. Create quote has no durable id.",
+      "body": {
+        "action": "create",
+        "title": "Summarize filings",
+        "amount": 100,
+        "criteria": "Three-bullet brief"
+      }
+    },
+    {
+      "id": "transition",
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "url": "https://liberty-amber.vercel.app/api/v0/transition",
+      "title": "Create → fund → submit → release",
+      "note": "Stateless sketch. Each step is a separate POST. Thread the job from the previous response, or send the sample jobs below (the engine does not look jobs up). Or skip the walk and POST /api/v0/simulate. Release returns agent_credits_delta (same as agent_payout). Apply it to a client-held agent wallet. Dispute returns 0.",
+      "steps": [
+        {
+          "action": "create",
+          "body": {
+            "action": "create",
+            "title": "Summarize filings",
+            "amount": 100,
+            "criteria": "Three-bullet brief"
+          }
+        },
+        {
+          "action": "fund",
+          "body": {
+            "action": "fund",
+            "payer_credits": 100,
+            "job": {
+              "id": "as_0123456789",
+              "title": "Summarize filings",
+              "amount": 100,
+              "criteria": "Three-bullet brief",
+              "proofUrl": "",
+              "status": "open",
+              "createdAt": "2026-09-15T00:00:00.000Z",
+              "fundedAt": null,
+              "submittedAt": null,
+              "resolvedAt": null,
+              "fee": 0,
+              "agentPayout": 0
+            }
+          }
+        },
+        {
+          "action": "submit",
+          "body": {
+            "action": "submit",
+            "proof_url": "https://example.com/proof",
+            "job": {
+              "id": "as_0123456789",
+              "title": "Summarize filings",
+              "amount": 100,
+              "criteria": "Three-bullet brief",
+              "proofUrl": "",
+              "status": "funded",
+              "createdAt": "2026-09-15T00:00:00.000Z",
+              "fundedAt": "2026-09-15T00:00:00.000Z",
+              "submittedAt": null,
+              "resolvedAt": null,
+              "fee": 0,
+              "agentPayout": 0
+            }
+          }
+        },
+        {
+          "action": "release",
+          "note": "Response includes agent_credits_delta (same integer as agent_payout). Apply it locally.",
+          "body": {
+            "action": "release",
+            "job": {
+              "id": "as_0123456789",
+              "title": "Summarize filings",
+              "amount": 100,
+              "criteria": "Three-bullet brief",
+              "proofUrl": "https://example.com/proof",
+              "status": "submitted",
+              "createdAt": "2026-09-15T00:00:00.000Z",
+              "fundedAt": "2026-09-15T00:00:00.000Z",
+              "submittedAt": "2026-09-15T00:00:00.000Z",
+              "resolvedAt": null,
+              "fee": 0,
+              "agentPayout": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "simulate",
+      "method": "POST",
+      "path": "/api/v0/simulate",
+      "url": "https://liberty-amber.vercel.app/api/v0/simulate",
+      "title": "One-shot create → fund → submit → release",
+      "note": "Full walk through the same engine. Create assigns a real as_… id. Default terminal is release. Set terminal to dispute for a refund walk. Release returns agent_credits_delta.",
+      "body": {
+        "title": "Summarize filings",
+        "amount": 100,
+        "criteria": "Three-bullet brief",
+        "payer_credits": 100,
+        "proof_url": "https://example.com/proof",
+        "terminal": "release"
+      }
+    },
+    {
+      "id": "verify",
+      "method": "POST",
+      "path": "/api/v0/verify",
+      "url": "https://liberty-amber.vercel.app/api/v0/verify",
+      "title": "Verify a receipt",
+      "note": "Stateless. Recomputes fee / agent_payout / returned_to_payer. A wrong fee is 200 with valid:false. Liberty does not store the receipt.",
+      "body": {
+        "receipt": {
+          "job_id": "as_0123456789",
+          "title": "Summarize filings",
+          "status": "released",
+          "amount": 100,
+          "release_fee": 5,
+          "agent_payout": 95,
+          "returned_to_payer": 0,
+          "success_criteria": "Three-bullet brief",
+          "proof": "https://example.com/proof",
+          "created": "2026-09-15T00:00:00.000Z",
+          "funded": "2026-09-15T00:00:00.000Z",
+          "submitted": "2026-09-15T00:00:00.000Z",
+          "resolved": "2026-09-15T00:00:00.000Z"
+        }
+      }
+    }
+  ]
+}
