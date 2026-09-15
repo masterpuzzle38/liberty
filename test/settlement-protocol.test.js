@@ -112,6 +112,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.demo_pack.money, false);
   assert.equal(SETTLEMENT.demo_pack.mode, "client");
   assert.equal(SETTLEMENT.demo_pack.import, "replace");
+  assert.equal(SETTLEMENT.demo_pack.reset, "confirm_clear_known_keys");
   assert.equal(SETTLEMENT.demo_pack.human_path, "/#demo-pack");
   assert.equal(SETTLEMENT.surfaces.demo_pack, "/#demo-pack");
   assert.ok(SETTLEMENT.demo_pack.storage_keys.includes("liberty.agent-settlement.v0"));

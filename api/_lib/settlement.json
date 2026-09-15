@@ -17,7 +17,7 @@
     "agent_credits_storage_key": "liberty.agent-settlement.agent-credits.v0",
     "agent_credits_note": "Client-held agent wallet. Credited on release by agent_credits_delta / agent_payout. Dispute does not credit. localStorage only. Not real money.",
     "demo_pack": "/#demo-pack",
-    "demo_pack_note": "Client-held JSON snapshot of Settlement localStorage (payer store, agent credits, receipts, optional demo key). Export downloads; import replaces after confirm. money: false. Liberty never receives the file."
+    "demo_pack_note": "Client-held JSON snapshot of Settlement localStorage (payer store, agent credits, receipts, optional demo key). Export downloads; import replaces after confirm. Reset demo clears those known keys after confirm. money: false. Liberty never receives the file."
   },
   "surfaces": {
     "discovery": "/.well-known/agent.json",
@@ -66,7 +66,8 @@
     "includes": ["payer_credits", "jobs", "agent_credits", "receipts"],
     "optional": ["demo_api_key"],
     "import": "replace",
-    "note": "The human UI downloads one JSON file of this browser’s Settlement state and can restore it later or on another device. Import validates the shape and replaces localStorage after confirm; it does not merge. The raw demo API key is included only if it already lives in localStorage. Liberty never receives the pack. Not a server ledger. Demo only."
+    "reset": "confirm_clear_known_keys",
+    "note": "The human UI downloads one JSON file of this browser’s Settlement state and can restore it later or on another device. Import validates the shape and replaces localStorage after confirm; it does not merge. Reset demo on /#demo-pack clears those known keys after confirm (payer store, agent credits, receipts, demo key). Unrelated localStorage is left alone. The raw demo API key is included only if it already lives in localStorage. Liberty never receives the pack. Not a server ledger. Demo only."
   },
   "receipt_export": {
     "mode": "client",
@@ -413,7 +414,7 @@
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
     "Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries. Same key plus same title/amount/criteria = same as_ + 10 hex. Optional client_ref is a separate adapter stamp on the job and receipt; it does not change the derived id. Liberty does not store or replay responses. No persistence. No SSRF. No real money.",
-    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0, and the agent wallet under liberty.agent-settlement.agent-credits.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. A successful release credits the agent wallet by agent_credits_delta. Dispute does not. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export. A demo pack on /#demo-pack exports or replaces those keys as one client-held JSON file. Import does not merge. Liberty never receives the pack.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0, and the agent wallet under liberty.agent-settlement.agent-credits.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. A successful release credits the agent wallet by agent_credits_delta. Dispute does not. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export. A demo pack on /#demo-pack exports or replaces those keys as one client-held JSON file. Import does not merge. Reset demo on that section clears the known Settlement keys after confirm. Liberty never receives the pack.",
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Payer credits, agent credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
     "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Payer credits, agent credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",
     "Receipt export is client-held. POST /api/v0/transition and POST /api/v0/simulate return receipt on release or dispute. The human UI downloads that object as JSON or copies a receipt link. There is no receipt GET and no server ledger.",

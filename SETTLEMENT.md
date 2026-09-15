@@ -190,7 +190,9 @@ The file includes `kind`, `version`, `money: false`, and the known localStorage 
 | `liberty.agent-settlement.receipts.v0` | Terminal receipts |
 | `liberty.agent-settlement.demo-key.v0` | Raw demo API key, **only if** one is already stored in this browser |
 
-Import validates the shape, then asks to **replace** the current localStorage (it does not merge). If the pack has no demo key, this browser’s stored key is cleared. The UI warns that the file may contain the raw demo API key. Treat that key like a password. Demo only — not real money.
+Import validates the shape, then asks to **replace** the current localStorage (it does not merge). If the pack has no demo key, this browser’s stored key is cleared. The UI warns that the file may contain the raw demo API key. Treat that key like a password.
+
+**Reset demo** on the same section (or the footer control) asks for confirm, then removes only those four known keys. Payer credits, jobs, agent credits, receipts, and the demo API key go back to empty / zero. Unrelated localStorage is left alone. Liberty does not receive anything. Demo only — not real money.
 
 ## Job templates
 
@@ -209,5 +211,5 @@ Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapte
 5. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
 6. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
 7. Apply `agent_credits_delta` to a client-held agent wallet after release (same integer as `agent_payout`). Dispute returns `0`. The human UI stores that balance under `liberty.agent-settlement.agent-credits.v0`. Liberty does not store balances.
-8. To come back later or move this browser’s demo to another device, export a demo pack from `/#demo-pack`. Import replaces localStorage (does not merge). Liberty never receives the file. The pack may include the raw demo API key if one was stored.
+8. To come back later or move this browser’s demo to another device, export a demo pack from `/#demo-pack`. Import replaces localStorage (does not merge). Reset demo on that section clears the known Settlement keys after confirm (including the demo API key). Unrelated localStorage is left alone. Liberty never receives the file. The pack may include the raw demo API key if one was stored.
 9. Do not claim live volume or user counts from this surface.

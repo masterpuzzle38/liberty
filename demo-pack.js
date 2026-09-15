@@ -374,6 +374,25 @@
     return { ok: true, message, pack: parsed.pack, summary: s, containsDemoKey: s.containsDemoKey };
   }
 
+  function resetConfirmMessage() {
+    return {
+      ok: true,
+      message: [
+        "Clear this browser’s Settlement demo?",
+        "Payer credits, agent credits, jobs, receipts, and the demo API key will be removed.",
+        "Other localStorage is left alone.",
+        "Liberty does not receive anything. Demo only — not real money.",
+      ].join(" "),
+    };
+  }
+
+  function clearStorage() {
+    return {
+      ok: true,
+      removes: STORAGE_KEYS.slice(),
+    };
+  }
+
   function storageWrites(raw) {
     const parsed = raw && raw.kind === KIND && raw.keys ? readPack(raw) : readPack(raw);
     if (!parsed.ok) return parsed;
@@ -406,9 +425,11 @@
     REQUIRED_KEYS,
     STORAGE_KEYS,
     VERSION,
+    clearStorage,
     confirmMessage,
     encodePack,
     readPack,
+    resetConfirmMessage,
     storageWrites,
     summarizePack,
   };

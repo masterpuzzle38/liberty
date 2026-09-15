@@ -11,9 +11,11 @@ const {
   RECEIPTS_KEY,
   STORAGE_KEYS,
   VERSION,
+  clearStorage,
   confirmMessage,
   encodePack,
   readPack,
+  resetConfirmMessage,
   storageWrites,
 } = require("../demo-pack");
 const { receiptFromJob } = require("../receipt-export");
@@ -178,6 +180,34 @@ test("confirm message is explicit replace and warns about a raw demo key", () =>
   assert.equal(without.ok, true);
   assert.match(without.message, /key will be cleared/i);
   assert.equal(without.containsDemoKey, false);
+});
+
+test("clearStorage lists only the known Settlement keys", () => {
+  const cleared = clearStorage();
+  assert.equal(cleared.ok, true);
+  assert.deepEqual(cleared.removes, STORAGE_KEYS);
+  assert.deepEqual(cleared.removes, [
+    "liberty.agent-settlement.v0",
+    "liberty.agent-settlement.agent-credits.v0",
+    "liberty.agent-settlement.receipts.v0",
+    "liberty.agent-settlement.demo-key.v0",
+  ]);
+  assert.equal(cleared.removes.includes("liberty.unrelated"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(cleared, "writes"), false);
+});
+
+test("reset confirm names Settlement state and leaves other localStorage alone", () => {
+  const prompt = resetConfirmMessage();
+  assert.equal(prompt.ok, true);
+  assert.match(prompt.message, /clear this browser/i);
+  assert.match(prompt.message, /payer credits/i);
+  assert.match(prompt.message, /agent credits/i);
+  assert.match(prompt.message, /jobs/i);
+  assert.match(prompt.message, /receipts/i);
+  assert.match(prompt.message, /demo API key/i);
+  assert.match(prompt.message, /other localStorage is left alone/i);
+  assert.match(prompt.message, /does not receive/i);
+  assert.match(prompt.message, /not real money/i);
 });
 
 test("optional receiptKeyId survives encode/decode", () => {
