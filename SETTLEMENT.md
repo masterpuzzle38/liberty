@@ -18,6 +18,7 @@ Machine-readable copies:
 - [`POST /api/v0/verify`](api/v0/verify.js) — recompute fee math for a receipt or proposed release/dispute
 - [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1
 - [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)
+- [`/robots.txt`](robots.txt) / [`/sitemap.xml`](sitemap.xml) — crawler allow list and the same discovery URLs (hash UI states are `/` once)
 
 ## Currency
 

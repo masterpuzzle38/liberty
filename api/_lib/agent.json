@@ -24,10 +24,12 @@
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
+    "robots": "/robots.txt",
+    "sitemap": "/sitemap.xml",
     "quote": "/api/v0/quote",
     "transition": "/api/v0/transition",
     "simulate": "/api/v0/simulate",
     "verify": "/api/v0/verify"
   },
-  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. GET /api/changelog.json for recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue). GET /api/fees.json for the demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
+  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. GET /robots.txt and /sitemap.xml list the same discovery URLs for crawlers (hash UI states are `/` once). GET /api/changelog.json for recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue). GET /api/fees.json for the demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
 }

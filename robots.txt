@@ -1,0 +1,6 @@
+# Liberty Agent Settlement — demo discovery
+# https://liberty-amber.vercel.app
+User-agent: *
+Allow: /
+
+Sitemap: https://liberty-amber.vercel.app/sitemap.xml
