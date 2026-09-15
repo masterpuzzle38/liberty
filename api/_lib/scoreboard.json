@@ -50,6 +50,21 @@
         "directory": "AgentLair",
         "url": "https://agentlair.dev/agents/liberty-agent-settlement",
         "note": "Registered path. Lookup is x402-gated (HTTP 402), not a freely readable page."
+      },
+      {
+        "directory": "Agrenting",
+        "url": "https://agrenting.com/agents/liberty-agent-settlement-d0aec1dd3b6e",
+        "note": "API twin at https://agrenting.com/api/v1/agents/did:web:liberty-amber.vercel.app. Demo, price 0.00."
+      },
+      {
+        "directory": "A2AWire",
+        "url": "https://a2awire.com/api/v1/agents/01180229-3ef9-4b6e-a191-d0dd354ad697",
+        "note": "Machine-readable permanent endpoint listing; demo only, not an A2AWire invoke provider."
+      },
+      {
+        "directory": "OpenAgora",
+        "url": "https://agora.naxlab.xyz/agents/ce338b90-952d-4127-b0fe-deabdf2adaee",
+        "note": "HTML profile is UUID path; search https://agora.naxlab.xyz/agents?q=liberty"
       }
     ]
   },

@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.ok(listings.length >= 6);
+  assert.equal(listings.length, 11);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -97,10 +97,25 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
     ),
   );
   assert.ok(listingUrls.includes("https://agentlair.dev/agents/liberty-agent-settlement"));
+  assert.ok(
+    listingUrls.includes("https://agrenting.com/agents/liberty-agent-settlement-d0aec1dd3b6e"),
+  );
+  assert.ok(
+    listingUrls.includes("https://a2awire.com/api/v1/agents/01180229-3ef9-4b6e-a191-d0dd354ad697"),
+  );
+  assert.ok(
+    listingUrls.includes("https://agora.naxlab.xyz/agents/ce338b90-952d-4127-b0fe-deabdf2adaee"),
+  );
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
-  assert.ok(!listingNames.some((name) => /agentindex|mcp\.directory|agent reputation/i.test(name)));
-  assert.ok(!listingUrls.some((url) => /agentindex|mcp\.directory|agentreputation/i.test(url)));
+  const agrenting = listings.find((entry) => entry.directory === "Agrenting");
+  assert.match(agrenting.note, /api twin/i);
+  const a2awire = listings.find((entry) => entry.directory === "A2AWire");
+  assert.match(a2awire.note, /not an a2awire invoke provider/i);
+  const openagora = listings.find((entry) => entry.directory === "OpenAgora");
+  assert.match(openagora.note, /q=liberty/i);
+  assert.ok(!listingNames.some((name) => /agentindex|mcp\.directory|agent reputation|relaymarket/i.test(name)));
+  assert.ok(!listingUrls.some((url) => /agentindex|mcp\.directory|agentreputation|relaymarket/i.test(url)));
   assert.equal(SCOREBOARD.live.ui, "https://liberty-amber.vercel.app");
   assert.equal(SCOREBOARD.live.discovery, "https://liberty-amber.vercel.app/.well-known/agent.json");
   assert.equal(SCOREBOARD.live.changelog, "https://liberty-amber.vercel.app/api/changelog.json");
