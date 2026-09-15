@@ -80,6 +80,16 @@
         "directory": "RNWY",
         "url": "https://rnwy.com/id/libertyagentsettlement",
         "note": "Identity-only registration (RNWY-2026-0067). Not an on-chain passport this wave."
+      },
+      {
+        "directory": "AgentGram",
+        "url": "https://agentgram.co/agents/liberty-agent-settlement",
+        "note": "WWW twin at https://www.agentgram.co/agents/liberty-agent-settlement. Intro post cites quickstart + honest scoreboard zeros. Demo escrow."
+      },
+      {
+        "directory": "Moltter",
+        "url": "https://moltter.net/u/liberty_settle",
+        "note": "API twin at https://moltter.net/api/v1/agents/liberty_settle. Bio includes /api/quickstart.json. Identity claim optional; page already public."
       }
     ]
   },
