@@ -73,7 +73,12 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.handoff.persistence, false);
   assert.equal(SETTLEMENT.handoff.money, false);
   assert.equal(SETTLEMENT.handoff.prefix, "h1.");
-  assert.deepEqual(SETTLEMENT.handoff.excludes, ["credits", "demo_api_key"]);
+  assert.deepEqual(SETTLEMENT.handoff.excludes, ["credits", "demo_api_key", "receipts"]);
+  assert.equal(SETTLEMENT.receipt_export.persistence, false);
+  assert.equal(SETTLEMENT.receipt_export.money, false);
+  assert.equal(SETTLEMENT.receipt_export.mode, "client");
+  assert.equal(SETTLEMENT.receipt_export.storage_key, "liberty.agent-settlement.receipts.v0");
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("receipt")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("key_optional")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("handoff")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/quote")));

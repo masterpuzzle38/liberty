@@ -9,9 +9,11 @@
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
+    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. A successful release or dispute also stores the JSON receipt in this browser for export. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
     "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
-    "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account."
+    "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account.",
+    "receipt_storage_key": "liberty.agent-settlement.receipts.v0",
+    "receipt_export_note": "Client-held terminal receipts (release/dispute). Download JSON for one, or JSON array / NDJSON for all. Liberty does not store receipts. Not a server ledger. Demo only."
   },
   "surfaces": {
     "health": "/api/health.json",
@@ -21,7 +23,19 @@
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
-    "handoff": "/#handoff/<token>"
+    "handoff": "/#handoff/<token>",
+    "receipt_export": "/"
+  },
+  "receipt_export": {
+    "mode": "client",
+    "persistence": false,
+    "money": false,
+    "storage": "localStorage",
+    "storage_key": "liberty.agent-settlement.receipts.v0",
+    "when": "successful release or dispute (transition receipt; quote dry-runs are not stored)",
+    "formats": ["json", "ndjson"],
+    "fields": ["job_id", "status", "release_fee", "agent_payout", "returned_to_payer", "created", "funded", "submitted", "resolved"],
+    "note": "The human UI keeps the transition receipt in this browser so a human or adapter can download or share proof. Liberty does not store receipts. Not a server ledger. Not real money."
   },
   "handoff": {
     "mode": "client",
@@ -32,7 +46,7 @@
     "hash": "#handoff/<token>",
     "query": "?handoff=<token>",
     "includes": ["job"],
-    "excludes": ["credits", "demo_api_key"],
+    "excludes": ["credits", "demo_api_key", "receipts"],
     "note": "Share a job snapshot so another browser can continue the next legal action via POST /api/v0/transition. Credits and the demo API key stay in each browser. Copy a fresh link after each action. Liberty does not store the job."
   },
   "transition_api": {
@@ -217,8 +231,9 @@
     "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
-    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition.",
-    "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits and the demo API key are not in the payload. Liberty does not persist the snapshot.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export.",
+    "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
+    "Receipt export is client-held. POST /api/v0/transition returns receipt on release or dispute. The human UI downloads that object as JSON. There is no receipt GET and no server ledger.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
 }

@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. The client holds the job. Neither persists jobs or takes escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. The client holds the job and can export that receipt as JSON from the human UI. Neither persists jobs or receipts or takes escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -54,7 +54,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, and the quote / transition API description.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export, and the quote / transition API description.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -328,7 +328,8 @@
           },
           "transition_api": { "type": "object" },
           "quote_api": { "type": "object" },
-          "handoff": { "$ref": "#/components/schemas/HandoffProtocol" }
+          "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
+          "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" }
         }
       },
       "HandoffProtocol": {
@@ -342,6 +343,21 @@
           "prefix": { "const": "h1." },
           "hash": { "const": "#handoff/<token>" },
           "query": { "const": "?handoff=<token>" }
+        }
+      },
+      "ReceiptExport": {
+        "type": "object",
+        "description": "Client-held terminal receipts. Not a server endpoint or ledger.",
+        "properties": {
+          "mode": { "const": "client" },
+          "persistence": { "const": false },
+          "money": { "const": false },
+          "storage": { "const": "localStorage" },
+          "storage_key": { "const": "liberty.agent-settlement.receipts.v0" },
+          "formats": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["json", "ndjson"] }
+          }
         }
       },
       "JobHandoff": {

@@ -27,9 +27,16 @@
     revokeKey: document.getElementById("revoke-key"),
     handoffForm: document.getElementById("handoff-form"),
     handoffInput: document.getElementById("handoff-input"),
+    receiptList: document.getElementById("receipt-list"),
+    receiptsEmpty: document.getElementById("receipts-empty"),
+    receiptsActions: document.getElementById("receipts-actions"),
+    downloadReceipts: document.getElementById("download-receipts"),
+    downloadReceiptsNdjson: document.getElementById("download-receipts-ndjson"),
+    copyReceipts: document.getElementById("copy-receipts"),
   };
 
   const handoff = window.LibertyJobHandoff;
+  const receiptsApi = window.LibertyReceiptExport;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -59,6 +66,52 @@
 
   function save(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadReceipts() {
+    if (!receiptsApi) return [];
+    try {
+      return receiptsApi.readReceiptList(localStorage.getItem(receiptsApi.STORAGE_KEY));
+    } catch {
+      return [];
+    }
+  }
+
+  function saveReceipts() {
+    if (!receiptsApi) return;
+    localStorage.setItem(receiptsApi.STORAGE_KEY, JSON.stringify(receipts));
+  }
+
+  function rememberReceipt(source, extras) {
+    if (!receiptsApi) return null;
+    const parsed = receiptsApi.readReceipt(source, extras);
+    if (!parsed.ok) return null;
+    receiptsApi.upsertReceipt(receipts, parsed.receipt);
+    saveReceipts();
+    return parsed.receipt;
+  }
+
+  function syncReceiptsFromJobs() {
+    if (!receiptsApi) return;
+    for (const job of state.jobs) {
+      if (job.status !== "released" && job.status !== "disputed") continue;
+      if (receipts.some((item) => item.job_id === job.id)) continue;
+      rememberReceipt(job, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
+    }
+  }
+
+  function downloadText(text, filename, type) {
+    const blob = new Blob([text], { type: type || "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function findReceipt(jobId) {
+    return receipts.find((item) => item.job_id === jobId) || null;
   }
 
   function loadDemoKey() {
@@ -114,6 +167,7 @@
   }
 
   let state = load();
+  let receipts = loadReceipts();
   let inflight = false;
   let pendingQuote = null;
 
@@ -146,6 +200,9 @@
         : next;
     }
     save(state);
+    if (next.status === "released" || next.status === "disputed") {
+      rememberReceipt(next, next.receiptKeyId ? { key_id: next.receiptKeyId } : undefined);
+    }
     return next;
   }
 
@@ -265,6 +322,11 @@
       state.credits = Math.max(0, Math.floor(data.payer_credits));
     }
     save(state);
+    if (data.receipt) {
+      rememberReceipt(data.receipt, { key_id: data.receipt.key_id || data.key_id });
+    } else if (data.job && (data.job.status === "released" || data.job.status === "disputed")) {
+      rememberReceipt(data.job, { key_id: data.key_id });
+    }
   }
 
   async function postEngine(url, payload, failLabel) {
@@ -424,7 +486,7 @@
     const data = await postTransition({ action: "release", job });
     if (!data) return;
     applyResult(data);
-    flash(`Released. Agent payout ${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Demo only.`);
+    flash(`Released. Agent payout ${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Receipt saved in this browser. Demo only.`);
     render();
   }
 
@@ -438,7 +500,7 @@
     });
     if (!data) return;
     applyResult(data);
-    flash(`Disputed. ${data.job.amount} credits returned to the payer. No release fee.`);
+    flash(`Disputed. ${data.job.amount} credits returned to the payer. No release fee. Receipt saved in this browser.`);
     render();
   }
 
@@ -528,8 +590,10 @@
           <h3>Receipt</h3>
           <pre id="receipt-md"></pre>
           <div class="action-row">
-            <button type="button" data-action="copy">Copy receipt</button>
+            <button type="button" data-action="copy">Copy markdown</button>
             <button type="button" class="secondary" data-action="download">Download .md</button>
+            <button type="button" class="ghost" data-action="download-json">Download JSON</button>
+            <button type="button" class="ghost" data-action="copy-json">Copy JSON</button>
           </div>
         </div>`
       : "";
@@ -609,10 +673,41 @@
     }
   }
 
+  function renderReceipts() {
+    if (!els.receiptList || !els.receiptsEmpty) return;
+    els.receiptsEmpty.hidden = receipts.length > 0;
+    if (els.receiptsActions) els.receiptsActions.hidden = receipts.length === 0;
+    els.receiptList.replaceChildren();
+    for (const receipt of receipts) {
+      const item = document.createElement("li");
+      item.className = "receipt-item";
+      item.innerHTML = `
+        <p class="receipt-item-title">
+          <span class="status ${escapeHtml(receipt.status)}"></span>
+          <code></code>
+        </p>
+        <p class="receipt-item-meta receipt-item-money"></p>
+        <p class="receipt-item-meta receipt-item-when"></p>
+        <div class="action-row">
+          <button type="button" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="download-json">Download JSON</button>
+          <button type="button" class="secondary" data-receipt-id="${escapeHtml(receipt.job_id)}" data-receipt-action="copy-json">Copy JSON</button>
+        </div>
+      `;
+      item.querySelector(".status").textContent = receipt.status;
+      item.querySelector("code").textContent = receipt.job_id;
+      item.querySelector(".receipt-item-money").textContent =
+        `Fee ${receipt.release_fee} · Agent payout ${receipt.agent_payout} · Returned to payer ${receipt.returned_to_payer}`;
+      item.querySelector(".receipt-item-when").textContent =
+        `${receipt.job_id} · resolved ${formatWhen(receipt.resolved)} · created ${formatWhen(receipt.created)}`;
+      els.receiptList.appendChild(item);
+    }
+  }
+
   function render() {
     renderBalance();
     renderList();
     renderDetail();
+    renderReceipts();
     renderKey();
   }
 
@@ -702,14 +797,24 @@
       }
     }
     if (action === "download") {
-      const blob = new Blob([receiptMarkdown(job)], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${job.id}.md`;
-      link.click();
-      URL.revokeObjectURL(url);
-      flash("Receipt downloaded.");
+      downloadText(receiptMarkdown(job), `${job.id}.md`, "text/markdown");
+      flash("Receipt markdown downloaded.");
+    }
+    if ((action === "download-json" || action === "copy-json") && receiptsApi) {
+      const stored = findReceipt(job.id) || rememberReceipt(job, job.receiptKeyId ? { key_id: job.receiptKeyId } : undefined);
+      const exported = stored ? receiptsApi.exportOneJson(stored) : { ok: false };
+      if (!exported.ok) return flash(exported.message || "Could not export that receipt.", true);
+      if (action === "download-json") {
+        downloadText(exported.text, exported.filename, "application/json");
+        flash("Receipt JSON downloaded. Demo only — not real money.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(exported.text);
+        flash("Receipt JSON copied. Demo only — not real money.");
+      } catch {
+        flash("Could not copy. Use Download JSON instead.", true);
+      }
     }
   });
 
@@ -734,6 +839,56 @@
     }
   });
 
+  async function exportReceiptById(jobId, action) {
+    if (!receiptsApi) return;
+    const receipt = findReceipt(jobId);
+    if (!receipt) return flash("That receipt is not in this browser.", true);
+    const exported = receiptsApi.exportOneJson(receipt);
+    if (!exported.ok) return flash(exported.message || "Could not export that receipt.", true);
+    if (action === "download-json") {
+      downloadText(exported.text, exported.filename, "application/json");
+      flash("Receipt JSON downloaded. Demo only — not real money.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(exported.text);
+      flash("Receipt JSON copied. Demo only — not real money.");
+    } catch {
+      flash("Could not copy. Use Download JSON instead.", true);
+    }
+  }
+
+  els.receiptList?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-receipt-action]");
+    if (!button) return;
+    exportReceiptById(button.dataset.receiptId, button.dataset.receiptAction);
+  });
+
+  els.downloadReceipts?.addEventListener("click", () => {
+    if (!receiptsApi || !receipts.length) return;
+    const exported = receiptsApi.exportAllJson(receipts);
+    downloadText(exported.text, exported.filename, "application/json");
+    flash(`Downloaded ${receipts.length} receipts as JSON. Demo only — not real money.`);
+  });
+
+  els.downloadReceiptsNdjson?.addEventListener("click", () => {
+    if (!receiptsApi || !receipts.length) return;
+    const exported = receiptsApi.exportAllNdjson(receipts);
+    downloadText(exported.text, exported.filename, "application/x-ndjson");
+    flash(`Downloaded ${receipts.length} receipts as NDJSON. Demo only — not real money.`);
+  });
+
+  els.copyReceipts?.addEventListener("click", async () => {
+    if (!receiptsApi || !receipts.length) return;
+    const exported = receiptsApi.exportAllJson(receipts);
+    try {
+      await navigator.clipboard.writeText(exported.text);
+      flash("All receipt JSON copied. Demo only — not real money.");
+    } catch {
+      flash("Could not copy. Use Download all instead.", true);
+    }
+  });
+
   els.revokeKey?.addEventListener("click", () => {
     if (!confirm("Revoke the demo key stored in this browser? Adapters using it will still work — this is not real auth.")) return;
     saveDemoKey("");
@@ -742,10 +897,12 @@
   });
 
   els.reset?.addEventListener("click", () => {
-    if (!confirm("Clear all demo credits and jobs in this browser?")) return;
+    if (!confirm("Clear all demo credits, jobs, and receipts in this browser?")) return;
     state = emptyState();
+    receipts = [];
     pendingQuote = null;
     localStorage.removeItem(STORAGE_KEY);
+    if (receiptsApi) localStorage.removeItem(receiptsApi.STORAGE_KEY);
     flash("Demo reset. The demo API key was left in place — revoke it separately if you want.");
     selectJob(null);
   });
@@ -758,5 +915,6 @@
   });
 
   consumeHandoffFromLocation();
+  syncReceiptsFromJobs();
   render();
 })();
