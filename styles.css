@@ -13,6 +13,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html {
   color-scheme: dark;
   background: var(--bg);
@@ -304,6 +306,44 @@ body.pending textarea {
   color: var(--muted);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
+}
+
+.receipt-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.receipt-item {
+  padding: 0.75rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #141310;
+}
+
+.receipt-item-title {
+  margin: 0 0 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.receipt-item-title code {
+  font-size: 0.84rem;
+}
+
+.receipt-item-meta {
+  margin: 0 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-item .action-row {
+  margin-top: 0.65rem;
 }
 
 .status {
