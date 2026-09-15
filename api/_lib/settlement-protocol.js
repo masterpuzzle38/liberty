@@ -11,6 +11,7 @@ const FEES = require("./fees.json");
 const TOOLS = require("./tools.json");
 const QUICKSTART = require("./quickstart.json");
 const TRANSITION_SCHEMA = require("./transition.schema.json");
+const ERRORS = require("./errors.json");
 
 function protocolHeaders() {
   return {
@@ -60,6 +61,7 @@ module.exports = {
   TOOLS,
   QUICKSTART,
   TRANSITION_SCHEMA,
+  ERRORS,
   protocolHeaders,
   serveProtocol,
 };

@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "error-catalog",
+      "title": "Machine-readable Settlement error catalog",
+      "href": "/api/errors.json"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-11",
       "title": "Scoreboard curated listings + wave 11",
       "href": "/#scoreboard"
@@ -75,12 +81,6 @@
       "date": "2026-09-15",
       "id": "scoreboard-wave-6",
       "title": "Scoreboard curated listings + wave 6",
-      "href": "/#scoreboard"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard-wave-5",
-      "title": "Scoreboard curated listings + wave 5",
       "href": "/#scoreboard"
     }
   ]

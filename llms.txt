@@ -19,6 +19,7 @@ Human demo: https://liberty-amber.vercel.app
 - [Tools](/api/tools.json): callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
 - [Quickstart](/api/quickstart.json): ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as `/#integrate`. Client-held. Liberty does not move real money
 - [Transition schema](/api/schemas/transition.json): JSON Schema (2020-12) for `POST /api/v0/transition` bodies. Client-held demo protocol; Liberty does not move real money
+- [Errors](/api/errors.json): live Settlement error codes (schema vs state, including `hold_expired`). Client-held demo; Liberty does not move real money
 - [Validate](/api/v0/validate): `POST` dry-check of the same engine and JSON Schema (no apply, no persist, no job id)
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id; Idempotency-Key echoed only)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow; optional Idempotency-Key stabilizes create ids)

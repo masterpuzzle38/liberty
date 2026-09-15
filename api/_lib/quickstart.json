@@ -72,6 +72,13 @@
       "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
     },
     {
+      "id": "errors",
+      "method": "GET",
+      "path": "/api/errors.json",
+      "url": "https://liberty-amber.vercel.app/api/errors.json",
+      "purpose": "Error codes the live Settlement API returns (schema vs state, hold_expired, missing_field, illegal_transition). Client-held demo; Liberty does not move real money."
+    },
+    {
       "id": "scoreboard",
       "method": "GET",
       "path": "/api/scoreboard.json",
