@@ -237,6 +237,17 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+@media (max-width: 520px) {
+  .activity-item {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .activity-item time {
+    flex: none;
+  }
+}
+
 .scoreboard-facts {
   margin: 0 0 0.75rem;
   display: grid;

@@ -1294,11 +1294,11 @@
     if (data.ok === true) {
       const receipt = payload && payload.receipt
         ? payload.receipt
-        : (payload && payload.job);
+        : (payload && (payload.job_id || payload.jobId) ? payload : (payload && payload.job));
       recordActivity("verify", {
         receipt,
         job: payload && payload.job,
-        job_id: receipt && (receipt.job_id || receipt.id),
+        job_id: receipt && (receipt.job_id || receipt.jobId || receipt.id),
         client_ref: receipt && (receipt.client_ref || receipt.clientRef),
         detail: data.valid ? "valid" : "mismatch",
       });
