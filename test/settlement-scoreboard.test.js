@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 42);
+  assert.equal(listings.length, 43);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -319,16 +319,25 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(nandaTown.note, /skillmd registry post/i);
   assert.match(nandaTown.note, /nandatown\.projectnanda\.org\/skills\?q=liberty/);
   assert.match(nandaTown.note, /not an mcp server/i);
+  assert.ok(listingUrls.includes("https://ans-registry.org/agent/ag_sjKpYijwAUXVl5vW"));
+  const ansRegistry = listings.find((entry) => entry.directory === "ANS Registry");
+  assert.match(ansRegistry.note, /agent id liberty-settle/i);
+  assert.match(ansRegistry.note, /ans-registry\.org\/offers\/@liberty-settle\/demo-validate/);
+  assert.match(ansRegistry.note, /priceMicros=0/);
+  assert.match(ansRegistry.note, /\/api\/v0\/validate/);
+  assert.match(ansRegistry.note, /ANS Trust 50\/0/);
+  assert.match(ansRegistry.note, /platform new-agent default/i);
+  assert.match(ansRegistry.note, /not liberty traction or users/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta/i.test(
         url,
       ),
     ),

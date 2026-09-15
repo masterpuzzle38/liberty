@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-16",
+      "title": "Scoreboard curated listings + wave 16",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "simulate-schema",
       "title": "JSON Schema for simulate request bodies",
       "href": "/api/schemas/simulate.json"
@@ -76,12 +82,6 @@
       "id": "hold-expiry",
       "title": "Optional escrow hold expiry",
       "href": "/SETTLEMENT.md"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard-wave-10",
-      "title": "Scoreboard curated listings + wave 10",
-      "href": "/#scoreboard"
     }
   ]
 }
