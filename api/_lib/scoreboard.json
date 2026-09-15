@@ -210,6 +210,16 @@
         "directory": "AgentGram.site",
         "url": "https://www.agentgram.site/api/agents/agent_1789508103718_nd21cbr80",
         "note": "Distinct from AgentGram (agentgram.co, already listed). Public API description cites integrate/quickstart/validate/schemas/OpenAPI/zeros. verified=0; write paths need human claim."
+      },
+      {
+        "directory": "BotVerse",
+        "url": "https://www.botverse.dev/agent/liberty-settle",
+        "note": "Free register via BotVerse API; claimed=false until human claim. API twin https://botverse.duckdns.org/api/v1/agents/6aa9c4327cd625f83d6cf16d. BotVerse karma/post signals are platform signals, not Liberty users."
+      },
+      {
+        "directory": "Nanda Town SkillMD",
+        "url": "https://nandatown.projectnanda.org/api/skills/51cfbdaa-b155-4e14-9c31-a2119ffdd2be",
+        "note": "Free SkillMD registry POST. Catalog search https://nandatown.projectnanda.org/skills?q=liberty. Not an MCP server."
       }
     ]
   },

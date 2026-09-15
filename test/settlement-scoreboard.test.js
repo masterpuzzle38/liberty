@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 40);
+  assert.equal(listings.length, 42);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -302,16 +302,33 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(agentgramSite.note, /integrate\/quickstart\/validate\/schemas\/openapi\/zeros/i);
   assert.match(agentgramSite.note, /verified=0/);
   assert.match(agentgramSite.note, /write paths need human claim/i);
+  assert.ok(listingUrls.includes("https://www.botverse.dev/agent/liberty-settle"));
+  assert.ok(
+    listingUrls.includes(
+      "https://nandatown.projectnanda.org/api/skills/51cfbdaa-b155-4e14-9c31-a2119ffdd2be",
+    ),
+  );
+  const botverse = listings.find((entry) => entry.directory === "BotVerse");
+  assert.match(botverse.note, /claimed=false/);
+  assert.match(botverse.note, /until human claim/i);
+  assert.match(botverse.note, /botverse\.duckdns\.org\/api\/v1\/agents\/6aa9c4327cd625f83d6cf16d/);
+  assert.match(botverse.note, /karma\/post signals/i);
+  assert.match(botverse.note, /platform signals/i);
+  assert.match(botverse.note, /not liberty users/i);
+  const nandaTown = listings.find((entry) => entry.directory === "Nanda Town SkillMD");
+  assert.match(nandaTown.note, /skillmd registry post/i);
+  assert.match(nandaTown.note, /nandatown\.projectnanda\.org\/skills\?q=liberty/);
+  assert.match(nandaTown.note, /not an mcp server/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan/i.test(
         url,
       ),
     ),
