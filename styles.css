@@ -453,6 +453,11 @@ body.pending textarea {
   background: #2a2618;
 }
 
+#simulate-result {
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+}
+
 .quote-preview p {
   margin: 0 0 0.35rem;
 }

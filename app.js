@@ -4,7 +4,14 @@
   const KEY_REVEAL = "liberty.agent-settlement.demo-key.reveal";
   const TRANSITION_URL = "/api/v0/transition";
   const QUOTE_URL = "/api/v0/quote";
+  const SIMULATE_URL = "/api/v0/simulate";
   const VERIFY_URL = "/api/v0/verify";
+  const SIMULATE_DEFAULTS = {
+    title: "Summarize filings",
+    amount: 100,
+    criteria: "Three-bullet brief matching the last three filings.",
+    proof_url: "https://example.com/proof",
+  };
   const STATUSES = ["open", "funded", "submitted", "released", "disputed"];
   const QUOTE_ACTIONS = ["fund", "release", "dispute"];
 
@@ -39,6 +46,9 @@
     verifyPickWrap: document.getElementById("verify-pick-wrap"),
     verifyInput: document.getElementById("verify-input"),
     verifyResult: document.getElementById("verify-result"),
+    simulateDemo: document.getElementById("simulate-demo"),
+    simulateDispute: document.getElementById("simulate-dispute"),
+    simulateResult: document.getElementById("simulate-result"),
   };
 
   const handoff = window.LibertyJobHandoff;
@@ -375,6 +385,65 @@
 
   function postQuote(payload) {
     return postEngine(QUOTE_URL, payload, "Quote failed.");
+  }
+
+  function postSimulate(payload) {
+    return postEngine(SIMULATE_URL, payload, "Simulate failed.");
+  }
+
+  function simulateImpactLine(data) {
+    const job = data.job || {};
+    const receipt = data.receipt || {};
+    if (job.status === "disputed") {
+      return `Disputed ${job.id}. Returned to payer ${receipt.returned_to_payer}. Fee 0. Payer credits: ${data.payer_credits}.`;
+    }
+    return `Released ${job.id}. Fee ${receipt.release_fee}. Agent payout ${receipt.agent_payout}. Payer credits: ${data.payer_credits}.`;
+  }
+
+  function renderSimulateResult(data) {
+    if (!els.simulateResult) return;
+    if (!data) {
+      els.simulateResult.hidden = true;
+      els.simulateResult.replaceChildren();
+      return;
+    }
+    const path = Array.isArray(data.steps)
+      ? data.steps.map((step) => step.action).join(" → ")
+      : (data.terminal || "release");
+    els.simulateResult.hidden = false;
+    els.simulateResult.innerHTML = `
+      <p class="quote-kicker">Demo — not real money</p>
+      <p class="quote-impact"></p>
+      <p class="hint"></p>
+    `;
+    els.simulateResult.querySelector(".quote-impact").textContent = simulateImpactLine(data);
+    els.simulateResult.querySelector(".hint").textContent =
+      `Full walk: ${path}. Receipt saved in this browser. Liberty did not store the job.`;
+  }
+
+  async function runSimulate(terminal) {
+    const amount = SIMULATE_DEFAULTS.amount;
+    const starting = state.credits < amount ? state.credits + amount : state.credits;
+    const data = await postSimulate({
+      title: SIMULATE_DEFAULTS.title,
+      amount,
+      criteria: SIMULATE_DEFAULTS.criteria,
+      payer_credits: starting,
+      proof_url: SIMULATE_DEFAULTS.proof_url,
+      terminal,
+    });
+    if (!data) {
+      renderSimulateResult(null);
+      return;
+    }
+    applyResult(data);
+    renderSimulateResult(data);
+    flash(
+      data.job && data.job.status === "disputed"
+        ? `Full demo walk disputed. ${data.returned_to_payer} credits returned. Fee 0. Receipt saved. Demo — not real money.`
+        : `Full demo walk released. Agent payout ${data.agent_payout} credits. Fee ${data.fee} credits. Receipt saved. Demo — not real money.`,
+    );
+    selectJob(data.job.id);
   }
 
   async function postVerify(payload) {
@@ -883,6 +952,9 @@
       }
     });
   });
+
+  els.simulateDemo?.addEventListener("click", () => runSimulate("release"));
+  els.simulateDispute?.addEventListener("click", () => runSimulate("dispute"));
 
   els.createForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
