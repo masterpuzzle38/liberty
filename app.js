@@ -71,12 +71,16 @@
     importPackForm: document.getElementById("import-demo-pack-form"),
     importPackFile: document.getElementById("import-demo-pack-file"),
     importPackInput: document.getElementById("import-demo-pack-input"),
+    ledgerFacts: document.getElementById("ledger-facts"),
+    ledgerEmpty: document.getElementById("ledger-empty"),
+    downloadLedgerCsv: document.getElementById("download-ledger-csv"),
   };
 
   const handoff = window.LibertyJobHandoff;
   const receiptsApi = window.LibertyReceiptExport;
   const walletApi = window.LibertyAgentWallet;
   const packApi = window.LibertyDemoPack;
+  const ledgerApi = window.LibertySettlementLedger;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -1248,11 +1252,33 @@
     return { ok: true, payload: { receipt: parsed } };
   }
 
+  function renderLedger() {
+    if (!els.ledgerFacts || !ledgerApi) return;
+    const totals = ledgerApi.summarizeLedger({
+      receipts,
+      jobs: state.jobs,
+      payerCredits: state.credits,
+      agentCredits,
+    });
+    els.ledgerFacts.replaceChildren();
+    appendFact(els.ledgerFacts, "Fees paid", `${totals.feesPaid} credits`);
+    appendFact(els.ledgerFacts, "Agent payouts", `${totals.agentPayouts} credits`);
+    appendFact(els.ledgerFacts, "Disputed returns", `${totals.disputedReturns} credits`);
+    appendFact(els.ledgerFacts, "Released receipts", totals.releasedCount);
+    appendFact(els.ledgerFacts, "Disputed receipts", totals.disputedCount);
+    appendFact(els.ledgerFacts, "Payer credits", totals.payerCredits);
+    appendFact(els.ledgerFacts, "Agent wallet", totals.agentCredits);
+    appendFact(els.ledgerFacts, "Jobs in this browser", totals.jobCount);
+    appendFact(els.ledgerFacts, "Money", "false");
+    if (els.ledgerEmpty) els.ledgerEmpty.hidden = totals.receiptCount > 0;
+  }
+
   function render() {
     renderBalance();
     renderList();
     renderDetail();
     renderReceipts();
+    renderLedger();
     renderKey();
   }
 
@@ -1552,6 +1578,17 @@
     const exported = receiptsApi.exportAllNdjson(receipts);
     downloadText(exported.text, exported.filename, "application/x-ndjson");
     flash(`Downloaded ${receipts.length} receipts as NDJSON. Demo only — not real money.`);
+  });
+
+  els.downloadLedgerCsv?.addEventListener("click", () => {
+    if (!ledgerApi) return;
+    const exported = ledgerApi.exportReceiptsCsv(receipts);
+    downloadText(exported.text, exported.filename, "text/csv");
+    if (exported.receiptCount) {
+      flash(`Downloaded ${exported.receiptCount} receipts as CSV. This browser only. Demo only — not real money.`);
+    } else {
+      flash("Downloaded a header-only CSV. No stored receipts in this browser. Demo only — not real money.");
+    }
   });
 
   els.copyReceipts?.addEventListener("click", async () => {

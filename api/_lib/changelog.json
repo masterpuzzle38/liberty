@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "ledger",
+      "title": "Client-held Settlement ledger",
+      "href": "/#ledger"
+    },
+    {
+      "date": "2026-09-15",
       "id": "robots-sitemap",
       "title": "robots.txt and sitemap",
       "href": "/sitemap.xml"
@@ -76,12 +82,6 @@
       "id": "idempotency",
       "title": "Demo Idempotency-Key",
       "href": "/#adapters"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "agent-discovery",
-      "title": "Agent discovery card",
-      "href": "/.well-known/agent.json"
     }
   ]
 }
