@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. The client holds the job and can export that receipt as JSON from the human UI. Neither persists jobs or receipts or takes escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/quote and POST /api/v0/transition."
+      "description": "Protocol documents agents can GET. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -25,6 +25,10 @@
     {
       "name": "transition",
       "description": "Stateless demo engine. Client holds state. money is always false. Demo API key is optional."
+    },
+    {
+      "name": "verify",
+      "description": "Stateless receipt / settlement verify. Same fee engine as quote/transition. Does not store receipts. money is always false. Demo API key is optional."
     }
   ],
   "paths": {
@@ -54,7 +58,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export, and the quote / transition API description.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export, and the quote / transition / verify API description.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -260,6 +264,102 @@
         }
       }
     },
+    "/api/v0/verify": {
+      "get": {
+        "tags": ["verify"],
+        "summary": "Discovery for the demo receipt verify engine",
+        "operationId": "getVerifyDiscovery",
+        "responses": {
+          "200": {
+            "description": "Path, dry_run, actions, and demo caveats. money is always false.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VerifyDiscovery" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["verify"],
+        "summary": "CORS preflight",
+        "operationId": "optionsVerify",
+        "responses": {
+          "204": {
+            "description": "Allow POST and OPTIONS from any origin."
+          }
+        }
+      },
+      "post": {
+        "tags": ["verify"],
+        "summary": "Verify a client-held receipt or proposed settlement",
+        "description": "Same fee engine as POST /api/v0/quote and POST /api/v0/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Recomputes expected money fields and lists mismatches. Does not store receipts. Optional demo API key via Authorization: Bearer or X-Liberty-Key. If sent, response includes key_id (SHA-256 prefix). If omitted, response notes key_optional. Not production auth. Not live escrow custody.",
+        "operationId": "postVerify",
+        "security": [
+          {},
+          { "bearerDemo": [] },
+          { "libertyKey": [] }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "description": "Bearer demo API key minted on the human UI. Not production auth.",
+            "schema": { "type": "string", "example": "Bearer lib_demo_…" }
+          },
+          {
+            "name": "X-Liberty-Key",
+            "in": "header",
+            "required": false,
+            "description": "Same demo key without the Bearer prefix. Preferred if both headers are sent.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification ran. valid is true when claimed money matches the engine. verified is true. money is always false. key_id when a demo key was sent, key_optional when it was not.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VerifySuccess" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON, action, or fields.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal transition (job is not terminal or submitted).",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransitionError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settlement.openapi.json": {
       "get": {
         "tags": ["surface"],
@@ -328,6 +428,7 @@
           },
           "transition_api": { "type": "object" },
           "quote_api": { "type": "object" },
+          "verify_api": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" }
         }
@@ -497,7 +598,8 @@
           "protocol": { "type": "string" },
           "dry_run": { "type": "boolean" },
           "quote": { "type": "string" },
-          "commit": { "type": "string" }
+          "commit": { "type": "string" },
+          "verify": { "type": "string" }
         }
       },
       "QuoteDiscovery": {
@@ -519,7 +621,88 @@
           "note": { "type": "string" },
           "protocol": { "type": "string" },
           "quote": { "const": "/api/v0/quote" },
-          "commit": { "const": "/api/v0/transition" }
+          "commit": { "const": "/api/v0/transition" },
+          "verify": { "const": "/api/v0/verify" }
+        }
+      },
+      "VerifyDiscovery": {
+        "type": "object",
+        "required": ["service", "mode", "money", "path", "methods", "auth", "persistence", "dry_run", "actions"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "path": { "const": "/api/v0/verify" },
+          "methods": { "type": "array", "items": { "type": "string" } },
+          "auth": { "$ref": "#/components/schemas/DemoAuthDiscovery" },
+          "persistence": { "const": false },
+          "dry_run": { "const": true },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["release", "dispute"] }
+          },
+          "note": { "type": "string" },
+          "protocol": { "type": "string" },
+          "quote": { "const": "/api/v0/quote" },
+          "commit": { "const": "/api/v0/transition" },
+          "verify": { "const": "/api/v0/verify" }
+        }
+      },
+      "VerifyMoney": {
+        "type": "object",
+        "properties": {
+          "fee": { "type": "integer", "minimum": 0 },
+          "agent_payout": { "type": "integer", "minimum": 0 },
+          "returned_to_payer": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "VerifyRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["receipt"],
+            "properties": {
+              "receipt": { "$ref": "#/components/schemas/Receipt" }
+            }
+          },
+          { "$ref": "#/components/schemas/Receipt" },
+          {
+            "type": "object",
+            "required": ["job"],
+            "properties": {
+              "job": { "$ref": "#/components/schemas/Job" },
+              "action": { "type": "string", "enum": ["release", "dispute"] },
+              "fee": { "type": "integer", "minimum": 0 },
+              "agent_payout": { "type": "integer", "minimum": 0 },
+              "returned_to_payer": { "type": "integer", "minimum": 0 }
+            }
+          }
+        ]
+      },
+      "VerifySuccess": {
+        "type": "object",
+        "required": ["ok", "mode", "money", "valid", "verified", "expected", "received", "mismatches"],
+        "properties": {
+          "ok": { "const": true },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "valid": { "type": "boolean" },
+          "verified": { "const": true },
+          "expected": { "$ref": "#/components/schemas/VerifyMoney" },
+          "received": { "$ref": "#/components/schemas/VerifyMoney" },
+          "mismatches": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "action": { "type": "string", "enum": ["release", "dispute"] },
+          "job_id": { "type": "string", "pattern": "^as_[0-9a-f]{10}$" },
+          "key_id": {
+            "type": "string",
+            "pattern": "^k_[0-9a-f]{12}$",
+            "description": "Present when a demo key header was sent."
+          },
+          "key_optional": { "type": "boolean", "description": "True when no demo key header was sent." },
+          "auth": { "$ref": "#/components/schemas/DemoAuth" }
         }
       },
       "QuoteJob": {

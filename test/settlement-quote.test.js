@@ -216,7 +216,9 @@ test("protocol files describe quote next to transition", () => {
   assert.equal(settlement.quote_api.money, false);
   assert.equal(settlement.quote_api.engine, "/api/v0/transition");
   assert.ok(settlement.surfaces.quote);
+  assert.ok(settlement.surfaces.verify);
   assert.ok(settlement.adapter_notes.some((note) => note.includes("/api/v0/quote")));
+  assert.equal(settlement.verify_api.path, "/api/v0/verify");
   assert.equal(settlement.receipt_export.persistence, false);
   assert.equal(settlement.receipt_export.money, false);
   assert.ok(openapi.paths["/api/v0/quote"].post);

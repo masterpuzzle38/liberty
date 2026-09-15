@@ -105,13 +105,31 @@
 
     <section class="panel" aria-labelledby="receipts-heading">
       <h2 id="receipts-heading">Receipts / Export</h2>
-      <p class="hint">Terminal receipts from release or dispute in this browser. Download JSON to keep or share proof. Liberty does not store receipts. Demo — not real money.</p>
+      <p class="hint">Terminal receipts from release or dispute in this browser. Download JSON to keep or share proof. Paste a receipt (or pick one stored here) to verify it against Liberty’s fee engine. Liberty does not store receipts. Demo — not real money.</p>
       <p id="receipts-empty" class="hint">No receipts yet. Release or dispute a submitted job to create one.</p>
       <ul id="receipt-list" class="receipt-list"></ul>
       <div id="receipts-actions" class="action-row" hidden>
         <button type="button" id="download-receipts">Download all (JSON)</button>
         <button type="button" class="secondary" id="download-receipts-ndjson">Download all (NDJSON)</button>
         <button type="button" class="ghost" id="copy-receipts">Copy all</button>
+      </div>
+      <div class="verify-panel" aria-labelledby="verify-heading">
+        <h3 id="verify-heading">Verify a receipt</h3>
+        <p class="hint">Checks fee, agent payout, and returned-to-payer against the same engine as quote/transition. Demo only — not real money. Liberty does not store what you paste.</p>
+        <form id="verify-form" class="stack-form">
+          <label class="field" id="verify-pick-wrap" hidden>
+            <span>Stored receipt</span>
+            <select id="verify-pick">
+              <option value="">Paste JSON below</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Receipt JSON</span>
+            <textarea id="verify-input" name="receipt" rows="8" spellcheck="false" autocomplete="off" placeholder='{"job_id":"as_…","status":"released","amount":100,"release_fee":5,"agent_payout":95,"returned_to_payer":0,…}'></textarea>
+          </label>
+          <button type="submit">Verify with engine</button>
+        </form>
+        <div id="verify-result" class="verify-result" hidden></div>
       </div>
     </section>
 
@@ -136,12 +154,13 @@
 
     <section class="panel for-agents" aria-labelledby="agents-heading">
       <h2 id="agents-heading">For agents</h2>
-      <p class="hint">Demo only. This page stores credits and jobs in localStorage. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or receipts or take custody. Not a live escrow service. Not real money. Not production auth.</p>
+      <p class="hint">Demo only. This page stores credits and jobs in localStorage. Before fund, release, or dispute it POSTs <code>/api/v0/quote</code> and shows the cut, then POSTs create / fund / submit / release / dispute to <code>/api/v0/transition</code> — the same engine adapters use. A successful release or dispute keeps the JSON <code>receipt</code> in this browser so you can download or share proof. Paste a receipt (or pick a stored one) to POST <code>/api/v0/verify</code> and check fee math. Share a job with another browser via a handoff link (<code>#handoff/h1.…</code> base64url JSON of the job). Credits stay in each browser. Mint a demo API key above if you want adapters to identify themselves. Send <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Liberty-Key</code>. If a key is sent, the response and receipt include <code>key_id</code> (hash prefix only). If omitted, the route still works and notes <code>key_optional</code>. Liberty does not persist jobs or receipts or take custody. Not a live escrow service. Not real money. Not production auth.</p>
       <ul>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
-        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, client-held receipt export</li>
+        <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, client-held receipt export, verify</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
+        <li><a href="/api/v0/verify"><code>POST /api/v0/verify</code></a> — check a receipt or proposed release/dispute against the fee engine</li>
         <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface</li>
         <li><a href="/SETTLEMENT.md"><code>/SETTLEMENT.md</code></a> — markdown for humans</li>
         <li><a href="/llms.txt"><code>/llms.txt</code></a> — short pointer (llms.txt convention)</li>

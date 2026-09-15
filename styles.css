@@ -346,6 +346,60 @@ body.pending textarea {
   margin-top: 0.65rem;
 }
 
+.verify-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.verify-panel h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.verify-result {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 8px;
+}
+
+.verify-result.ok {
+  border: 1px solid #3d5a3a;
+  background: #1a2419;
+}
+
+.verify-result.bad {
+  border: 1px solid #5a3a34;
+  background: #261816;
+}
+
+.verify-result .verify-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 650;
+}
+
+.verify-result.ok .verify-kicker { color: var(--ok); }
+.verify-result.bad .verify-kicker { color: var(--bad); }
+
+.verify-result .verify-impact {
+  margin: 0 0 0.55rem;
+}
+
+.verify-result .verify-meta {
+  margin-bottom: 0.55rem;
+}
+
+.verify-mismatches {
+  margin: 0 0 0.55rem;
+  padding-left: 1.15rem;
+  color: var(--bad);
+}
+
 .status {
   display: inline-block;
   padding: 0.05rem 0.45rem;

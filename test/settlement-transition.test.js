@@ -307,4 +307,9 @@ test("protocol files describe optional demo keys and stay valid JSON", () => {
     quoteHeaders.headers.find((h) => h.key === "Access-Control-Allow-Headers").value,
     CORS_ALLOW_HEADERS,
   );
+  const verifyHeaders = vercel.headers.find((row) => row.source === "/api/v0/verify");
+  assert.equal(
+    verifyHeaders.headers.find((h) => h.key === "Access-Control-Allow-Headers").value,
+    CORS_ALLOW_HEADERS,
+  );
 });
