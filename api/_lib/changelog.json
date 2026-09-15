@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-6",
+      "title": "Scoreboard curated listings + wave 6",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-5",
       "title": "Scoreboard curated listings + wave 5",
       "href": "/#scoreboard"
@@ -76,12 +82,6 @@
       "id": "proof-note",
       "title": "Optional proof_note on submit",
       "href": "/"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "demo-pack",
-      "title": "Demo pack export / import",
-      "href": "/#demo-pack"
     }
   ]
 }

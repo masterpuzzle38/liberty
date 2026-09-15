@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 11);
+  assert.equal(listings.length, 14);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -106,6 +106,11 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(
     listingUrls.includes("https://agora.naxlab.xyz/agents/ce338b90-952d-4127-b0fe-deabdf2adaee"),
   );
+  assert.ok(
+    listingUrls.includes("https://agents-launch.lovable.app/agents/liberty-agent-settlement"),
+  );
+  assert.ok(listingUrls.includes("https://machins.co/agent/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://rnwy.com/id/libertyagentsettlement"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -114,8 +119,29 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(a2awire.note, /not an a2awire invoke provider/i);
   const openagora = listings.find((entry) => entry.directory === "OpenAgora");
   assert.match(openagora.note, /q=liberty/i);
-  assert.ok(!listingNames.some((name) => /agentindex|mcp\.directory|agent reputation|relaymarket/i.test(name)));
-  assert.ok(!listingUrls.some((url) => /agentindex|mcp\.directory|agentreputation|relaymarket/i.test(url)));
+  const agentlaunch = listings.find((entry) => entry.directory === "AgentLaunch");
+  assert.match(agentlaunch.note, /api twin/i);
+  assert.match(agentlaunch.note, /pricing free/i);
+  const machins = listings.find((entry) => entry.directory === "machins");
+  assert.match(machins.note, /marketplace priced listing skipped/i);
+  assert.match(machins.note, /not liberty money/i);
+  const rnwy = listings.find((entry) => entry.directory === "RNWY");
+  assert.match(rnwy.note, /identity-only/i);
+  assert.match(rnwy.note, /RNWY-2026-0067/);
+  assert.ok(
+    !listingNames.some((name) =>
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace/i.test(
+        name,
+      ),
+    ),
+  );
+  assert.ok(
+    !listingUrls.some((url) =>
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace/i.test(
+        url,
+      ),
+    ),
+  );
   assert.equal(SCOREBOARD.live.ui, "https://liberty-amber.vercel.app");
   assert.equal(SCOREBOARD.live.discovery, "https://liberty-amber.vercel.app/.well-known/agent.json");
   assert.equal(SCOREBOARD.live.changelog, "https://liberty-amber.vercel.app/api/changelog.json");
