@@ -28,6 +28,13 @@
   },
   "related": [
     {
+      "id": "validate",
+      "method": "POST",
+      "path": "/api/v0/validate",
+      "url": "https://liberty-amber.vercel.app/api/v0/validate",
+      "purpose": "Dry-check a transition body against the live engine and JSON Schema. No commit. Same request shape as quote/transition. Non-create actions must send the client-held job. Liberty does not move real money."
+    },
+    {
       "id": "openapi",
       "method": "GET",
       "path": "/openapi.json",

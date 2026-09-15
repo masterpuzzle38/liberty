@@ -66,9 +66,13 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
   assert.doesNotMatch(JSON.stringify(TOOLS), /\$[\d,]+|\b\d[\d,]*\s+(gmv|revenue)\b/i);
 
   const toolIds = TOOLS.tools.map((tool) => tool.id);
-  assert.deepEqual(toolIds, ["quote", "transition", "simulate", "verify"]);
+  assert.deepEqual(toolIds, ["validate", "quote", "transition", "simulate", "verify"]);
   assert.equal(
     TOOLS.tools.find((tool) => tool.id === "transition").schema,
+    "/api/schemas/transition.json",
+  );
+  assert.equal(
+    TOOLS.tools.find((tool) => tool.id === "validate").schema,
     "/api/schemas/transition.json",
   );
   for (const tool of TOOLS.tools) {
@@ -79,6 +83,10 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     assert.ok(tool.purpose.length > 0);
   }
 
+  assert.deepEqual(
+    TOOLS.tools.find((tool) => tool.id === "validate").actions,
+    SETTLEMENT.validate_api.requests,
+  );
   assert.deepEqual(
     TOOLS.tools.find((tool) => tool.id === "quote").actions,
     SETTLEMENT.quote_api.requests,

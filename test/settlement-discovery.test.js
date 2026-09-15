@@ -74,6 +74,7 @@ test("agent discovery card stays demo-only and points at the real surfaces", () 
   assert.equal(AGENT.surfaces.transition, "/api/v0/transition");
   assert.equal(AGENT.surfaces.simulate, "/api/v0/simulate");
   assert.equal(AGENT.surfaces.verify, "/api/v0/verify");
+  assert.equal(AGENT.surfaces.validate, "/api/v0/validate");
   assert.match(AGENT.note, /not an a2a agent card/i);
   assert.match(AGENT.note, /not a chatgpt plugin/i);
   assert.match(AGENT.note, /no payments/i);
@@ -107,6 +108,7 @@ test("GET settlement engines point at the well-known discovery card", () => {
     { method: "GET", body: null, dryRun: true },
     { method: "GET", body: null, simulate: true },
     { method: "GET", body: null, verify: true },
+    { method: "GET", body: null, validate: true },
   ]) {
     const get = handleHttp(req);
     assert.equal(get.status, 200);

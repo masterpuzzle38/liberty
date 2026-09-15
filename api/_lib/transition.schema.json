@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://liberty-amber.vercel.app/api/schemas/transition.json",
   "title": "Liberty Agent Settlement transition request",
-  "description": "JSON Schema for POST /api/v0/transition request bodies. Client-held demo protocol; Liberty does not move real money. Same request shape as POST /api/v0/quote (dry-run). Quote, transition, and simulate never persist jobs or take custody. Agent wallets stay client-held — apply response agent_credits_delta locally after release. payer_credits is the only credits field accepted on a request (required on fund; optional on dispute).",
+  "description": "JSON Schema for POST /api/v0/transition request bodies. Client-held demo protocol; Liberty does not move real money. Same request shape as POST /api/v0/quote (dry-run) and POST /api/v0/validate (dry-check). Quote, validate, transition, and simulate never persist jobs or take custody. Agent wallets stay client-held — apply response agent_credits_delta locally after release. payer_credits is the only credits field accepted on a request (required on fund; optional on dispute).",
   "type": "object",
   "oneOf": [
     { "$ref": "#/$defs/CreateRequest" },

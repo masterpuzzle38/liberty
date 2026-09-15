@@ -94,7 +94,7 @@
 
     <section id="integrate" class="panel adapter-examples" aria-labelledby="integrate-heading">
       <h2 id="integrate-heading">Integrate</h2>
-      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Client-held demo. Liberty does not move real money. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
+      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Dry-check a body first with <a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — same rules, no commit. Client-held demo. Liberty does not move real money. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
       <p id="integrate-empty" class="hint">Loading the demo escrow walk…</p>
       <div id="integrate-body" hidden></div>
     </section>
@@ -385,9 +385,10 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/changelog.json"><code>/api/changelog.json</code></a> — recent shipped slices (newest first; same list as <a href="#whats-new">/#whats-new</a>)</li>
         <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Same facts as <a href="#scoreboard">/#scoreboard</a></li>
         <li><a href="/api/fees.json"><code>/api/fees.json</code></a> — demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Same facts as <a href="#fees">/#fees</a></li>
-        <li><a href="/api/tools.json"><code>/api/tools.json</code></a> — callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server</li>
+        <li><a href="/api/tools.json"><code>/api/tools.json</code></a> — callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server</li>
         <li><a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as <a href="#integrate">/#integrate</a></li>
         <li><a href="/api/schemas/transition.json"><code>/api/schemas/transition.json</code></a> — JSON Schema for <code>POST /api/v0/transition</code> bodies (client-held demo protocol; Liberty does not move real money)</li>
+        <li><a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — dry-check a transition body (no apply, no persist, no job id)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

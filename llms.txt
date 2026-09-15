@@ -16,9 +16,10 @@ Human demo: https://liberty-amber.vercel.app
 - [What's new](/api/changelog.json): recent shipped slices (newest first; dates and titles only; no user counts or revenue). Same list as `/#whats-new`
 - [Scoreboard](/api/scoreboard.json): honest zeros (`external_users`, `paid_pilots`, `revenue_usd`) plus curated listing URLs. Listings ≠ users. Same facts as `/#scoreboard`
 - [Fees](/api/fees.json): demo fee schedule (release 5% rounded `Math.round(amount * 0.05)`, dispute no release fee, top-up/fund none). Same facts as `/#fees`
-- [Tools](/api/tools.json): callable Settlement surfaces (quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
+- [Tools](/api/tools.json): callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
 - [Quickstart](/api/quickstart.json): ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as `/#integrate`. Client-held. Liberty does not move real money
 - [Transition schema](/api/schemas/transition.json): JSON Schema (2020-12) for `POST /api/v0/transition` bodies. Client-held demo protocol; Liberty does not move real money
+- [Validate](/api/v0/validate): `POST` dry-check of the same engine and JSON Schema (no apply, no persist, no job id)
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id; Idempotency-Key echoed only)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow; optional Idempotency-Key stabilizes create ids)
 - [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute (same optional Idempotency-Key)
