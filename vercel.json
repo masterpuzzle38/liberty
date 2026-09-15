@@ -9,6 +9,14 @@
     {
       "source": "/api/tools.json",
       "destination": "/api/agent.json?doc=tools"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/settlement.openapi.json"
+    },
+    {
+      "source": "/api/openapi.json",
+      "destination": "/api/agent.json?doc=openapi"
     }
   ],
   "headers": [
@@ -28,6 +36,20 @@
     },
     {
       "source": "/settlement.openapi.json",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/openapi.json",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/api/openapi.json",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Cache-Control", "value": "public, max-age=300" }

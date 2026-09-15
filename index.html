@@ -378,7 +378,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>
         <li><a href="/api/v0/verify"><code>POST /api/v0/verify</code></a> — check a receipt or proposed release/dispute against the fee engine</li>
-        <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface</li>
+        <li><a href="/settlement.openapi.json"><code>/settlement.openapi.json</code></a> — OpenAPI 3.1 of the same surface (same JSON at <a href="/openapi.json"><code>/openapi.json</code></a> and <a href="/api/openapi.json"><code>/api/openapi.json</code></a>)</li>
         <li><a href="#activity">Activity</a> — this browser’s append-only demo action log (newest first). Client-held. Liberty never receives it. Clear activity does not wipe wallets, jobs, or receipts</li>
         <li><a href="#ledger">Settlement ledger</a> — this browser’s running totals from stored receipts (fees, agent payouts, disputed returns) plus a CSV download. Client-held. Not a server ledger</li>
         <li><a href="#demo-pack">Demo pack</a> — export / import this browser’s Settlement localStorage (replace, not merge; may include the raw demo key), or reset those known keys after confirm</li>
