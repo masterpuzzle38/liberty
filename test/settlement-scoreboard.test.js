@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 36);
+  assert.equal(listings.length, 40);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -269,6 +269,39 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(moltbook.note, /pending_claim/);
   assert.match(moltbook.note, /page still public/i);
   assert.match(moltbook.note, /not full activation until human claim/i);
+  assert.ok(listingUrls.includes("https://botbook.space/agent/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://abund.ai/agent/liberty_settle"));
+  assert.ok(listingUrls.includes("https://api.moltgrid.net/v1/directory/agent_efa01a48f1d0"));
+  assert.ok(
+    listingUrls.includes(
+      "https://www.agentgram.site/api/agents/agent_1789508103718_nd21cbr80",
+    ),
+  );
+  const botbook = listings.find((entry) => entry.directory === "Botbook");
+  assert.match(botbook.note, /botbook\.space\/post\/d6bee080-1120-4634-afe7-b2c562685abe/);
+  assert.match(botbook.note, /botbook\.space\/api\/agents\/liberty-agent-settlement/);
+  assert.match(botbook.note, /integrate\/quickstart\/validate\/schemas\/openapi\/zeros/i);
+  assert.match(botbook.note, /follower_count=0/);
+  const abund = listings.find((entry) => entry.directory === "Abund.ai");
+  assert.match(abund.note, /pending_claim/);
+  assert.match(abund.note, /page still public/i);
+  assert.match(abund.note, /karma=0/);
+  const moltgrid = listings.find((entry) => entry.directory === "MoltGrid");
+  assert.match(moltgrid.note, /credits=50/);
+  assert.match(moltgrid.note, /uptime_pct=99\.0/);
+  assert.match(moltgrid.note, /moltgrid defaults/i);
+  assert.match(moltgrid.note, /not liberty money or traction/i);
+  assert.match(moltgrid.note, /reputation=0/);
+  assert.match(moltgrid.note, /tasks_completed=0/);
+  assert.doesNotMatch(moltgrid.note, /\$/);
+  const agentgramSite = listings.find((entry) => entry.directory === "AgentGram.site");
+  assert.ok(listingNames.includes("AgentGram"));
+  assert.match(agentgramSite.note, /distinct from agentgram/i);
+  assert.match(agentgramSite.note, /agentgram\.co/);
+  assert.match(agentgramSite.note, /already listed/i);
+  assert.match(agentgramSite.note, /integrate\/quickstart\/validate\/schemas\/openapi\/zeros/i);
+  assert.match(agentgramSite.note, /verified=0/);
+  assert.match(agentgramSite.note, /write paths need human claim/i);
   assert.ok(
     !listingNames.some((name) =>
       /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(

@@ -190,6 +190,26 @@
         "directory": "Moltbook",
         "url": "https://www.moltbook.com/u/liberty_settle",
         "note": "Public og+API. status pending_claim (page still public). Not full activation until human claim."
+      },
+      {
+        "directory": "Botbook",
+        "url": "https://botbook.space/agent/liberty-agent-settlement",
+        "note": "Intro https://botbook.space/post/d6bee080-1120-4634-afe7-b2c562685abe. API twin https://botbook.space/api/agents/liberty-agent-settlement. Cites integrate/quickstart/validate/schemas/OpenAPI/zeros. follower_count=0."
+      },
+      {
+        "directory": "Abund.ai",
+        "url": "https://abund.ai/agent/liberty_settle",
+        "note": "Public og+API. status pending_claim (page still public). karma=0."
+      },
+      {
+        "directory": "MoltGrid",
+        "url": "https://api.moltgrid.net/v1/directory/agent_efa01a48f1d0",
+        "note": "Platform credits=50 and uptime_pct=99.0 are MoltGrid defaults — not Liberty money or traction. reputation=0. tasks_completed=0."
+      },
+      {
+        "directory": "AgentGram.site",
+        "url": "https://www.agentgram.site/api/agents/agent_1789508103718_nd21cbr80",
+        "note": "Distinct from AgentGram (agentgram.co, already listed). Public API description cites integrate/quickstart/validate/schemas/OpenAPI/zeros. verified=0; write paths need human claim."
       }
     ]
   },
