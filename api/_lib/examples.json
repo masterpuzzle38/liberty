@@ -35,7 +35,7 @@
       "path": "/api/v0/quote",
       "url": "https://liberty-amber.vercel.app/api/v0/quote",
       "title": "Dry-run quote",
-      "note": "Same engine as transition. No state change. Create quote has no durable id. Optional client_ref echoes on the quoted job. Optional callback_url echoes the same way; Liberty never fetches it. Optional Idempotency-Key is echoed only.",
+      "note": "Same engine as transition. Validate against GET /api/schemas/quote.json. No state change. Create quote has no durable id. A quote is not an invoice and not proof of payment. Optional client_ref echoes on the quoted job. Optional callback_url echoes the same way; Liberty never fetches it. Optional Idempotency-Key is echoed only.",
       "body": {
         "action": "create",
         "title": "Summarize filings",

@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/quote.json",
+  "title": "Liberty Agent Settlement quote request",
+  "description": "JSON Schema for POST /api/v0/quote request bodies (create / fund / submit / release / dispute). Same request shape as POST /api/v0/transition and POST /api/v0/validate. Dry-run only: Liberty does not move real money, persist jobs, take custody, or mutate state. Create quote has no durable id. A quote is not an invoice and not proof of payment. money is always false. Demo only. Success responses match $defs/QuoteSuccess (quoted: true, money: false).",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/CreateRequest" },
+    { "$ref": "#/$defs/FundRequest" },
+    { "$ref": "#/$defs/SubmitRequest" },
+    { "$ref": "#/$defs/ReleaseRequest" },
+    { "$ref": "#/$defs/DisputeRequest" }
+  ],
+  "$defs": {
+    "IdempotencyKey": {
+      "type": "string",
+      "description": "Optional. Header Idempotency-Key or body idempotency_key / idempotencyKey. On quote, echoed only. Create quote stays dry-run and still has no durable id. Liberty does not store or replay responses."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Adapter-owned https URL. Echoes on the quoted job. Liberty never HTTP-fetches or calls it. Empty or whitespace-only is rejected. notify_url / notifyUrl / callbackUrl are aliases."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id. Echoes on the quoted job. Independent of Idempotency-Key. Empty or whitespace-only is rejected. clientRef is an alias."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Client-held payer credit balance in integer demo credits. Not real money. Not an invoice."
+    },
+    "ExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional escrow hold expiry as an ISO-8601 UTC datetime. Stamped on the quoted funded job as expiresAt. After this instant, a release quote fails; dispute remains allowed. If both expires_at and ttl_seconds are sent, Liberty rejects as conflicting."
+    },
+    "TtlSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional hold lifetime in seconds from fund. Liberty stamps expiresAt = now + ttl_seconds on the quoted job. Must be a positive integer. Ignored when expires_at is also sent — both together are rejected."
+    },
+    "Job": {
+      "type": "object",
+      "description": "Current client-held job for fund / submit / release / dispute quotes. Liberty does not look jobs up. Send the object from the previous response. camelCase matches the UI and OpenAPI Job schema; snake_case aliases are accepted.",
+      "required": ["id", "title", "amount", "criteria", "status"],
+      "anyOf": [
+        { "required": ["createdAt"] },
+        { "required": ["created_at"] }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^as_[0-9a-f]{10}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "criteria": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "funded", "submitted", "released", "disputed"]
+        },
+        "proofUrl": { "type": "string" },
+        "proof_url": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "created_at": { "type": "string" },
+        "fundedAt": { "type": ["string", "null"] },
+        "funded_at": { "type": ["string", "null"] },
+        "submittedAt": { "type": ["string", "null"] },
+        "submitted_at": { "type": ["string", "null"] },
+        "resolvedAt": { "type": ["string", "null"] },
+        "resolved_at": { "type": ["string", "null"] },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "fee": { "type": "integer", "minimum": 0 },
+        "agentPayout": { "type": "integer", "minimum": 0 },
+        "agent_payout": { "type": "integer", "minimum": 0 },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "dispute_reason": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "CreateRequest": {
+      "type": "object",
+      "required": ["action", "title", "amount", "criteria"],
+      "properties": {
+        "action": { "const": "create" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "amount": { "type": "integer", "minimum": 1 },
+        "criteria": { "type": "string", "minLength": 1 },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "FundRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "anyOf": [
+        { "required": ["payer_credits"] },
+        { "required": ["payerCredits"] }
+      ],
+      "properties": {
+        "action": { "const": "fund" },
+        "job": { "$ref": "#/$defs/Job" },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payerCredits": { "$ref": "#/$defs/Credits" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "ttl_seconds": { "$ref": "#/$defs/TtlSeconds" },
+        "ttlSeconds": { "$ref": "#/$defs/TtlSeconds" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "SubmitRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "anyOf": [
+        { "required": ["proof_url"] },
+        { "required": ["proofUrl"] }
+      ],
+      "properties": {
+        "action": { "const": "submit" },
+        "job": { "$ref": "#/$defs/Job" },
+        "proof_url": { "type": "string", "minLength": 1 },
+        "proofUrl": { "type": "string", "minLength": 1 },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "ReleaseRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "properties": {
+        "action": { "const": "release" },
+        "job": { "$ref": "#/$defs/Job" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "DisputeRequest": {
+      "type": "object",
+      "required": ["action", "job"],
+      "properties": {
+        "action": { "const": "dispute" },
+        "job": { "$ref": "#/$defs/Job" },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payerCredits": { "$ref": "#/$defs/Credits" },
+        "dispute_reason": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "QuoteJob": {
+      "type": "object",
+      "description": "Would-be next job on a successful quote. Same fields as a commit. Create quotes omit id — no durable id is assigned until POST /api/v0/transition. Not an invoice.",
+      "required": ["title", "amount", "criteria", "status", "createdAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^as_[0-9a-f]{10}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "criteria": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "funded", "submitted", "released", "disputed"]
+        },
+        "proofUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "fundedAt": { "type": ["string", "null"] },
+        "submittedAt": { "type": ["string", "null"] },
+        "resolvedAt": { "type": ["string", "null"] },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "fee": { "type": "integer", "minimum": 0 },
+        "agentPayout": { "type": "integer", "minimum": 0 },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "QuoteSuccess": {
+      "type": "object",
+      "description": "200 body from POST /api/v0/quote. quoted is true. money is always false. Create omits job.id. A quote is not an invoice and not proof of payment. Does not mutate client-held state.",
+      "required": ["ok", "mode", "money", "quoted", "action", "job"],
+      "properties": {
+        "ok": { "const": true },
+        "mode": { "const": "demo" },
+        "money": { "const": false },
+        "quoted": { "const": true },
+        "action": {
+          "type": "string",
+          "enum": ["create", "fund", "submit", "release", "dispute"]
+        },
+        "job": { "$ref": "#/$defs/QuoteJob" },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payer_credits_after": { "$ref": "#/$defs/Credits" },
+        "fee": { "type": "integer", "minimum": 0 },
+        "agent_payout": { "type": "integer", "minimum": 0 },
+        "agent_credits_delta": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Credits to add to a client-held agent wallet after a commit. Same as agent_payout on release; 0 on dispute. Quote does not apply this delta."
+        },
+        "returned_to_payer": { "type": "integer", "minimum": 0 },
+        "receipt": {
+          "type": "object",
+          "description": "Present on quoted release or dispute. Same expanded receipt as GET /api/schemas/receipt.json. Not proof of payment."
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^k_[0-9a-f]{12}$",
+          "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+        },
+        "key_optional": {
+          "type": "boolean",
+          "description": "True when no demo key header was sent."
+        },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    }
+  }
+}

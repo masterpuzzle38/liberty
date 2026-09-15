@@ -254,6 +254,7 @@ test("quote HTTP wrapper: OPTIONS, GET discovery, POST dry-run, and 405", () => 
   assert.equal(get.body.dry_run, true);
   assert.equal(get.body.money, false);
   assert.equal(get.body.persistence, false);
+  assert.equal(get.body.schema, "/api/schemas/quote.json");
   assert.equal(get.body.commit, "/api/v0/transition");
 
   const posted = handleHttp({

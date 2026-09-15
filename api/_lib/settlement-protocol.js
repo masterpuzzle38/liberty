@@ -11,6 +11,7 @@ const FEES = require("./fees.json");
 const TOOLS = require("./tools.json");
 const QUICKSTART = require("./quickstart.json");
 const TRANSITION_SCHEMA = require("./transition.schema.json");
+const QUOTE_SCHEMA = require("./quote.schema.json");
 const RECEIPT_SCHEMA = require("./receipt.schema.json");
 const HANDOFF_SCHEMA = require("./handoff.schema.json");
 const ERRORS = require("./errors.json");
@@ -63,6 +64,7 @@ module.exports = {
   TOOLS,
   QUICKSTART,
   TRANSITION_SCHEMA,
+  QUOTE_SCHEMA,
   RECEIPT_SCHEMA,
   HANDOFF_SCHEMA,
   ERRORS,

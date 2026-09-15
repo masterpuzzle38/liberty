@@ -1,12 +1,12 @@
 "use strict";
 
 const OPENAPI = require("../settlement.openapi.json");
-const { AGENT, TOOLS, QUICKSTART, TRANSITION_SCHEMA, RECEIPT_SCHEMA, HANDOFF_SCHEMA, ERRORS, serveProtocol } = require("./_lib/settlement-protocol");
+const { AGENT, TOOLS, QUICKSTART, TRANSITION_SCHEMA, QUOTE_SCHEMA, RECEIPT_SCHEMA, HANDOFF_SCHEMA, ERRORS, serveProtocol } = require("./_lib/settlement-protocol");
 
 // Hobby deployments allow 12 functions. /api/tools.json, /api/openapi.json,
-// /api/quickstart.json, /api/schemas/transition.json, /api/schemas/receipt.json,
-// /api/schemas/handoff.json, and /api/errors.json rewrite here instead of
-// adding more api/*.json.js files.
+// /api/quickstart.json, /api/schemas/transition.json, /api/schemas/quote.json,
+// /api/schemas/receipt.json, /api/schemas/handoff.json, and /api/errors.json
+// rewrite here instead of adding more api/*.json.js files.
 // /openapi.json rewrites to the static settlement.openapi.json file.
 function documentFor(req) {
   const url = String(req.url || "");
@@ -24,6 +24,12 @@ function documentFor(req) {
     || /(?:^|[/?])schemas\/transition\.json(?:\?|$)/.test(url)
   ) {
     return TRANSITION_SCHEMA;
+  }
+  if (
+    url.includes("doc=quote-schema")
+    || /(?:^|[/?])schemas\/quote\.json(?:\?|$)/.test(url)
+  ) {
+    return QUOTE_SCHEMA;
   }
   if (
     url.includes("doc=receipt-schema")

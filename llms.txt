@@ -19,6 +19,7 @@ Human demo: https://liberty-amber.vercel.app
 - [Tools](/api/tools.json): callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
 - [Quickstart](/api/quickstart.json): ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as `/#integrate`. Client-held. Liberty does not move real money
 - [Transition schema](/api/schemas/transition.json): JSON Schema (2020-12) for `POST /api/v0/transition` bodies. Client-held demo protocol; Liberty does not move real money
+- [Quote schema](/api/schemas/quote.json): JSON Schema (2020-12) for `POST /api/v0/quote` bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. Client-held demo; Liberty does not move real money
 - [Receipt schema](/api/schemas/receipt.json): JSON Schema (2020-12) for shareable terminal receipts (`#receipt/r1.…` / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment
 - [Handoff schema](/api/schemas/handoff.json): JSON Schema (2020-12) for shareable job handoffs (`#handoff/h1.…`). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers
 - [Errors](/api/errors.json): live Settlement error codes (schema vs state, including `hold_expired`). Client-held demo; Liberty does not move real money

@@ -52,7 +52,8 @@
       "id": "quote",
       "method": "POST",
       "path": "/api/v0/quote",
-      "purpose": "Dry-run of the transition engine. Next status and fee math. No state change. Create has no durable id.",
+      "schema": "/api/schemas/quote.json",
+      "purpose": "Dry-run of the transition engine. Next status and fee math. No state change. Create has no durable id. A quote is not an invoice and not proof of payment.",
       "body": ["action"],
       "actions": [
         {
@@ -205,6 +206,12 @@
       "method": "GET",
       "path": "/api/schemas/transition.json",
       "purpose": "JSON Schema (2020-12) for POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money."
+    },
+    {
+      "id": "quote_schema",
+      "method": "GET",
+      "path": "/api/schemas/quote.json",
+      "purpose": "JSON Schema (2020-12) for POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. Client-held demo; Liberty does not move real money."
     },
     {
       "id": "receipt_schema",

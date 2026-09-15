@@ -4,7 +4,7 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). GET /api/tools.json lists callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/schemas/transition.json is the JSON Schema for POST /api/v0/transition bodies. GET /api/schemas/receipt.json is the JSON Schema for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment. GET /api/schemas/handoff.json is the JSON Schema for shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers. GET /api/errors.json lists the live error codes the engine returns (schema vs state, including hold_expired). Client-held demo; Liberty does not move real money. GET /settlement.openapi.json is the OpenAPI 3.1 document (same JSON at /openapi.json and /api/openapi.json). GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/validate dry-checks that same request shape without applying or persisting. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). GET /api/tools.json lists callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/schemas/transition.json is the JSON Schema for POST /api/v0/transition bodies. GET /api/schemas/quote.json is the JSON Schema for POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. GET /api/schemas/receipt.json is the JSON Schema for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment. GET /api/schemas/handoff.json is the JSON Schema for shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers. GET /api/errors.json lists the live error codes the engine returns (schema vs state, including hold_expired). Client-held demo; Liberty does not move real money. GET /settlement.openapi.json is the OpenAPI 3.1 document (same JSON at /openapi.json and /api/openapi.json). GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/validate dry-checks that same request shape without applying or persisting. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
@@ -42,6 +42,7 @@
     "tools": "/api/tools.json",
     "quickstart": "/api/quickstart.json",
     "transition_schema": "/api/schemas/transition.json",
+    "quote_schema": "/api/schemas/quote.json",
     "receipt_schema": "/api/schemas/receipt.json",
     "handoff_schema": "/api/schemas/handoff.json",
     "errors": "/api/errors.json",
@@ -219,7 +220,8 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Optional client_ref echoes on the quoted create job. Optional callback_url echoes the same way. Liberty never fetches it. Optional expires_at or ttl_seconds on fund stamps expiresAt on the quoted job (same conflicting-both rule). After expiresAt, a release quote fails; dispute remains allowed. Optional proof_note echoes on the quoted submit job. Optional release_note / dispute_reason echo on the quoted receipt and job. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
+    "schema": "/api/schemas/quote.json",
+    "note": "Same request shape and engine as transition. Validate the body against GET /api/schemas/quote.json before calling. A quote is not an invoice and not proof of payment. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Optional client_ref echoes on the quoted create job. Optional callback_url echoes the same way. Liberty never fetches it. Optional expires_at or ttl_seconds on fund stamps expiresAt on the quoted job (same conflicting-both rule). After expiresAt, a release quote fails; dispute remains allowed. Optional proof_note echoes on the quoted submit job. Optional release_note / dispute_reason echo on the quoted receipt and job. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
     "create_job": "Validated open job fields only. No durable id. Optional client_ref and callback_url echo when sent.",
     "requests": [
       {
@@ -506,6 +508,16 @@
     "validates": "POST /api/v0/transition",
     "note": "JSON Schema for transition request bodies. Client-held demo protocol; Liberty does not move real money. Same request shape as POST /api/v0/quote and POST /api/v0/validate. Agent wallets stay client-held."
   },
+  "quote_schema": {
+    "path": "/api/schemas/quote.json",
+    "money": false,
+    "mode": "demo",
+    "persistence": false,
+    "origin": "https://liberty-amber.vercel.app",
+    "draft": "2020-12",
+    "validates": "POST /api/v0/quote",
+    "note": "JSON Schema for quote request bodies (create / fund / submit / release / dispute) and the quoted success shape. Dry-run only. Client-held demo protocol; Liberty does not move real money. A quote is not an invoice and not proof of payment. Same request shape as POST /api/v0/transition."
+  },
   "receipt_schema": {
     "path": "/api/schemas/receipt.json",
     "money": false,
@@ -583,6 +595,7 @@
     "GET /api/quickstart.json for an ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Absolute curls. Client-held. Liberty does not move real money.",
     "GET /api/tools.json for callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. Not an A2A Agent Card. Not a ChatGPT plugin.",
     "GET /api/schemas/transition.json for the JSON Schema (2020-12) of POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money.",
+    "GET /api/schemas/quote.json for the JSON Schema (2020-12) of POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. Client-held demo; Liberty does not move real money.",
     "GET /api/schemas/receipt.json for the JSON Schema (2020-12) of shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment.",
     "GET /api/schemas/handoff.json for the JSON Schema (2020-12) of shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers.",
     "GET /api/errors.json for the live error codes the engine returns (schema vs state, including hold_expired and conflicting expires_at / ttl_seconds). Client-held demo. Liberty does not move real money.",
@@ -593,7 +606,7 @@
     "GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Listings are not users. Same facts as /#scoreboard.",
     "GET /api/fees.json for the demo fee schedule (release 5% rounded Math.round(amount * 0.05), dispute no release fee, top-up/fund none). Same math as this document’s fee_schedule. Same facts as /#fees.",
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
-    "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id. Optional Idempotency-Key is echoed only.",
+    "POST /api/v0/quote is a dry-run of that same engine. Validate the body against GET /api/schemas/quote.json before calling. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id. A quote is not an invoice and not proof of payment. Optional Idempotency-Key is echoed only.",
     "POST /api/v0/validate dry-checks that same request shape and engine without applying fund/submit/release/dispute, minting a job id, or persisting. Returns { ok: true } or structured field errors (kind: schema on 400, kind: state on 409). Non-create actions must send the client-held job. Liberty does not move real money.",
     "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Client holds the result. Liberty does not persist.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",

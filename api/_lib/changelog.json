@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "quote-schema",
+      "title": "JSON Schema for quote payloads",
+      "href": "/api/schemas/quote.json"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-14",
       "title": "Scoreboard curated listings + wave 14",
       "href": "/#scoreboard"
@@ -76,12 +82,6 @@
       "id": "scoreboard-wave-9",
       "title": "Scoreboard curated listings + wave 9",
       "href": "/#scoreboard"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "integrate",
-      "title": "Human Integrate panel for Settlement quickstart",
-      "href": "/#integrate"
     }
   ]
 }
