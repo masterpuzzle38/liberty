@@ -214,7 +214,9 @@
     if (els.importPackInput) els.importPackInput.value = "";
     if (els.importPackFile) els.importPackFile.value = "";
     const keyNote = writes.containsDemoKey ? " Raw demo key restored in this browser." : "";
-    flash(`Imported demo pack. ${writes.summary.jobCount} jobs, ${writes.summary.receiptCount} receipts.${keyNote} Liberty did not receive the file. Demo only.`);
+    const jobLabel = writes.summary.jobCount === 1 ? "1 job" : `${writes.summary.jobCount} jobs`;
+    const receiptLabel = writes.summary.receiptCount === 1 ? "1 receipt" : `${writes.summary.receiptCount} receipts`;
+    flash(`Imported demo pack. ${jobLabel}, ${receiptLabel}.${keyNote} Liberty did not receive the file. Demo only.`);
     selectJob(null);
     return true;
   }
