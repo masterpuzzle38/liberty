@@ -66,6 +66,11 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.surfaces.examples, "/api/examples.json");
   assert.equal(SETTLEMENT.examples.path, "/api/examples.json");
   assert.equal(SETTLEMENT.examples.money, false);
+  assert.equal(SETTLEMENT.surfaces.templates, "/api/templates.json");
+  assert.equal(SETTLEMENT.templates.path, "/api/templates.json");
+  assert.equal(SETTLEMENT.templates.money, false);
+  assert.equal(SETTLEMENT.templates.auto_create, false);
+  assert.equal(SETTLEMENT.templates.auto_fund, false);
   assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");
   assert.equal(SETTLEMENT.simulate_api.money, false);
   assert.equal(SETTLEMENT.simulate_api.persistence, false);
@@ -112,6 +117,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/verify")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/v0/simulate")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/examples.json")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/templates.json")));
 });
 
 test("receipt fields match the engine receipt plus optional key_id", () => {

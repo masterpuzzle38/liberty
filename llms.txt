@@ -11,6 +11,7 @@ Human demo: https://liberty-amber.vercel.app
 - [Health](/api/health.json): service, demo mode, `money: false`
 - [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export, shareable receipt links, verify, client-held agent wallet
 - [Examples](/api/examples.json): copy-ready request bodies for quote, transition, simulate, and verify (same curls as `/#adapters`)
+- [Templates](/api/templates.json): preset create-job fields (same buttons as `/#create`; fill only, no auto-create or fund)
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow)
 - [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute

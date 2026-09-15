@@ -308,6 +308,15 @@ body.pending textarea {
   margin: 0.7rem 0 0;
 }
 
+#job-templates {
+  margin: 0.7rem 0 1rem;
+}
+
+.presets [aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .board {
   display: grid;
   gap: 1rem;
