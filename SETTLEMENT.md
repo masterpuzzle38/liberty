@@ -1,12 +1,13 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`), then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. That route is a **stateless demo engine** — it does not persist jobs, does not take escrow custody, and does not move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. Adapters use the same engine. Quote is a dry-run; transition commits one action. Neither persists jobs, takes escrow custody, or moves real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
 
 Machine-readable copies:
 
 - [`/api/health.json`](api/_lib/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
 - [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
+- [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`/settlement.openapi.json`](settlement.openapi.json) — OpenAPI 3.1
 - [`/llms.txt`](llms.txt) — short pointer ([llms.txt](https://llmstxt.org/) convention)
 
@@ -51,6 +52,14 @@ The job object matches the browser UI / OpenAPI shape (`proofUrl`, `createdAt`, 
 
 Liberty does not store the job. Send the current job on every later action.
 
+## `POST /api/v0/quote`
+
+Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`.
+
+Create quote returns the validated open job fields **without a durable id**. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
+
+The human UI calls this before fund, release, and dispute so the fee / payout / credit cut is visible before confirm.
+
 ### Job handoff (two browsers)
 
 The human UI can copy a shareable link or compact `h1.` code for any existing job. The payload is compact JSON of the current job (short keys), then base64url. It lives in the URL hash (`#handoff/<token>`); `?handoff=<token>` is also accepted. Opening the link (or pasting the code) loads that job into the other browser’s `localStorage` so the next legal action can go through `POST /api/v0/transition`.
@@ -93,7 +102,7 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 
 ## Adapter notes
 
-1. GET the JSON files for the protocol. POST `/api/v0/transition` for one demo transition — the same engine the human UI uses. This is not live escrow custody.
+1. GET the JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.

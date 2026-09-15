@@ -2,4 +2,4 @@
 
 const { createVercelHandler } = require("../_lib/settlement-transition");
 
-module.exports = createVercelHandler();
+module.exports = createVercelHandler({ dryRun: true });

@@ -351,6 +351,34 @@ body.pending textarea {
   margin-bottom: 0.75rem;
 }
 
+.quote-preview {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid #4a4124;
+  border-radius: 8px;
+  background: #2a2618;
+}
+
+.quote-preview p {
+  margin: 0 0 0.35rem;
+}
+
+.quote-preview .quote-kicker {
+  color: var(--accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 650;
+}
+
+.quote-preview .quote-impact {
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-preview .hint {
+  margin-bottom: 0;
+}
+
 .handoff-share,
 .receipt {
   margin-top: 1rem;

@@ -4,12 +4,12 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/transition is a stateless demo engine: it returns the next job state and fee math. It does not persist jobs, take custody, or move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. Neither persists jobs, takes custody, or moves real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
     "storage_key": "liberty.agent-settlement.v0",
-    "note": "The browser UI stores credits and jobs here, then POSTs create / fund / submit / release / dispute to /api/v0/transition. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
+    "note": "The browser UI stores credits and jobs here. Before fund, release, or dispute it POSTs /api/v0/quote and shows the cut, then POSTs /api/v0/transition on confirm. Same engine as adapters. Demo credits stay in this browser. Jobs can be copied to another browser via a client-held handoff link.",
     "demo_key_storage_key": "liberty.agent-settlement.demo-key.v0",
     "demo_key_note": "Self-serve demo API key. Raw key is localStorage only. Not production auth. Not an account."
   },
@@ -17,6 +17,7 @@
     "health": "/api/health.json",
     "protocol": "/api/settlement.json",
     "transition": "/api/v0/transition",
+    "quote": "/api/v0/quote",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
@@ -49,6 +50,44 @@
       "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout)",
       "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl"]
     },
+    "requests": [
+      {
+        "action": "create",
+        "body": ["action", "title", "amount", "criteria"]
+      },
+      {
+        "action": "fund",
+        "body": ["action", "job", "payer_credits"]
+      },
+      {
+        "action": "submit",
+        "body": ["action", "job", "proof_url"]
+      },
+      {
+        "action": "release",
+        "body": ["action", "job"]
+      },
+      {
+        "action": "dispute",
+        "body": ["action", "job"],
+        "optional": ["payer_credits"]
+      }
+    ]
+  },
+  "quote_api": {
+    "path": "/api/v0/quote",
+    "method": "POST",
+    "cors": ["POST", "OPTIONS"],
+    "auth": "optional",
+    "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
+    "auth_note": "Same optional demo API key as /api/v0/transition. If sent, response includes key_id. If omitted, notes key_optional. Not production auth.",
+    "dry_run": true,
+    "persistence": false,
+    "money": false,
+    "mode": "demo",
+    "engine": "/api/v0/transition",
+    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Not live escrow custody.",
+    "create_job": "Validated open job fields only. No durable id.",
     "requests": [
       {
         "action": "create",
@@ -175,9 +214,10 @@
   ],
   "adapter_notes": [
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
+    "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
-    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0 and POSTs the five actions to /api/v0/transition.",
+    "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition.",
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Credits and the demo API key are not in the payload. Liberty does not persist the snapshot.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]
