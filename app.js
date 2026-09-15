@@ -74,6 +74,9 @@
     ledgerFacts: document.getElementById("ledger-facts"),
     ledgerEmpty: document.getElementById("ledger-empty"),
     downloadLedgerCsv: document.getElementById("download-ledger-csv"),
+    activityList: document.getElementById("activity-list"),
+    activityEmpty: document.getElementById("activity-empty"),
+    clearActivity: document.getElementById("clear-activity"),
   };
 
   const handoff = window.LibertyJobHandoff;
@@ -81,6 +84,7 @@
   const walletApi = window.LibertyAgentWallet;
   const packApi = window.LibertyDemoPack;
   const ledgerApi = window.LibertySettlementLedger;
+  const activityApi = window.LibertySettlementActivity;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -138,6 +142,39 @@
   function saveReceipts() {
     if (!receiptsApi) return;
     localStorage.setItem(receiptsApi.STORAGE_KEY, JSON.stringify(receipts));
+  }
+
+  function loadActivity() {
+    if (!activityApi) return [];
+    try {
+      return activityApi.readEvents(localStorage.getItem(activityApi.STORAGE_KEY));
+    } catch {
+      return [];
+    }
+  }
+
+  function saveActivity() {
+    if (!activityApi) return;
+    localStorage.setItem(activityApi.STORAGE_KEY, activityApi.writeEvents(activity));
+  }
+
+  function recordActivity(action, source) {
+    if (!activityApi) return;
+    const src = source && typeof source === "object" ? source : {};
+    const job = src.job && typeof src.job === "object" ? src.job : null;
+    const receipt = src.receipt && typeof src.receipt === "object" ? src.receipt : null;
+    const input = { action };
+    const jobId = src.job_id || src.jobId || (job && job.id) || (receipt && receipt.job_id);
+    const clientRef = src.client_ref || src.clientRef
+      || (job && (job.clientRef || job.client_ref))
+      || (receipt && receipt.client_ref);
+    if (jobId) input.job_id = jobId;
+    if (clientRef) input.client_ref = clientRef;
+    if (typeof src.detail === "string" && src.detail.trim()) input.detail = src.detail.trim();
+    const next = activityApi.appendEvent(activity, input);
+    if (!next.ok) return;
+    activity = next.events;
+    saveActivity();
   }
 
   function rememberReceipt(source, extras) {
@@ -229,6 +266,7 @@
     const jobLabel = writes.summary.jobCount === 1 ? "1 job" : `${writes.summary.jobCount} jobs`;
     const receiptLabel = writes.summary.receiptCount === 1 ? "1 receipt" : `${writes.summary.receiptCount} receipts`;
     flash(`Imported demo pack. ${jobLabel}, ${receiptLabel}.${keyNote} Liberty did not receive the file. Demo only.`);
+    recordActivity("import", { detail: `${jobLabel}, ${receiptLabel}` });
     selectJob(null);
     return true;
   }
@@ -257,10 +295,28 @@
     if (els.verifyInput) els.verifyInput.value = "";
     renderSimulateResult(null);
     renderVerifyResult(null);
-    flash("Demo reset. Settlement localStorage in this browser is empty. Other keys were left alone. Liberty did not receive anything.");
+    flash("Demo reset. Settlement localStorage in this browser is empty. Activity log kept. Other keys were left alone. Liberty did not receive anything.");
+    recordActivity("reset", { detail: "demo keys cleared" });
     if (location.hash && /^#job\//i.test(location.hash)) {
       history.replaceState(null, "", location.pathname + location.search);
     }
+    render();
+  }
+
+  function clearActivityLog() {
+    const prompt = activityApi && activityApi.confirmClearMessage
+      ? activityApi.confirmClearMessage()
+      : {
+        ok: true,
+        message: "Clear this browser’s activity log? Jobs, wallets, receipts, and the demo API key stay. Only the activity list is removed. Liberty does not receive anything. Demo only.",
+      };
+    if (!prompt.ok) return flash(prompt.message || "Could not clear activity.", true);
+    if (!confirm(prompt.message)) return;
+    activity = activityApi && activityApi.clearEvents
+      ? activityApi.clearEvents().events
+      : [];
+    if (activityApi) localStorage.removeItem(activityApi.STORAGE_KEY);
+    flash("Activity log cleared. Jobs, wallets, and receipts were left alone. Liberty did not receive anything.");
     render();
   }
 
@@ -278,6 +334,11 @@
     downloadText(encoded.text, encoded.filename, "application/json");
     const keyNote = encoded.containsDemoKey ? " This file includes the raw demo API key." : "";
     flash(`Downloaded demo pack.${keyNote} Client-held only — Liberty did not receive the file. Demo only.`);
+    const summary = encoded.summary || {};
+    const jobLabel = summary.jobCount === 1 ? "1 job" : `${summary.jobCount || 0} jobs`;
+    const receiptLabel = summary.receiptCount === 1 ? "1 receipt" : `${summary.receiptCount || 0} receipts`;
+    recordActivity("export", { detail: `${jobLabel}, ${receiptLabel}` });
+    renderActivity();
   }
 
   function saveDemoKey(key) {
@@ -323,6 +384,7 @@
   let state = load();
   let receipts = loadReceipts();
   let agentCredits = loadAgentCredits();
+  let activity = loadActivity();
   let inflight = false;
   let pendingQuote = null;
 
@@ -660,6 +722,11 @@
       return;
     }
     applyResult(data);
+    recordActivity("simulate", {
+      job: data.job,
+      receipt: data.receipt,
+      detail: data.terminal || (data.job && data.job.status) || "release",
+    });
     renderSimulateResult(data);
     flash(
       data.job && data.job.status === "disputed"
@@ -807,6 +874,7 @@
     const data = await postTransition(payload);
     if (!data) return false;
     applyResult(data);
+    recordActivity("create", data);
     flash(`Job ${data.job.id} created. Fund it to hold ${data.job.amount} credits in escrow.`);
     selectJob(data.job.id);
     return true;
@@ -822,6 +890,7 @@
     });
     if (!data) return;
     applyResult(data);
+    recordActivity("fund", data);
     flash(`${data.job.amount} credits held in escrow for ${data.job.id}.`);
     render();
   }
@@ -838,6 +907,7 @@
     const data = await postTransition(payload);
     if (!data) return;
     applyResult(data);
+    recordActivity("submit", data);
     flash("Proof submitted. Payer can release or dispute.");
     render();
   }
@@ -848,6 +918,7 @@
     const data = await postTransition(moneyActionPayload("release", job, note));
     if (!data) return;
     applyResult(data);
+    recordActivity("release", data);
     flash(`Released. Agent wallet +${data.job.agentPayout} credits. Fee ${data.job.fee} credits. Receipt saved in this browser. Demo only.`);
     render();
   }
@@ -858,6 +929,7 @@
     const data = await postTransition(moneyActionPayload("dispute", job, note));
     if (!data) return;
     applyResult(data);
+    recordActivity("dispute", data);
     flash(`Disputed. ${data.job.amount} credits returned to the payer. Agent wallet unchanged. Receipt saved in this browser.`);
     render();
   }
@@ -1220,6 +1292,17 @@
     if (!data) return;
     renderVerifyResult(data);
     if (data.ok === true) {
+      const receipt = payload && payload.receipt
+        ? payload.receipt
+        : (payload && payload.job);
+      recordActivity("verify", {
+        receipt,
+        job: payload && payload.job,
+        job_id: receipt && (receipt.job_id || receipt.id),
+        client_ref: receipt && (receipt.client_ref || receipt.clientRef),
+        detail: data.valid ? "valid" : "mismatch",
+      });
+      renderActivity();
       flash(data.valid
         ? "Receipt matches the fee engine. Demo only — not real money."
         : "Receipt does not match the fee engine. See mismatches below.");
@@ -1273,12 +1356,45 @@
     if (els.ledgerEmpty) els.ledgerEmpty.hidden = totals.receiptCount > 0;
   }
 
+  function activityLine(event) {
+    const bits = [event.action];
+    if (event.job_id) bits.push(event.job_id);
+    if (event.client_ref) bits.push(event.client_ref);
+    if (event.detail) {
+      const already = bits.includes(event.detail)
+        || (event.job_id && event.detail.includes(event.job_id) && (!event.client_ref || event.detail.includes(event.client_ref)));
+      if (!already) bits.push(event.detail);
+    }
+    return bits.join(" · ");
+  }
+
+  function renderActivity() {
+    if (!els.activityList) return;
+    els.activityList.replaceChildren();
+    for (const event of activity) {
+      const item = document.createElement("li");
+      item.className = "activity-item";
+      const when = document.createElement("time");
+      when.dateTime = event.at;
+      when.textContent = formatWhen(event.at);
+      const action = document.createElement("span");
+      action.className = "activity-action";
+      action.textContent = activityLine(event);
+      item.append(when, action);
+      els.activityList.append(item);
+    }
+    const shown = activity.length > 0;
+    els.activityList.hidden = !shown;
+    if (els.activityEmpty) els.activityEmpty.hidden = shown;
+  }
+
   function render() {
     renderBalance();
     renderList();
     renderDetail();
     renderReceipts();
     renderLedger();
+    renderActivity();
     renderKey();
   }
 
@@ -1652,6 +1768,7 @@
 
   els.resetPack?.addEventListener("click", resetDemo);
   els.reset?.addEventListener("click", resetDemo);
+  els.clearActivity?.addEventListener("click", clearActivityLog);
 
   window.addEventListener("hashchange", () => {
     if (receiptsApi && receiptsApi.readLocationReceipt && receiptsApi.readLocationReceipt(location)) {
