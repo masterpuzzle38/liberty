@@ -61,6 +61,7 @@
     whatsNewList: document.getElementById("whats-new-list"),
     whatsNewEmpty: document.getElementById("whats-new-empty"),
     exportPack: document.getElementById("export-demo-pack"),
+    resetPack: document.getElementById("reset-demo-pack"),
     importPackForm: document.getElementById("import-demo-pack-form"),
     importPackFile: document.getElementById("import-demo-pack-file"),
     importPackInput: document.getElementById("import-demo-pack-input"),
@@ -220,6 +221,37 @@
     flash(`Imported demo pack. ${jobLabel}, ${receiptLabel}.${keyNote} Liberty did not receive the file. Demo only.`);
     selectJob(null);
     return true;
+  }
+
+  function resetDemo() {
+    const prompt = packApi && packApi.resetConfirmMessage
+      ? packApi.resetConfirmMessage()
+      : {
+        ok: true,
+        message: "Clear this browser’s Settlement demo? Payer credits, agent credits, jobs, receipts, and the demo API key will be removed. Other localStorage is left alone. Liberty does not receive anything. Demo only — not real money.",
+      };
+    if (!prompt.ok) return flash(prompt.message || "Could not reset the demo.", true);
+    if (!confirm(prompt.message)) return;
+    const cleared = packApi && packApi.clearStorage
+      ? packApi.clearStorage()
+      : { ok: true, removes: [STORAGE_KEY, KEY_STORAGE, "liberty.agent-settlement.receipts.v0", "liberty.agent-settlement.agent-credits.v0"] };
+    if (!cleared.ok) return flash(cleared.message || "Could not reset the demo.", true);
+    (cleared.removes || []).forEach((key) => localStorage.removeItem(key));
+    try { sessionStorage.removeItem(KEY_REVEAL); } catch { /* ignore */ }
+    state = emptyState();
+    receipts = [];
+    agentCredits = 0;
+    pendingQuote = null;
+    if (els.importPackInput) els.importPackInput.value = "";
+    if (els.importPackFile) els.importPackFile.value = "";
+    if (els.verifyInput) els.verifyInput.value = "";
+    renderSimulateResult(null);
+    renderVerifyResult(null);
+    flash("Demo reset. Settlement localStorage in this browser is empty. Other keys were left alone. Liberty did not receive anything.");
+    if (location.hash && /^#job\//i.test(location.hash)) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    render();
   }
 
   function exportDemoPack() {
@@ -1561,18 +1593,8 @@
     applyDemoPack(els.importPackInput ? els.importPackInput.value : "");
   });
 
-  els.reset?.addEventListener("click", () => {
-    if (!confirm("Clear all demo credits (payer and agent), jobs, and receipts in this browser?")) return;
-    state = emptyState();
-    receipts = [];
-    agentCredits = 0;
-    pendingQuote = null;
-    localStorage.removeItem(STORAGE_KEY);
-    if (receiptsApi) localStorage.removeItem(receiptsApi.STORAGE_KEY);
-    if (walletApi) localStorage.removeItem(walletApi.STORAGE_KEY);
-    flash("Demo reset. The demo API key was left in place — revoke it separately if you want.");
-    selectJob(null);
-  });
+  els.resetPack?.addEventListener("click", resetDemo);
+  els.reset?.addEventListener("click", resetDemo);
 
   window.addEventListener("hashchange", () => {
     if (receiptsApi && receiptsApi.readLocationReceipt && receiptsApi.readLocationReceipt(location)) {

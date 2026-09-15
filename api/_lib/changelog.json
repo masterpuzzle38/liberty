@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "reset-demo",
+      "title": "Reset demo",
+      "href": "/#demo-pack"
+    },
+    {
+      "date": "2026-09-15",
       "id": "proof-note",
       "title": "Optional proof_note on submit",
       "href": "/"
@@ -76,12 +82,6 @@
       "id": "simulate",
       "title": "One-shot demo settlement",
       "href": "/api/v0/simulate"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "job-templates",
-      "title": "Job templates",
-      "href": "/#create"
     }
   ]
 }
