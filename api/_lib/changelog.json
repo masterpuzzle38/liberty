@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-14",
+      "title": "Scoreboard curated listings + wave 14",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "handoff-schema",
       "title": "JSON Schema for shareable job handoffs",
       "href": "/api/schemas/handoff.json"
@@ -76,12 +82,6 @@
       "id": "integrate",
       "title": "Human Integrate panel for Settlement quickstart",
       "href": "/#integrate"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard-wave-8",
-      "title": "Scoreboard curated listings + wave 8",
-      "href": "/#scoreboard"
     }
   ]
 }
