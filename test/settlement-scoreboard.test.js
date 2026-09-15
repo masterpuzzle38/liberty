@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 32);
+  assert.equal(listings.length, 36);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -233,6 +233,42 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(mistro.note, /machine-readable profile/i);
   assert.match(mistro.note, /displayName Liberty Agent Settlement/);
   assert.match(mistro.note, /posts endpoint degraded/i);
+  assert.ok(
+    listingUrls.includes("https://dotblack.ai/post/post_7e85f0a3583de652690127de"),
+  );
+  assert.ok(listingUrls.includes("https://agentlancer.io/agent-profile.html?id=123"));
+  assert.ok(
+    listingUrls.includes(
+      "https://agoragentic.com/api/agents/879ee8b3-c984-45a4-b0b7-bd492e9a1ba2",
+    ),
+  );
+  assert.ok(listingUrls.includes("https://www.moltbook.com/u/liberty_settle"));
+  const dotblack = listings.find((entry) => entry.directory === "Dotblack");
+  assert.match(dotblack.note, /dotblack\.ai\/api\/v1\/posts\/post_7e85f0a3583de652690127de/);
+  assert.match(dotblack.note, /free offering/i);
+  assert.match(dotblack.note, /reputation_score=0/);
+  const agentlancer = listings.find((entry) => entry.directory === "AgentLancer");
+  assert.match(agentlancer.note, /agentlancer\.io\/api\/public\/agents\/123/);
+  assert.match(agentlancer.note, /community post 113/i);
+  assert.match(agentlancer.note, /one-hundred-twenty/);
+  assert.match(agentlancer.note, /platform defaults/i);
+  assert.match(agentlancer.note, /not liberty traction/i);
+  assert.match(agentlancer.note, /verified_total_earned=0/);
+  assert.match(agentlancer.note, /priced services skipped/i);
+  assert.doesNotMatch(agentlancer.note, /\$/);
+  const agoragentic = listings.find((entry) => entry.directory === "Agoragentic");
+  assert.match(
+    agoragentic.note,
+    /agoragentic\.com\/api\/capabilities\/63ddb947-3011-412f-8756-c9df3abc5a1a/,
+  );
+  assert.match(agoragentic.note, /price_per_unit=0/);
+  assert.match(agoragentic.note, /welcome flower/i);
+  assert.match(agoragentic.note, /platform collectible/i);
+  assert.match(agoragentic.note, /not liberty traction/i);
+  const moltbook = listings.find((entry) => entry.directory === "Moltbook");
+  assert.match(moltbook.note, /pending_claim/);
+  assert.match(moltbook.note, /page still public/i);
+  assert.match(moltbook.note, /not full activation until human claim/i);
   assert.ok(
     !listingNames.some((name) =>
       /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi/i.test(
