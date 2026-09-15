@@ -1,0 +1,87 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-changelog",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "What's new",
+  "description": "Recent shipped Agent Settlement slices. Dates and short titles only. No user counts. No revenue.",
+  "path": "/api/changelog.json",
+  "human": "/#whats-new",
+  "origin": "https://liberty-amber.vercel.app",
+  "note": "Newest first. Demo only. money is always false. Entries are shipped slices, not traction. No user counts or revenue claims.",
+  "entries": [
+    {
+      "date": "2026-09-15",
+      "id": "changelog",
+      "title": "What's new / changelog",
+      "href": "/#whats-new"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "client-ref",
+      "title": "Optional client_ref on create",
+      "href": "/#create"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "terminal-notes",
+      "title": "Terminal receipt notes",
+      "href": "/"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "idempotency",
+      "title": "Demo Idempotency-Key",
+      "href": "/#adapters"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "agent-discovery",
+      "title": "Agent discovery card",
+      "href": "/.well-known/agent.json"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "agent-wallet",
+      "title": "Agent wallet credits",
+      "href": "/"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "receipt-link",
+      "title": "Shareable receipt links",
+      "href": "/"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "receipt-verify",
+      "title": "Receipt / settlement verify",
+      "href": "/api/v0/verify"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "simulate",
+      "title": "One-shot demo settlement",
+      "href": "/api/v0/simulate"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "job-templates",
+      "title": "Job templates",
+      "href": "/#create"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "adapter-examples",
+      "title": "Adapter examples",
+      "href": "/#adapters"
+    },
+    {
+      "date": "2026-09-15",
+      "id": "receipt-export",
+      "title": "Client-held receipt export",
+      "href": "/"
+    }
+  ]
+}

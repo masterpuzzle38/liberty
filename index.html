@@ -9,6 +9,7 @@
   <meta name="description" content="Escrow and credits for agent jobs. Demo — not real money." />
   <link rel="describedby" href="/llms.txt" />
   <link rel="alternate" type="application/json" href="/.well-known/agent.json" title="Agent Settlement discovery" />
+  <link rel="alternate" type="application/json" href="/api/changelog.json" title="What's new" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -55,6 +56,13 @@
           </div>
         </dl>
       </aside>
+    </section>
+
+    <section id="whats-new" class="panel" aria-labelledby="whats-new-heading">
+      <h2 id="whats-new-heading">What's new</h2>
+      <p class="hint">Shipped Settlement slices. Dates and titles only — no user counts, no revenue. Full list: <a href="/api/changelog.json"><code>/api/changelog.json</code></a>.</p>
+      <p id="whats-new-empty" class="hint">Loading recent ships…</p>
+      <ol id="whats-new-list" class="whats-new-list" hidden></ol>
     </section>
 
     <p id="flash" class="flash" role="status" aria-live="polite" hidden></p>
@@ -293,6 +301,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
         <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>
         <li><a href="/api/templates.json"><code>/api/templates.json</code></a> — preset create-job fields (same buttons as <a href="#create">/#create</a>; fill only)</li>
+        <li><a href="/api/changelog.json"><code>/api/changelog.json</code></a> — recent shipped slices (newest first; same list as <a href="#whats-new">/#whats-new</a>)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

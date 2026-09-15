@@ -13,6 +13,7 @@ Human demo: https://liberty-amber.vercel.app
 - [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export, shareable receipt links, verify, client-held agent wallet
 - [Examples](/api/examples.json): copy-ready request bodies for quote, transition, simulate, and verify (same curls as `/#adapters`)
 - [Templates](/api/templates.json): preset create-job fields (same buttons as `/#create`; fill only, no auto-create or fund)
+- [What's new](/api/changelog.json): recent shipped slices (newest first; dates and titles only; no user counts or revenue). Same list as `/#whats-new`
 - [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id; Idempotency-Key echoed only)
 - [Transition](/api/v0/transition): `POST` stateless demo engine (not live escrow; optional Idempotency-Key stabilizes create ids)
 - [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute (same optional Idempotency-Key)

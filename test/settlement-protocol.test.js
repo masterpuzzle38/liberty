@@ -74,6 +74,10 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.surfaces.templates, "/api/templates.json");
   assert.equal(SETTLEMENT.templates.path, "/api/templates.json");
   assert.equal(SETTLEMENT.templates.money, false);
+  assert.equal(SETTLEMENT.surfaces.changelog, "/api/changelog.json");
+  assert.equal(SETTLEMENT.changelog.path, "/api/changelog.json");
+  assert.equal(SETTLEMENT.changelog.money, false);
+  assert.equal(SETTLEMENT.changelog.human_path, "/#whats-new");
   assert.equal(SETTLEMENT.templates.auto_create, false);
   assert.equal(SETTLEMENT.templates.auto_fund, false);
   assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");
@@ -124,6 +128,7 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/.well-known/agent.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/examples.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/templates.json")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/changelog.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("Idempotency-Key")));
   assert.equal(SETTLEMENT.transition_api.idempotency.replay, false);
   assert.equal(SETTLEMENT.quote_api.idempotency.replay, false);

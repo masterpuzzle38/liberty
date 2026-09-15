@@ -18,6 +18,7 @@
     "protocol": "/api/settlement.json",
     "examples": "/api/examples.json",
     "templates": "/api/templates.json",
+    "changelog": "/api/changelog.json",
     "openapi": "/settlement.openapi.json",
     "markdown": "/SETTLEMENT.md",
     "llms": "/llms.txt",
@@ -26,5 +27,5 @@
     "simulate": "/api/v0/simulate",
     "verify": "/api/v0/verify"
   },
-  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
+  "note": "Same JSON at /.well-known/agent.json and /api/agent.json. GET /api/changelog.json for recent shipped slices (newest first; no user counts or revenue). Not an A2A Agent Card and not a ChatGPT plugin — those would claim protocols this demo does not speak. Optional demo API key is not production auth. No payments. No claimed user counts."
 }

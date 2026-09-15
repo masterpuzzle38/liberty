@@ -6,6 +6,8 @@
   const QUOTE_URL = "/api/v0/quote";
   const SIMULATE_URL = "/api/v0/simulate";
   const VERIFY_URL = "/api/v0/verify";
+  const CHANGELOG_URL = "/api/changelog.json";
+  const CHANGELOG_LIMIT = 12;
   const SIMULATE_DEFAULTS = {
     title: "Summarize filings",
     amount: 100,
@@ -55,6 +57,8 @@
     simulateDispute: document.getElementById("simulate-dispute"),
     simulateNote: document.getElementById("simulate-note"),
     simulateResult: document.getElementById("simulate-result"),
+    whatsNewList: document.getElementById("whats-new-list"),
+    whatsNewEmpty: document.getElementById("whats-new-empty"),
   };
 
   const handoff = window.LibertyJobHandoff;
@@ -1460,7 +1464,45 @@
     render();
   });
 
+  async function loadWhatsNew() {
+    if (!els.whatsNewList) return;
+    try {
+      const res = await fetch(CHANGELOG_URL, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("changelog_unavailable");
+      const doc = await res.json();
+      if (!doc || doc.money !== false) throw new Error("changelog_invalid");
+      const entries = Array.isArray(doc.entries) ? doc.entries.slice(0, CHANGELOG_LIMIT) : [];
+      els.whatsNewList.replaceChildren();
+      for (const entry of entries) {
+        if (!entry || typeof entry.date !== "string" || typeof entry.title !== "string") continue;
+        const item = document.createElement("li");
+        const when = document.createElement("time");
+        when.dateTime = entry.date;
+        when.textContent = entry.date;
+        const link = document.createElement("a");
+        const href = typeof entry.href === "string" && entry.href.startsWith("/") ? entry.href : "/";
+        link.href = href;
+        link.textContent = entry.title;
+        item.append(when, link);
+        els.whatsNewList.append(item);
+      }
+      const shown = els.whatsNewList.children.length;
+      els.whatsNewList.hidden = shown === 0;
+      if (els.whatsNewEmpty) {
+        els.whatsNewEmpty.hidden = shown > 0;
+        if (!shown) els.whatsNewEmpty.textContent = "No shipped slices listed yet.";
+      }
+    } catch {
+      if (els.whatsNewEmpty) {
+        els.whatsNewEmpty.hidden = false;
+        els.whatsNewEmpty.textContent = "Could not load What’s new. See /api/changelog.json.";
+      }
+      if (els.whatsNewList) els.whatsNewList.hidden = true;
+    }
+  }
+
   if (!consumeReceiptFromLocation()) consumeHandoffFromLocation();
   syncReceiptsFromJobs();
   render();
+  loadWhatsNew();
 })();
