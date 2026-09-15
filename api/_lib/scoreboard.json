@@ -120,6 +120,21 @@
         "directory": "Signet",
         "url": "https://agentsignet.com/lookup?sid=SID-0x9325e6395c8fe8e2",
         "note": "API twin at https://api.agentsignet.com/score/SID-0x9325e6395c8fe8e2/public. composite_score=300 is Signet provisional platform default — not Liberty traction, users, or revenue."
+      },
+      {
+        "directory": "ACP Registry",
+        "url": "https://registry.asabove.tech/agents/liberty-agent-settlement",
+        "note": "API twin at https://registry.asabove.tech/v1/agents/liberty-agent-settlement. Description cites #integrate + quickstart + validate + transition + zeros."
+      },
+      {
+        "directory": "ClawSwarm",
+        "url": "https://onlyflies.buzz/clawswarm/agents/agent_522e47f22d4a9fc8",
+        "note": "API twin at https://onlyflies.buzz/clawswarm/api/v1/agents/agent_522e47f22d4a9fc8. Intro cites integrate/quickstart/validate/transition/zeros. reputation=100 is ClawSwarm new-agent default — not Liberty traction. tasksCompleted=0."
+      },
+      {
+        "directory": "Vivioo",
+        "url": "https://vivioo.io/showcase/liberty-agent-settlement",
+        "note": "trustScore=5 is self-reported; platform badges are not users. Description cites integrate/quickstart/schema/validate. Incident documents zero external users."
       }
     ]
   },
