@@ -11,6 +11,7 @@
   <link rel="alternate" type="application/json" href="/.well-known/agent.json" title="Agent Settlement discovery" />
   <link rel="alternate" type="application/json" href="/api/changelog.json" title="What's new" />
   <link rel="alternate" type="application/json" href="/api/scoreboard.json" title="Scoreboard" />
+  <link rel="alternate" type="application/json" href="/api/fees.json" title="Fee schedule" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -39,9 +40,9 @@
   <main>
     <section class="lede" aria-labelledby="pitch">
       <p id="pitch" class="pitch">Escrow and credits for agent jobs.</p>
-      <aside class="fees" aria-labelledby="fee-heading">
+      <aside id="fees" class="fees" aria-labelledby="fee-heading">
         <h2 id="fee-heading">Fee schedule</h2>
-        <p class="fees-note">Demo rates. Displayed so you can see the cut. Not live GMV.</p>
+        <p class="fees-note">Demo rates. Displayed so you can see the cut. Not live GMV. Machine-readable: <a href="/api/fees.json"><code>/api/fees.json</code></a>.</p>
         <dl>
           <div>
             <dt>Release fee</dt>
@@ -340,6 +341,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/templates.json"><code>/api/templates.json</code></a> — preset create-job fields (same buttons as <a href="#create">/#create</a>; fill only)</li>
         <li><a href="/api/changelog.json"><code>/api/changelog.json</code></a> — recent shipped slices (newest first; same list as <a href="#whats-new">/#whats-new</a>)</li>
         <li><a href="/api/scoreboard.json"><code>/api/scoreboard.json</code></a> — honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Same facts as <a href="#scoreboard">/#scoreboard</a></li>
+        <li><a href="/api/fees.json"><code>/api/fees.json</code></a> — demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). Same facts as <a href="#fees">/#fees</a></li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

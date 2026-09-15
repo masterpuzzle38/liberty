@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the discovery card for crawlers and other agents. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). GET /api/changelog.json lists recent shipped slices (newest first; dates and titles only; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. Optional Idempotency-Key (or body idempotency_key) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Optional callback_url (notify_url alias) on create is stamped on the job and receipt; Liberty never HTTP-fetches or calls it. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, and /api/scoreboard.json for honest zeros. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET, including /.well-known/agent.json for the discovery card, /api/examples.json for copy-ready request bodies, /api/templates.json for preset create-job fields, /api/changelog.json for recent shipped slices, /api/scoreboard.json for honest zeros, and /api/fees.json for the demo fee schedule. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -178,6 +178,24 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Scoreboard" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fees.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Demo fee schedule",
+        "description": "Machine-readable demo fee rules. mode is demo. money is always false. Release is 5% rounded Math.round(amount * 0.05). Dispute has no release fee. Top-up and fund have none. Same math as the quote/transition/simulate/verify engine. Same facts as /#fees.",
+        "operationId": "getFeeSchedule",
+        "responses": {
+          "200": {
+            "description": "Fee schedule. Demo rates. Not live GMV. Not real money.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Fees" }
               }
             }
           }
@@ -664,6 +682,7 @@
               "templates": { "const": "/api/templates.json" },
               "changelog": { "const": "/api/changelog.json" },
               "scoreboard": { "const": "/api/scoreboard.json" },
+              "fees": { "const": "/api/fees.json" },
               "openapi": { "const": "/settlement.openapi.json" },
               "markdown": { "const": "/SETTLEMENT.md" },
               "llms": { "const": "/llms.txt" },
@@ -708,6 +727,7 @@
           "templates": { "type": "object" },
           "changelog": { "type": "object" },
           "scoreboard": { "type": "object" },
+          "fees": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
@@ -914,6 +934,47 @@
           "requires": { "type": "array", "items": { "type": "string" } },
           "optional": { "type": "array", "items": { "type": "string" } },
           "effect": { "type": "string" }
+        }
+      },
+      "Fees": {
+        "type": "object",
+        "description": "Shape of /api/fees.json. Demo fee schedule. Same math as the engine. Not live GMV.",
+        "required": ["service", "kind", "mode", "money", "path", "release", "dispute", "top_up", "fund"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "kind": { "const": "liberty-agent-settlement-fees" },
+          "version": { "type": "string" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "path": { "const": "/api/fees.json" },
+          "human": { "const": "/#fees" },
+          "origin": { "const": "https://liberty-amber.vercel.app" },
+          "unit": { "const": "credits" },
+          "integer_only": { "const": true },
+          "release": {
+            "type": "object",
+            "properties": {
+              "rate": { "type": "number", "const": 0.05 },
+              "rounding": { "const": "nearest_credit" },
+              "when": { "const": "payer_releases" },
+              "formula": { "const": "Math.round(amount * 0.05)" },
+              "agent_payout": { "const": "amount - fee" },
+              "note": { "type": "string" }
+            }
+          },
+          "dispute": {
+            "type": "object",
+            "properties": {
+              "release_fee": { "const": 0 },
+              "escrow": { "const": "returned_to_payer" },
+              "note": { "type": "string" }
+            }
+          },
+          "top_up": { "type": "object", "properties": { "fee": { "const": 0 } } },
+          "fund": { "type": "object", "properties": { "fee": { "const": 0 }, "note": { "type": "string" } } },
+          "note": { "type": "string" }
         }
       },
       "FeeSchedule": {

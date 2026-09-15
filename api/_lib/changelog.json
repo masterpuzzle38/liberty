@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "fees",
+      "title": "Machine-readable fee schedule",
+      "href": "/#fees"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard",
       "title": "Honest scoreboard listings",
       "href": "/#scoreboard"
@@ -75,12 +81,6 @@
       "date": "2026-09-15",
       "id": "agent-wallet",
       "title": "Agent wallet credits",
-      "href": "/"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "receipt-link",
-      "title": "Shareable receipt links",
       "href": "/"
     }
   ]

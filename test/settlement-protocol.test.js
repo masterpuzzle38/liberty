@@ -82,6 +82,10 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.equal(SETTLEMENT.scoreboard.path, "/api/scoreboard.json");
   assert.equal(SETTLEMENT.scoreboard.money, false);
   assert.equal(SETTLEMENT.scoreboard.human_path, "/#scoreboard");
+  assert.equal(SETTLEMENT.surfaces.fees, "/api/fees.json");
+  assert.equal(SETTLEMENT.fees.path, "/api/fees.json");
+  assert.equal(SETTLEMENT.fees.money, false);
+  assert.equal(SETTLEMENT.fees.human_path, "/#fees");
   assert.equal(SETTLEMENT.templates.auto_create, false);
   assert.equal(SETTLEMENT.templates.auto_fund, false);
   assert.equal(SETTLEMENT.simulate_api.path, "/api/v0/simulate");

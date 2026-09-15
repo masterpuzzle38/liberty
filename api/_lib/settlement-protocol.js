@@ -7,6 +7,7 @@ const TEMPLATES = require("./templates.json");
 const AGENT = require("./agent.json");
 const CHANGELOG = require("./changelog.json");
 const SCOREBOARD = require("./scoreboard.json");
+const FEES = require("./fees.json");
 
 function protocolHeaders() {
   return {
@@ -52,6 +53,7 @@ module.exports = {
   AGENT,
   CHANGELOG,
   SCOREBOARD,
+  FEES,
   protocolHeaders,
   serveProtocol,
 };
