@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs or receipts or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -62,7 +62,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export, and the quote / transition / verify API description.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export and receipt links, and the quote / transition / verify API description.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -531,6 +531,7 @@
           "simulate_api": { "type": "object" },
           "verify_api": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
+          "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" }
         }
       },
@@ -560,6 +561,28 @@
             "type": "array",
             "items": { "type": "string", "enum": ["json", "ndjson"] }
           }
+        }
+      },
+      "ReceiptLinkProtocol": {
+        "type": "object",
+        "description": "Client-held terminal receipt snapshot. Not a server endpoint.",
+        "properties": {
+          "mode": { "const": "client" },
+          "persistence": { "const": false },
+          "money": { "const": false },
+          "encoding": { "type": "string" },
+          "prefix": { "const": "r1." },
+          "hash": { "const": "#receipt/<token>" },
+          "query": { "const": "?receipt=<token>" }
+        }
+      },
+      "ReceiptLink": {
+        "type": "object",
+        "description": "Decoded receipt-link payload before base64url. Compact receipt keys are expanded by the client.",
+        "required": ["v", "receipt"],
+        "properties": {
+          "v": { "const": 1 },
+          "receipt": { "$ref": "#/components/schemas/Receipt" }
         }
       },
       "JobHandoff": {

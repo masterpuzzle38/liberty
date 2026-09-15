@@ -1,6 +1,6 @@
 # Agent Settlement protocol
 
-Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. **Run a full demo settlement** POSTs `/api/v0/simulate` and walks create → fund → submit → release (or dispute) in one request. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; simulate commits the full walk; verify checks claimed money fields. None persist jobs or receipts, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. Credits stay in each browser. Liberty never stores the snapshot.
+Demo only. Not real money. Live demo: https://liberty-amber.vercel.app. The human UI on `/` stores credits and jobs in `localStorage` (`liberty.agent-settlement.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` and shows the cut, then POSTs create / fund / submit / release / dispute to `/api/v0/transition`. **Run a full demo settlement** POSTs `/api/v0/simulate` and walks create → fund → submit → release (or dispute) in one request. A successful release or dispute also stores the JSON `receipt` in this browser (`liberty.agent-settlement.receipts.v0`) so a human or adapter can download proof. Paste that receipt (or pick a stored one) to POST `/api/v0/verify` — same fee engine, no server ledger. Adapters use the same engine. Quote is a dry-run; transition commits one action; simulate commits the full walk; verify checks claimed money fields. None persist jobs or receipts, take escrow custody, or move real money. An optional demo API key can identify the adapter; it is not production auth. A payer and an agent can share the same job with a **handoff link** (`#handoff/h1.…`) that encodes the current job in the URL. A payer or agent can share a terminal receipt with a **receipt link** (`#receipt/r1.…`) that encodes the receipt in the URL. Credits stay in each browser. Liberty never stores the snapshot.
 
 Machine-readable copies:
 
@@ -90,13 +90,19 @@ Send JSON with either:
 
 A completed check returns `200` with `ok: true`, `mode: "demo"`, `money: false`, `verified: true`, `valid` (boolean), `expected`, `received`, and `mismatches`. A wrong fee is still `200` with `valid: false`. Illegal or incomplete input returns 4xx JSON (`error`, `message`; `money` stays false).
 
-The human UI on `/` can paste receipt JSON or pick a stored receipt and POST here.
+The human UI on `/` can paste receipt JSON, paste a receipt link, or pick a stored receipt and POST here.
 
 ### Job handoff (two browsers)
 
 The human UI can copy a shareable link or compact `h1.` code for any existing job. The payload is compact JSON of the current job (short keys), then base64url. It lives in the URL hash (`#handoff/<token>`); `?handoff=<token>` is also accepted. Opening the link (or pasting the code) loads that job into the other browser’s `localStorage` so the next legal action can go through `POST /api/v0/transition`.
 
 The snapshot is the job only. Demo credits, the demo API key, and the receipts list stay in each browser. Copy a fresh link after each action. This is not a server-side job ledger.
+
+### Receipt link (two browsers)
+
+The human UI can copy a shareable link or compact `r1.` code after a successful release, dispute, or simulate. The payload is compact JSON of the receipt (short keys), then base64url. It lives in the URL hash (`#receipt/<token>`); `?receipt=<token>` is also accepted. Opening the link (or pasting the code) loads that receipt into the other browser’s Receipts / Export verify panel so someone can inspect it or POST `/api/v0/verify` without pasting JSON.
+
+The snapshot is the receipt only. Demo credits, jobs, and the demo API key stay in each browser. Liberty does not store the receipt. This is not a server ledger.
 
 ### Demo API key
 
@@ -136,7 +142,7 @@ Emitted after release or dispute (markdown in the human UI; JSON `receipt` on th
 
 The human UI keeps terminal receipts in this browser after a successful `release` or `dispute` (the same JSON object the transition and simulate APIs return). Quote dry-runs are not stored. There is no server ledger and no receipt GET.
 
-On `/`, **Receipts / Export** lists those receipts with fee, agent payout, returned to payer, status, job id, and timestamps. Download one as JSON, or download all as a JSON array or NDJSON. Copy-to-clipboard is also available. Paste a receipt (or pick a stored one) to verify it against `POST /api/v0/verify`. Demo — not real money. Liberty does not store receipts.
+On `/`, **Receipts / Export** lists those receipts with fee, agent payout, returned to payer, status, job id, and timestamps. Download one as JSON, or download all as a JSON array or NDJSON. Copy a receipt link (`#receipt/r1.…`) to load the same object into Verify on another device. Copy-to-clipboard is also available. Paste a receipt, a receipt link, or pick a stored one to verify it against `POST /api/v0/verify`. Demo — not real money. Liberty does not store receipts.
 
 ## Adapter notes
 
@@ -144,5 +150,5 @@ On `/`, **Receipts / Export** lists those receipts with fee, agent payout, retur
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.
-5. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
+5. Keep a terminal receipt yourself. The transition and simulate APIs return `receipt` on release or dispute; the human UI stores that object in `localStorage` and can download JSON / NDJSON or copy a receipt link (`#receipt/r1.…`). Opening the link loads Verify. POST `/api/v0/verify` to check fee math. Liberty does not store receipts.
 6. Do not claim live volume or user counts from this surface.
