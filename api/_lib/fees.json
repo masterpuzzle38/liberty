@@ -1,0 +1,35 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-fees",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "Fee schedule",
+  "description": "Current demo fee rules. Same math as quote, transition, simulate, and verify. Not live GMV.",
+  "path": "/api/fees.json",
+  "human": "/#fees",
+  "origin": "https://liberty-amber.vercel.app",
+  "unit": "credits",
+  "integer_only": true,
+  "release": {
+    "rate": 0.05,
+    "rounding": "nearest_credit",
+    "when": "payer_releases",
+    "formula": "Math.round(amount * 0.05)",
+    "agent_payout": "amount - fee",
+    "note": "5% of the job amount, rounded to the nearest credit, taken when the payer releases."
+  },
+  "dispute": {
+    "release_fee": 0,
+    "escrow": "returned_to_payer",
+    "note": "No release fee. Escrow returns to the payer."
+  },
+  "top_up": {
+    "fee": 0
+  },
+  "fund": {
+    "fee": 0,
+    "note": "Funding holds the full amount in escrow. No extra fee."
+  },
+  "note": "Demo rates. Same formula as the engine. Adapters can GET this instead of parsing SETTLEMENT.md. money is always false. Not live GMV."
+}
