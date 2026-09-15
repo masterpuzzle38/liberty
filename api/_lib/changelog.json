@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-8",
+      "title": "Scoreboard curated listings + wave 8",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "transition-schema",
       "title": "JSON Schema for transition requests",
       "href": "/api/schemas/transition.json"
@@ -76,12 +82,6 @@
       "id": "fees",
       "title": "Machine-readable fee schedule",
       "href": "/#fees"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard",
-      "title": "Honest scoreboard listings",
-      "href": "/#scoreboard"
     }
   ]
 }
