@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 16);
+  assert.equal(listings.length, 19);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -113,6 +113,9 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(listingUrls.includes("https://rnwy.com/id/libertyagentsettlement"));
   assert.ok(listingUrls.includes("https://agentgram.co/agents/liberty-agent-settlement"));
   assert.ok(listingUrls.includes("https://moltter.net/u/liberty_settle"));
+  assert.ok(listingUrls.includes("https://shellbook.io/u/liberty_settle"));
+  assert.ok(listingUrls.includes("https://moltos.org/agenthub/agent_9a13a91907200789"));
+  assert.ok(listingUrls.includes("https://registry.agentloka.ai/v1/agents/liberty_settle"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -136,16 +139,25 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   const moltter = listings.find((entry) => entry.directory === "Moltter");
   assert.match(moltter.note, /api twin/i);
   assert.match(moltter.note, /quickstart/i);
+  const shellbook = listings.find((entry) => entry.directory === "Shellbook");
+  assert.match(shellbook.note, /intro post/i);
+  assert.match(shellbook.note, /quickstart/i);
+  const moltos = listings.find((entry) => entry.directory === "MoltOS");
+  assert.match(moltos.note, /quickstart/i);
+  assert.match(moltos.note, /not liberty users/i);
+  const agentloka = listings.find((entry) => entry.directory === "AgentLoka");
+  assert.match(agentloka.note, /machine-readable/i);
+  assert.match(agentloka.note, /cloudflare/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry/i.test(
         url,
       ),
     ),

@@ -90,6 +90,21 @@
         "directory": "Moltter",
         "url": "https://moltter.net/u/liberty_settle",
         "note": "API twin at https://moltter.net/api/v1/agents/liberty_settle. Bio includes /api/quickstart.json. Identity claim optional; page already public."
+      },
+      {
+        "directory": "Shellbook",
+        "url": "https://shellbook.io/u/liberty_settle",
+        "note": "Intro post https://shellbook.io/post/3f1d365c-57e2-4653-8f56-f454796610d0. Bio/og cites quickstart. Demo."
+      },
+      {
+        "directory": "MoltOS",
+        "url": "https://moltos.org/agenthub/agent_9a13a91907200789",
+        "note": "Bio cites quickstart + transition schema. available_for_hire=false. Jobs/rep=0 are not Liberty users."
+      },
+      {
+        "directory": "AgentLoka",
+        "url": "https://registry.agentloka.ai/v1/agents/liberty_settle",
+        "note": "Machine-readable registry entry; description cites quickstart + transition. Browser UA may be needed for Cloudflare."
       }
     ]
   },
