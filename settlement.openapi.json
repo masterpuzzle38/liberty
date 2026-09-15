@@ -4,7 +4,7 @@
     "title": "Liberty Agent Settlement",
     "version": "0",
     "summary": "Demo protocol for escrow and credits on agent jobs.",
-    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    "description": "Agent Settlement demo. GET /api/health.json and /api/settlement.json are protocol documents. GET /api/examples.json lists copy-ready request bodies (same curls as /#adapters). GET /api/templates.json lists preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action and returns a receipt on release or dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes that fee math for a client-held receipt or proposed release/dispute. The client holds the job and can export that receipt as JSON from the human UI. None persist jobs, receipts, or balances or take escrow custody. The human UI can share a job via a client-held handoff link (#handoff/h1.… base64url JSON) and a terminal receipt via a receipt link (#receipt/r1.… base64url JSON). Credits stay in each browser. Credits are simulated. Not real money. Optional demo API key (Authorization: Bearer or X-Liberty-Key) identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
     "license": {
       "name": "See repository"
     }
@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "surface",
-      "description": "Protocol documents agents can GET, including /api/examples.json for copy-ready request bodies. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
+      "description": "Protocol documents agents can GET, including /api/examples.json for copy-ready request bodies and /api/templates.json for preset create-job fields. No payments. Demo API key is optional on POST /api/v0/quote, POST /api/v0/transition, POST /api/v0/simulate, and POST /api/v0/verify."
     },
     {
       "name": "quote",
@@ -62,7 +62,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Demo protocol",
-        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export and receipt links, and the quote / transition / verify API description. Copy-ready request bodies are at /api/examples.json.",
+        "description": "States (create / fund / submit / release / dispute), fee schedule, job fields, receipt fields, client-held receipt export and receipt links, and the quote / transition / verify API description. Copy-ready request bodies are at /api/examples.json. Preset create-job fields are at /api/templates.json.",
         "operationId": "getSettlementProtocol",
         "responses": {
           "200": {
@@ -88,6 +88,24 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/AdapterExamples" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates.json": {
+      "get": {
+        "tags": ["surface"],
+        "summary": "Preset create-job templates",
+        "description": "Preset title, amount, and success criteria for the create-job form. Same buttons as /#create. Clicking a template fills the form only. It does not create or fund. Demo only. money is always false.",
+        "operationId": "getJobTemplates",
+        "responses": {
+          "200": {
+            "description": "Job templates. Fill only. Not an open job ledger. Not real money.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobTemplates" }
               }
             }
           }
@@ -549,6 +567,7 @@
           "simulate_api": { "type": "object" },
           "verify_api": { "type": "object" },
           "examples": { "type": "object" },
+          "templates": { "type": "object" },
           "handoff": { "$ref": "#/components/schemas/HandoffProtocol" },
           "receipt_link": { "$ref": "#/components/schemas/ReceiptLinkProtocol" },
           "receipt_export": { "$ref": "#/components/schemas/ReceiptExport" },
@@ -567,6 +586,25 @@
           "origin": { "const": "https://liberty-amber.vercel.app" },
           "human_path": { "const": "/#adapters" },
           "examples": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "JobTemplates": {
+        "type": "object",
+        "description": "Shape of /api/templates.json. Preset create-job fields. Fill only.",
+        "required": ["service", "mode", "money", "origin", "templates"],
+        "properties": {
+          "service": { "const": "liberty-agent-settlement" },
+          "version": { "type": "string" },
+          "mode": { "const": "demo" },
+          "money": { "const": false },
+          "origin": { "const": "https://liberty-amber.vercel.app" },
+          "human_path": { "const": "/#create" },
+          "auto_create": { "const": false },
+          "auto_fund": { "const": false },
+          "templates": {
             "type": "array",
             "items": { "type": "object" }
           }

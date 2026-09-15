@@ -1085,6 +1085,31 @@
   els.simulateDemo?.addEventListener("click", () => runSimulate("release"));
   els.simulateDispute?.addEventListener("click", () => runSimulate("dispute"));
 
+  function clearJobTemplatePressed() {
+    document.querySelectorAll("[data-job-template]").forEach((button) => {
+      button.setAttribute("aria-pressed", "false");
+    });
+  }
+
+  document.querySelectorAll("[data-job-template]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const title = button.getAttribute("data-title") || "";
+      const amount = button.getAttribute("data-amount") || "";
+      const criteria = button.getAttribute("data-criteria") || "";
+      const titleEl = document.getElementById("job-title");
+      const amountEl = document.getElementById("job-amount");
+      const criteriaEl = document.getElementById("job-criteria");
+      if (titleEl) titleEl.value = title;
+      if (amountEl) amountEl.value = amount;
+      if (criteriaEl) criteriaEl.value = criteria;
+      document.querySelectorAll("[data-job-template]").forEach((other) => {
+        other.setAttribute("aria-pressed", other === button ? "true" : "false");
+      });
+      flash("Template filled. Review and create when ready — this did not fund.");
+      titleEl?.focus();
+    });
+  });
+
   els.createForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = document.getElementById("job-title")?.value || "";
@@ -1094,7 +1119,10 @@
     if (!amount) return flash("Amount must be a whole number of credits.", true);
     if (!criteria.trim()) return flash("Add success criteria so proof can be judged.", true);
     const created = await createJob({ title, amount, criteria });
-    if (created) els.createForm.reset();
+    if (created) {
+      els.createForm.reset();
+      clearJobTemplatePressed();
+    }
   });
 
   els.jobList?.addEventListener("click", (event) => {

@@ -95,8 +95,16 @@
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="create-heading">
+    <section id="create" class="panel" aria-labelledby="create-heading">
       <h2 id="create-heading">Create job</h2>
+      <p class="hint">Pick a template to fill title, amount, and criteria. Does not create or fund. Demo — not real money. Same fields: <a href="/api/templates.json"><code>/api/templates.json</code></a>.</p>
+      <p id="job-templates" class="presets" role="group" aria-label="Job templates">
+        <button type="button" class="ghost" data-job-template="research-brief" data-title="Research brief" data-amount="40" data-criteria="Three-bullet brief with sources. Cite the last three public filings or equivalent docs." aria-pressed="false">Research brief</button>
+        <button type="button" class="ghost" data-job-template="code-review" data-title="Code review" data-amount="80" data-criteria="List blockers, risks, and one merge decision. Point at files and line numbers." aria-pressed="false">Code review</button>
+        <button type="button" class="ghost" data-job-template="data-extract" data-title="Data extract" data-amount="50" data-criteria="CSV or JSON of the requested fields only. Note any missing rows. No extra columns." aria-pressed="false">Data extract</button>
+        <button type="button" class="ghost" data-job-template="content-draft" data-title="Content draft" data-amount="60" data-criteria="800-word draft matching the brief. Include a headline and three section headings." aria-pressed="false">Content draft</button>
+        <button type="button" class="ghost" data-job-template="filing-summary" data-title="Summarize filings" data-amount="100" data-criteria="Three-bullet brief matching the last three filings." aria-pressed="false">Filing summary</button>
+      </p>
       <form id="create-form" class="stack-form">
         <label class="field">
           <span>Title</span>
@@ -270,6 +278,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
         <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>
+        <li><a href="/api/templates.json"><code>/api/templates.json</code></a> — preset create-job fields (same buttons as <a href="#create">/#create</a>; fill only)</li>
         <li><a href="/api/v0/quote"><code>POST /api/v0/quote</code></a> — dry-run of the same engine (no state change)</li>
         <li><a href="/api/v0/transition"><code>POST /api/v0/transition</code></a> — stateless demo engine (optional <code>Authorization</code> / <code>X-Liberty-Key</code>)</li>
         <li><a href="/api/v0/simulate"><code>POST /api/v0/simulate</code></a> — one-shot create → fund → submit → release|dispute</li>

@@ -7,6 +7,7 @@ Machine-readable copies:
 - [`/api/health.json`](api/_lib/health.json) — `{ "service": "liberty-agent-settlement", "mode": "demo", "money": false }`
 - [`/api/settlement.json`](api/_lib/settlement.json) — states, fees, job and receipt fields
 - [`/api/examples.json`](api/_lib/examples.json) — copy-ready request bodies (same curls as `/#adapters`)
+- [`/api/templates.json`](api/_lib/templates.json) — preset create-job fields (same buttons as `/#create`; fill only)
 - [`POST /api/v0/transition`](api/v0/transition.js) — apply one action; client holds the job
 - [`POST /api/v0/quote`](api/v0/quote.js) — dry-run of the same engine; no state change
 - [`POST /api/v0/simulate`](api/v0/simulate.js) — one-shot create → fund → submit → release|dispute
@@ -147,13 +148,17 @@ The human UI keeps terminal receipts in this browser after a successful `release
 
 On `/`, **Receipts / Export** lists those receipts with fee, agent payout, returned to payer, status, job id, and timestamps. Download one as JSON, or download all as a JSON array or NDJSON. Copy a receipt link (`#receipt/r1.…`) to load the same object into Verify on another device. Copy-to-clipboard is also available. Paste a receipt, a receipt link, or pick a stored one to verify it against `POST /api/v0/verify`. Demo — not real money. Liberty does not store receipts.
 
+## Job templates
+
+Preset title, amount, and success criteria live on [`/#create`](https://liberty-amber.vercel.app/#create). The same fields are at [`/api/templates.json`](api/_lib/templates.json). Clicking a template fills the create form only. It does not create or fund. Demo — not real money.
+
 ## Adapter examples
 
 Copy-ready curls live on [`/#adapters`](https://liberty-amber.vercel.app/#adapters). The same request bodies are at [`/api/examples.json`](api/_lib/examples.json). Live origin: `https://liberty-amber.vercel.app`. Optional `Authorization: Bearer <key>` or `X-Liberty-Key` (mint on `/`). Missing keys still work (`key_optional`). Release returns `agent_credits_delta` (same integer as `agent_payout`) for a client-held agent wallet.
 
 ## Adapter notes
 
-1. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
+1. GET [`/api/examples.json`](api/_lib/examples.json) for copy-ready bodies, or copy curls from `/#adapters`. GET [`/api/templates.json`](api/_lib/templates.json) for preset create-job fields (same buttons as `/#create`; fill only). GET the other JSON files for the protocol. POST `/api/v0/quote` to preview the next state and fee math; POST `/api/v0/transition` to commit one demo action; POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request; POST `/api/v0/verify` to check a receipt or proposed outcome — the same engine the human UI uses. This is not live escrow custody.
 2. Implement create / fund / submit / release / dispute against the table above (or let Liberty compute the next state).
 3. Optional: mint a demo key on `/` and send it as `Authorization: Bearer <key>` or `X-Liberty-Key`. Missing keys still work (`key_optional`).
 4. To continue a job in another browser, share a handoff link from `/` (`#handoff/h1.…`) or the compact `h1.` code. Decode is client-side. Liberty does not persist the job.

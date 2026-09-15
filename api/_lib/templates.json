@@ -1,0 +1,56 @@
+{
+  "service": "liberty-agent-settlement",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "title": "Job templates",
+  "description": "Preset create-job fields for the Agent Settlement demo. Clicking a template on /#create fills title, amount, and success criteria. It does not create or fund. Demo only. Not real money.",
+  "origin": "https://liberty-amber.vercel.app",
+  "human_path": "/#create",
+  "fills": "create_form",
+  "auto_create": false,
+  "auto_fund": false,
+  "surfaces": {
+    "ui": "/#create",
+    "templates": "/api/templates.json",
+    "protocol": "/api/settlement.json",
+    "create": "/api/v0/transition"
+  },
+  "templates": [
+    {
+      "id": "research-brief",
+      "label": "Research brief",
+      "title": "Research brief",
+      "amount": 40,
+      "criteria": "Three-bullet brief with sources. Cite the last three public filings or equivalent docs."
+    },
+    {
+      "id": "code-review",
+      "label": "Code review",
+      "title": "Code review",
+      "amount": 80,
+      "criteria": "List blockers, risks, and one merge decision. Point at files and line numbers."
+    },
+    {
+      "id": "data-extract",
+      "label": "Data extract",
+      "title": "Data extract",
+      "amount": 50,
+      "criteria": "CSV or JSON of the requested fields only. Note any missing rows. No extra columns."
+    },
+    {
+      "id": "content-draft",
+      "label": "Content draft",
+      "title": "Content draft",
+      "amount": 60,
+      "criteria": "800-word draft matching the brief. Include a headline and three section headings."
+    },
+    {
+      "id": "filing-summary",
+      "label": "Filing summary",
+      "title": "Summarize filings",
+      "amount": 100,
+      "criteria": "Three-bullet brief matching the last three filings."
+    }
+  ]
+}
