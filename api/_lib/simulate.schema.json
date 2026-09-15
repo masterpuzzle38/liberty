@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/simulate.json",
+  "title": "Liberty Agent Settlement simulate request",
+  "description": "JSON Schema for POST /api/v0/simulate request bodies. One-shot create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Client-held demo protocol; Liberty does not persist jobs, take custody, or move real money. money is always false. Demo only.",
+  "type": "object",
+  "$ref": "#/$defs/SimulateRequest",
+  "$defs": {
+    "IdempotencyKey": {
+      "type": "string",
+      "description": "Optional. Header Idempotency-Key or body idempotency_key / idempotencyKey. On the create step, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Liberty does not store or replay responses."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Adapter-owned https URL. Stamped on create; lands on the job and later receipt. Liberty never HTTP-fetches or calls it. Empty or whitespace-only is rejected. notify_url / notifyUrl / callbackUrl are aliases."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id. Stamped on create; lands on the job and later receipt. Independent of Idempotency-Key. Empty or whitespace-only is rejected. clientRef is an alias."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim. proof_note on submit; release_note when terminal is release; dispute_reason when terminal is dispute."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Client-held payer credit balance in integer demo credits. Must cover amount on the fund step. Not real money."
+    },
+    "ExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional escrow hold expiry as an ISO-8601 UTC datetime. Applied on the fund step and stamped on the funded job as expiresAt. After this instant, the release step fails; dispute remains allowed. If both expires_at and ttl_seconds are sent, Liberty rejects as conflicting."
+    },
+    "TtlSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional hold lifetime in seconds from fund. Liberty stamps expiresAt = now + ttl_seconds on the funded job. Must be a positive integer. Ignored when expires_at is also sent — both together are rejected."
+    },
+    "Terminal": {
+      "type": "string",
+      "enum": ["release", "dispute"],
+      "default": "release",
+      "description": "Last step of the walk. Defaults to release when omitted. Other values are rejected."
+    },
+    "SimulateRequest": {
+      "type": "object",
+      "description": "One JSON body for the full walk. No action field and no job — Liberty creates the job, then funds, submits, and finishes. Canonical snake_case matches OpenAPI and /api/tools.json; camelCase aliases are accepted by the live handler.",
+      "required": ["title", "amount", "criteria", "payer_credits", "proof_url"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "amount": { "type": "integer", "minimum": 1 },
+        "criteria": { "type": "string", "minLength": 1 },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "payerCredits": { "$ref": "#/$defs/Credits" },
+        "proof_url": { "type": "string", "minLength": 1 },
+        "proofUrl": { "type": "string", "minLength": 1 },
+        "terminal": { "$ref": "#/$defs/Terminal" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "ttl_seconds": { "$ref": "#/$defs/TtlSeconds" },
+        "ttlSeconds": { "$ref": "#/$defs/TtlSeconds" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "release_note": { "$ref": "#/$defs/Note" },
+        "releaseNote": { "$ref": "#/$defs/Note" },
+        "dispute_reason": { "$ref": "#/$defs/Note" },
+        "disputeReason": { "$ref": "#/$defs/Note" },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
+      }
+    },
+    "SimulateSuccess": {
+      "type": "object",
+      "description": "200 body from POST /api/v0/simulate. money is always false. Create assigned a real as_… id. Does not persist jobs or receipts. Not proof of payment.",
+      "required": ["ok", "mode", "money", "steps", "job", "payer_credits"],
+      "properties": {
+        "ok": { "const": true },
+        "mode": { "const": "demo" },
+        "money": { "const": false },
+        "terminal": { "$ref": "#/$defs/Terminal" },
+        "job": {
+          "type": "object",
+          "description": "Final client-held job after the walk. Same shape as a transition release or dispute job."
+        },
+        "payer_credits": { "$ref": "#/$defs/Credits" },
+        "fee": { "type": "integer", "minimum": 0 },
+        "agent_payout": { "type": "integer", "minimum": 0 },
+        "agent_credits_delta": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Credits to add to a client-held agent wallet after the walk. Same as agent_payout on release; 0 on dispute. Liberty does not apply this delta."
+        },
+        "returned_to_payer": { "type": "integer", "minimum": 0 },
+        "receipt": {
+          "type": "object",
+          "description": "Terminal receipt. Same expanded receipt as GET /api/schemas/receipt.json. Not proof of payment."
+        },
+        "steps": {
+          "type": "array",
+          "description": "Ordered create, fund, submit, then release or dispute. Each step is the same shape as a transition success for that action.",
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^k_[0-9a-f]{12}$",
+          "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+        },
+        "key_optional": {
+          "type": "boolean",
+          "description": "True when no demo key header was sent."
+        },
+        "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
+        "idempotent": {
+          "type": "boolean",
+          "description": "True when create assigned job.id from the Idempotency-Key."
+        }
+      }
+    }
+  }
+}

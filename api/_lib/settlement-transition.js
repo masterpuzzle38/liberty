@@ -979,7 +979,7 @@ function discovery(kind) {
     note: verifyMode
       ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
       : simulateMode
-        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+        ? "One-shot demo lifecycle. Validate the body against GET /api/schemas/simulate.json. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
         : validateMode
           ? "Dry-check of the same engine and JSON Schema as POST /api/v0/transition. Same request shape as quote and transition. Returns { ok: true } when the body would be accepted, or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits, hold_expired) with kind: state. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
           : quote
@@ -1004,7 +1004,9 @@ function discovery(kind) {
       ? "/api/schemas/receipt.json"
       : quote
         ? "/api/schemas/quote.json"
-        : "/api/schemas/transition.json",
+        : simulateMode
+          ? "/api/schemas/simulate.json"
+          : "/api/schemas/transition.json",
     errors: "/api/errors.json",
     quote: "/api/v0/quote",
     commit: "/api/v0/transition",
