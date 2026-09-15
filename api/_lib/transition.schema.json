@@ -39,6 +39,16 @@
       "minimum": 0,
       "description": "Client-held payer credit balance in integer demo credits. Not real money."
     },
+    "ExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional escrow hold expiry as an ISO-8601 UTC datetime. Stamped on the funded job as expiresAt. After this instant, release fails; dispute remains allowed. If both expires_at and ttl_seconds are sent, Liberty rejects as conflicting."
+    },
+    "TtlSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional hold lifetime in seconds from fund. Liberty stamps expiresAt = now + ttl_seconds. Must be a positive integer. Ignored when expires_at is also sent — both together are rejected."
+    },
     "Job": {
       "type": "object",
       "description": "Current client-held job. Liberty does not look jobs up. Send the object from the previous response. camelCase matches the UI and OpenAPI Job schema; snake_case aliases are accepted.",
@@ -79,6 +89,8 @@
         "submitted_at": { "type": ["string", "null"] },
         "resolvedAt": { "type": ["string", "null"] },
         "resolved_at": { "type": ["string", "null"] },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
         "fee": { "type": "integer", "minimum": 0 },
         "agentPayout": { "type": "integer", "minimum": 0 },
         "agent_payout": { "type": "integer", "minimum": 0 },
@@ -126,6 +138,10 @@
         "job": { "$ref": "#/$defs/Job" },
         "payer_credits": { "$ref": "#/$defs/Credits" },
         "payerCredits": { "$ref": "#/$defs/Credits" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "ttl_seconds": { "$ref": "#/$defs/TtlSeconds" },
+        "ttlSeconds": { "$ref": "#/$defs/TtlSeconds" },
         "idempotency_key": { "$ref": "#/$defs/IdempotencyKey" },
         "idempotencyKey": { "$ref": "#/$defs/IdempotencyKey" }
       }

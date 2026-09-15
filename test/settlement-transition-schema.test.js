@@ -100,6 +100,10 @@ test("transition JSON Schema stays aligned with the live request shape", () => {
   assert.deepEqual(requiredOf("CreateRequest"), ["action", "title", "amount", "criteria"]);
   assert.ok(requiredOf("FundRequest").includes("payer_credits"));
   assert.ok(hasField(def("FundRequest"), "payerCredits"));
+  assert.ok(hasField(def("FundRequest"), "expires_at"));
+  assert.ok(hasField(def("FundRequest"), "ttl_seconds"));
+  assert.ok(hasField(def("Job"), "expiresAt"));
+  assert.equal(def("TtlSeconds").minimum, 1);
   assert.ok(requiredOf("SubmitRequest").includes("proof_url"));
   assert.ok(hasField(def("SubmitRequest"), "proof_note"));
   assert.ok(hasField(def("ReleaseRequest"), "release_note"));

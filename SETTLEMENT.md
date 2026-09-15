@@ -48,10 +48,10 @@ Machine-readable copy: [`/api/fees.json`](api/_lib/fees.json). Same math as the 
 | Action | From | To | Effect |
 | --- | --- | --- | --- |
 | create | — | open | Job exists. Credits unchanged. Requires title, amount, success criteria. Optional `client_ref` (max 128) stamps the adapter’s own reference on the job and later receipt. Optional `callback_url` (`notify_url` alias, max 512, https) is stamped the same way so *their* client can notify itself after release or dispute. Liberty never HTTP-fetches or calls this URL. |
-| fund | open | funded | Deduct `amount` from payer credits; hold in escrow. Fails if balance is short. |
+| fund | open | funded | Deduct `amount` from payer credits; hold in escrow. Fails if balance is short. Optional `expires_at` (ISO-8601 UTC) or `ttl_seconds` (positive integer) stamps `expiresAt`. If both are sent, Liberty rejects as conflicting. Missing expiry keeps today’s behavior. |
 | submit | funded | submitted | Attach a proof URL (or a note the payer can check). Optional `proof_note` (max 400) lands on the job and later receipt. Escrow stays held. |
-| release | submitted | released | Terminal. Set `fee`, `agentPayout`, and `agent_credits_delta`. Optional `release_note` lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. |
-| dispute | submitted | disputed | Terminal. Return `amount` to the payer. Optional `dispute_reason` lands on the job and receipt. `fee = 0`, `agentPayout = 0`, `agent_credits_delta = 0`. |
+| release | submitted | released | Terminal. Set `fee`, `agentPayout`, and `agent_credits_delta`. Optional `release_note` lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. If the job has `expiresAt` and now is after that instant, release fails (`hold_expired`). |
+| dispute | submitted | disputed | Terminal. Return `amount` to the payer. Optional `dispute_reason` lands on the job and receipt. `fee = 0`, `agentPayout = 0`, `agent_credits_delta = 0`. Allowed after `expiresAt` (refund path for a stuck hold). |
 
 ## `POST /api/v0/transition`
 
@@ -60,7 +60,7 @@ JSON body. CORS is open for `POST` and `OPTIONS`. Demo API key is optional (`Aut
 | `action` | Send | Receive |
 | --- | --- | --- |
 | `create` | `title`, `amount`, `criteria` (optional `client_ref`, max 128; optional `callback_url` / `notify_url`, max 512, https) | `job` (`status: open`, id `as_` + 10 hex; stable when an Idempotency-Key is sent; `clientRef` / `callbackUrl` when sent) |
-| `fund` | `job`, `payer_credits` | updated `job`, updated `payer_credits` |
+| `fund` | `job`, `payer_credits` (optional `expires_at` ISO-8601 UTC, or `ttl_seconds` ≥ 1; both together are rejected) | updated `job` (`expiresAt` when an expiry was sent), updated `payer_credits` |
 | `submit` | `job`, `proof_url` (optional `proof_note`, max 400) | updated `job` |
 | `release` | `job` (optional `release_note`, max 400) | updated `job`, `fee`, `agent_payout`, `agent_credits_delta`, `receipt` |
 | `dispute` | `job` (optional `payer_credits`, optional `dispute_reason`, max 400) | updated `job`, `fee: 0`, `agent_credits_delta: 0`, `returned_to_payer`, `receipt` |
@@ -71,7 +71,7 @@ Liberty does not store the job. Send the current job on every later action.
 
 ## `POST /api/v0/quote`
 
-Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Optional `proof_note` echoes on the quoted submit job. Optional `release_note` / `dispute_reason` echo on the quoted receipt and job when sent. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
+Same request shape, CORS, optional demo key, and engine as transition. Dry-run only: Liberty computes the next status, `fee`, `agent_payout`, `agent_credits_delta`, `payer_credits_after`, and `returned_to_payer` when those apply, and does **not** mutate client-held state. Optional `expires_at` or `ttl_seconds` on fund stamps `expiresAt` on the quoted job (both together are rejected). After `expiresAt`, a release quote fails; dispute remains allowed. Optional `proof_note` echoes on the quoted submit job. Optional `release_note` / `dispute_reason` echo on the quoted receipt and job when sent. Response always includes `mode: "demo"`, `money: false`, and `quoted: true`. Optional `Idempotency-Key` is echoed only.
 
 Create quote returns the validated open job fields **without a durable id**. Optional `client_ref` and optional `callback_url` echo on the quoted job. Liberty assigns `as_` + 10 hex only on `POST /api/v0/transition` create. Illegal transitions return the same 4xx JSON as transition (`error`, `message`; `money` stays false).
 
@@ -88,6 +88,8 @@ Send JSON:
 | `title` `amount` `criteria` | Same as create |
 | `client_ref` | Optional adapter/correlation id (`clientRef` alias). Max 128. Empty or whitespace-only is rejected. Lands on the job and receipt. Independent of Idempotency-Key. |
 | `callback_url` | Optional adapter-owned URL (`callbackUrl` / `notify_url` / `notifyUrl` aliases). Max 512. https only. Empty or whitespace-only is rejected. Lands on the job and receipt. Liberty never HTTP-fetches or calls this URL. No SSRF. The adapter’s own client may notify itself after release or dispute. Independent of Idempotency-Key. |
+| `expires_at` | Optional on the fund step (`expiresAt` alias). ISO-8601 UTC datetime. Stamps `expiresAt`. If both `expires_at` and `ttl_seconds` are sent, Liberty rejects as conflicting. |
+| `ttl_seconds` | Optional on the fund step (`ttlSeconds` alias). Positive integer. Stamps `expiresAt` = now + ttl. After that instant, the release step fails; dispute remains allowed. |
 | `payer_credits` | Starting payer balance (`payerCredits` alias). Must cover `amount`. |
 | `proof_url` | Attached on submit (`proofUrl` alias) |
 | `proof_note` | Optional on the submit step (`proofNote` alias). Max 400. Lands on the job and later receipt. |
@@ -164,6 +166,7 @@ Liberty stays stateless. The key makes create ids stable so adapters can retry w
 | `proofNote` | optional; set on submit when `proof_note` was sent (max 400) |
 | `status` | one of the states above |
 | `createdAt` `fundedAt` `submittedAt` `resolvedAt` | ISO-8601; later stamps are null until that step |
+| `expiresAt` | optional; set on fund when `expires_at` or `ttl_seconds` was sent. After this instant, release fails; dispute remains allowed. |
 | `fee` `agentPayout` | integers; zero until release |
 | `releaseNote` | optional; set on release when `release_note` was sent (max 400) |
 | `disputeReason` | optional; set on dispute when `dispute_reason` was sent (max 400) |

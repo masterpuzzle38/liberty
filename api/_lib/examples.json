@@ -51,7 +51,7 @@
       "path": "/api/v0/transition",
       "url": "https://liberty-amber.vercel.app/api/v0/transition",
       "title": "Create → fund → submit → release",
-      "note": "Stateless sketch. Each step is a separate POST. Thread the job from the previous response, or send the sample jobs below (the engine does not look jobs up). Or skip the walk and POST /api/v0/simulate. Optional Idempotency-Key on create keeps the as_ id stable for retries; Liberty does not replay stored responses. Optional client_ref (max 128) stamps the adapter’s correlation id on the job and later receipt; it is independent of the as_ id. Optional callback_url (notify_url alias, max 512, https) is stamped the same way. Liberty never HTTP-fetches or calls it. Optional proof_note on submit (max 400) lands on the job and later receipt. Optional release_note (max 400) lands on the receipt. Release returns agent_credits_delta (same as agent_payout). Apply it to a client-held agent wallet. Dispute returns 0.",
+      "note": "Stateless sketch. Each step is a separate POST. Thread the job from the previous response, or send the sample jobs below (the engine does not look jobs up). Or skip the walk and POST /api/v0/simulate. Optional Idempotency-Key on create keeps the as_ id stable for retries; Liberty does not replay stored responses. Optional client_ref (max 128) stamps the adapter’s correlation id on the job and later receipt; it is independent of the as_ id. Optional callback_url (notify_url alias, max 512, https) is stamped the same way. Liberty never HTTP-fetches or calls it. Optional expires_at (ISO-8601 UTC) or ttl_seconds (positive integer) on fund stamps expiresAt. If both are sent, Liberty rejects as conflicting. After expiresAt, release fails; dispute remains allowed. Optional proof_note on submit (max 400) lands on the job and later receipt. Optional release_note (max 400) lands on the receipt. Release returns agent_credits_delta (same as agent_payout). Apply it to a client-held agent wallet. Dispute returns 0.",
       "steps": [
         {
           "action": "create",
@@ -66,9 +66,11 @@
         },
         {
           "action": "fund",
+          "note": "Optional ttl_seconds (or expires_at) stamps expiresAt. This sketch uses 86400 seconds. After that instant, release fails; dispute still refunds.",
           "body": {
             "action": "fund",
             "payer_credits": 100,
+            "ttl_seconds": 86400,
             "job": {
               "id": "as_0123456789",
               "title": "Summarize filings",
@@ -138,7 +140,7 @@
       "path": "/api/v0/simulate",
       "url": "https://liberty-amber.vercel.app/api/v0/simulate",
       "title": "One-shot create → fund → submit → release",
-      "note": "Full walk through the same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias) is stamped the same way; Liberty never fetches it. Default terminal is release. Set terminal to dispute for a refund walk. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
+      "note": "Full walk through the same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias) is stamped the same way; Liberty never fetches it. Optional expires_at or ttl_seconds is applied on fund (send one, not both) and stamps expiresAt. After that instant, release fails; dispute remains allowed. Default terminal is release. Set terminal to dispute for a refund walk. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note or dispute_reason (max 400) lands on the receipt. Release returns agent_credits_delta.",
       "body": {
         "title": "Summarize filings",
         "amount": 100,

@@ -26,6 +26,7 @@
     ["fundedAt", "fa"],
     ["submittedAt", "sa"],
     ["resolvedAt", "ra"],
+    ["expiresAt", "ea"],
     ["fee", "f"],
     ["agentPayout", "ap"],
     ["clientRef", "cr"],
@@ -149,6 +150,12 @@
     }
     if (callbackUrl) job.callbackUrl = callbackUrl;
 
+    const expiresAt = readStamp(firstDefined(raw.expiresAt, raw.expires_at));
+    if (expiresAt === undefined) {
+      return fail("invalid_job", "job.expiresAt must be a string.");
+    }
+    if (expiresAt) job.expiresAt = expiresAt;
+
     const proofNote = readText(firstDefined(raw.proofNote, raw.proof_note));
     const releaseNote = readText(firstDefined(raw.releaseNote, raw.release_note));
     const disputeReason = readText(firstDefined(raw.disputeReason, raw.dispute_reason));
@@ -190,6 +197,7 @@
     if (packed.funded_at !== undefined && job.fundedAt === undefined) job.fundedAt = packed.funded_at;
     if (packed.submitted_at !== undefined && job.submittedAt === undefined) job.submittedAt = packed.submitted_at;
     if (packed.resolved_at !== undefined && job.resolvedAt === undefined) job.resolvedAt = packed.resolved_at;
+    if (packed.expires_at !== undefined && job.expiresAt === undefined) job.expiresAt = packed.expires_at;
     if (packed.agent_payout !== undefined && job.agentPayout === undefined) job.agentPayout = packed.agent_payout;
     if (packed.client_ref !== undefined && job.clientRef === undefined) job.clientRef = packed.client_ref;
     if (packed.callback_url !== undefined && job.callbackUrl === undefined) job.callbackUrl = packed.callback_url;

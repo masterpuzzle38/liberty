@@ -168,10 +168,11 @@
       "path": "/api/v0/transition",
       "url": "https://liberty-amber.vercel.app/api/v0/transition",
       "action": "fund",
-      "purpose": "Hold the amount in demo escrow. Deducts from payer_credits. No extra fee. Sample job is ready-to-run because the engine does not look jobs up.",
+      "purpose": "Hold the amount in demo escrow. Deducts from payer_credits. No extra fee. Optional expires_at (ISO-8601 UTC) or ttl_seconds (positive integer) stamps expiresAt — this sample uses ttl_seconds: 86400. If both are sent, Liberty rejects as conflicting. After expiresAt, release fails; dispute still refunds. Sample job is ready-to-run because the engine does not look jobs up.",
       "body": {
         "action": "fund",
         "payer_credits": 100,
+        "ttl_seconds": 86400,
         "job": {
           "id": "as_0123456789",
           "title": "Summarize filings",
@@ -187,7 +188,7 @@
           "agentPayout": 0
         }
       },
-      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"fund\",\"payer_credits\":100,\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"\",\"status\":\"open\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":null,\"submittedAt\":null,\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
+      "curl": "curl -X POST https://liberty-amber.vercel.app/api/v0/transition \\\n  -H 'content-type: application/json' \\\n  -d '{\"action\":\"fund\",\"payer_credits\":100,\"ttl_seconds\":86400,\"job\":{\"id\":\"as_0123456789\",\"title\":\"Summarize filings\",\"amount\":100,\"criteria\":\"Three-bullet brief\",\"proofUrl\":\"\",\"status\":\"open\",\"createdAt\":\"2026-09-15T00:00:00.000Z\",\"fundedAt\":null,\"submittedAt\":null,\"resolvedAt\":null,\"fee\":0,\"agentPayout\":0}}'\n# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'"
     },
     {
       "n": 6,
@@ -227,7 +228,7 @@
       "path": "/api/v0/transition",
       "url": "https://liberty-amber.vercel.app/api/v0/transition",
       "action": "release",
-      "purpose": "Terminal happy path. Computes fee, agent_payout, and agent_credits_delta. Apply the delta to a client-held agent wallet. Optional release_note lands on the receipt.",
+      "purpose": "Terminal happy path. Computes fee, agent_payout, and agent_credits_delta. Apply the delta to a client-held agent wallet. Optional release_note lands on the receipt. If the job has expiresAt and now is after that instant, release fails; dispute still refunds.",
       "body": {
         "action": "release",
         "release_note": "Proof matches the three-bullet brief.",
