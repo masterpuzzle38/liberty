@@ -412,14 +412,14 @@
     "mode": "demo",
     "origin": "https://liberty-amber.vercel.app",
     "human_path": "/#scoreboard",
-    "note": "Honest zeros. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. Listings are not users. Same facts as /#scoreboard."
+    "note": "Honest zeros. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. directory_listings is a curated static list of public listing URLs. Listings are not users. Same facts as /#scoreboard."
   },
   "adapter_notes": [
     "GET /.well-known/agent.json (same JSON as /api/agent.json) for the discovery card. Demo / money: false. Not an A2A Agent Card. Not a ChatGPT plugin.",
     "GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). Optional Authorization: Bearer <key> or X-Liberty-Key. Optional Idempotency-Key on quote, transition, and simulate. Release returns agent_credits_delta.",
     "GET /api/templates.json for preset create-job fields (same buttons as /#create). Fill only — no auto-create or fund.",
     "GET /api/changelog.json for recent shipped slices (newest first; dates and titles only). No user counts or revenue. Same list as /#whats-new.",
-    "GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue). Listings are not users. Same facts as /#scoreboard.",
+    "GET /api/scoreboard.json for honest zeros (external users, paid pilots, revenue) plus curated listing URLs. Listings are not users. Same facts as /#scoreboard.",
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
     "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id. Optional Idempotency-Key is echoed only.",
     "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Client holds the result. Liberty does not persist.",

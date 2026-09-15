@@ -65,9 +65,42 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(typeof SCOREBOARD.revenue_usd, "number");
   assert.match(SCOREBOARD.note, /listings\s*≠\s*users/i);
   assert.match(SCOREBOARD.note, /demo only/i);
-  assert.match(SCOREBOARD.directory_listings.note, /not listings and not users/i);
-  assert.equal(SCOREBOARD.directory_listings.urls, undefined);
+  assert.match(SCOREBOARD.directory_listings.note, /listings are not users/i);
   assert.equal(SCOREBOARD.directory_listings.count, undefined);
+  assert.equal(SCOREBOARD.directory_listings.urls, undefined);
+  const listings = SCOREBOARD.directory_listings.entries;
+  assert.ok(Array.isArray(listings));
+  assert.ok(listings.length >= 6);
+  const listingUrls = listings.map((entry) => entry.url);
+  const listingNames = listings.map((entry) => entry.directory);
+  for (const entry of listings) {
+    assert.equal(typeof entry.directory, "string");
+    assert.ok(entry.directory.length > 0);
+    assert.equal(typeof entry.url, "string");
+    assert.match(entry.url, /^https:\/\//);
+    if (entry.note !== undefined) assert.equal(typeof entry.note, "string");
+    if (entry.agent_id !== undefined) assert.equal(typeof entry.agent_id, "string");
+  }
+  assert.ok(listingUrls.includes("https://meshkore.com/agent/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://agentconnex.com/agents/liberty-agent-settlement-a3102d"));
+  assert.ok(listingUrls.includes("https://for.you.com/agents/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://agentbazaar.tech/agent/ag_67487308"));
+  assert.ok(listingUrls.includes("https://agentmesh.help/agents/agt_6f8323b9f3a6"));
+  assert.ok(
+    listingUrls.includes(
+      "https://api.agentstore.tools/api/agents/liberty-agent-settlement.liberty-agent-settlement",
+    ),
+  );
+  assert.ok(
+    listingUrls.includes(
+      "https://floweringagents.ai.in.rs/agents/f08bf12a-b57c-4d69-bd6a-a2c7b4b86c61",
+    ),
+  );
+  assert.ok(listingUrls.includes("https://agentlair.dev/agents/liberty-agent-settlement"));
+  const agentlair = listings.find((entry) => entry.directory === "AgentLair");
+  assert.match(agentlair.note, /x402/i);
+  assert.ok(!listingNames.some((name) => /agentindex|mcp\.directory|agent reputation/i.test(name)));
+  assert.ok(!listingUrls.some((url) => /agentindex|mcp\.directory|agentreputation/i.test(url)));
   assert.equal(SCOREBOARD.live.ui, "https://liberty-amber.vercel.app");
   assert.equal(SCOREBOARD.live.discovery, "https://liberty-amber.vercel.app/.well-known/agent.json");
   assert.equal(SCOREBOARD.live.changelog, "https://liberty-amber.vercel.app/api/changelog.json");
@@ -124,6 +157,7 @@ test("discovery, protocol, and docs point at the scoreboard", () => {
 
   const homepage = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(homepage.includes('id="scoreboard"'));
+  assert.ok(homepage.includes('id="scoreboard-listings"'));
   assert.ok(homepage.includes('href="/api/scoreboard.json"'));
 
   const llms = fs.readFileSync(path.join(ROOT, "llms.txt"), "utf8");

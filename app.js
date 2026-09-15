@@ -63,6 +63,8 @@
     whatsNewEmpty: document.getElementById("whats-new-empty"),
     scoreboardFacts: document.getElementById("scoreboard-facts"),
     scoreboardEmpty: document.getElementById("scoreboard-empty"),
+    scoreboardListings: document.getElementById("scoreboard-listings"),
+    scoreboardListingsLabel: document.getElementById("scoreboard-listings-label"),
     scoreboardNote: document.getElementById("scoreboard-note"),
     exportPack: document.getElementById("export-demo-pack"),
     resetPack: document.getElementById("reset-demo-pack"),
@@ -1712,6 +1714,36 @@
       }
       els.scoreboardFacts.hidden = false;
       if (els.scoreboardEmpty) els.scoreboardEmpty.hidden = true;
+      const listingEntries =
+        doc.directory_listings && Array.isArray(doc.directory_listings.entries)
+          ? doc.directory_listings.entries.filter(
+              (entry) =>
+                entry &&
+                typeof entry.directory === "string" &&
+                entry.directory &&
+                typeof entry.url === "string" &&
+                entry.url.startsWith("https://"),
+            )
+          : [];
+      if (els.scoreboardListings) {
+        els.scoreboardListings.replaceChildren();
+        for (const entry of listingEntries) {
+          const item = document.createElement("li");
+          const link = liveLink(entry.url, entry.directory);
+          item.append(link);
+          if (typeof entry.note === "string" && entry.note) {
+            const caveat = document.createElement("span");
+            caveat.className = "listing-note";
+            caveat.textContent = entry.note;
+            item.append(caveat);
+          }
+          els.scoreboardListings.append(item);
+        }
+        els.scoreboardListings.hidden = listingEntries.length === 0;
+      }
+      if (els.scoreboardListingsLabel) {
+        els.scoreboardListingsLabel.hidden = listingEntries.length === 0;
+      }
       if (els.scoreboardNote) {
         const listingNote =
           doc.directory_listings && typeof doc.directory_listings.note === "string"
@@ -1727,6 +1759,11 @@
         els.scoreboardEmpty.textContent = "Could not load the scoreboard. See /api/scoreboard.json.";
       }
       if (els.scoreboardFacts) els.scoreboardFacts.hidden = true;
+      if (els.scoreboardListings) {
+        els.scoreboardListings.replaceChildren();
+        els.scoreboardListings.hidden = true;
+      }
+      if (els.scoreboardListingsLabel) els.scoreboardListingsLabel.hidden = true;
       if (els.scoreboardNote) els.scoreboardNote.hidden = true;
     }
   }

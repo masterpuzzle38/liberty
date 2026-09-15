@@ -170,7 +170,7 @@
       "get": {
         "tags": ["surface"],
         "summary": "Honest scoreboard",
-        "description": "Challenge evidence. mode is demo. money is always false. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. Listings are not users. Same facts as /#scoreboard.",
+        "description": "Challenge evidence. mode is demo. money is always false. external_users, paid_pilots, and revenue_usd stay 0 until there is real evidence. directory_listings is a curated static list of public listing URLs. Listings are not users. Same facts as /#scoreboard.",
         "operationId": "getScoreboard",
         "responses": {
           "200": {
@@ -764,7 +764,26 @@
           "external_users": { "const": 0 },
           "paid_pilots": { "const": 0 },
           "revenue_usd": { "const": 0 },
-          "directory_listings": { "type": "object" },
+          "directory_listings": {
+            "type": "object",
+            "description": "Curated public listing URLs Liberty submitted. Listings are not users.",
+            "properties": {
+              "note": { "type": "string" },
+              "entries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["directory", "url"],
+                  "properties": {
+                    "directory": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" },
+                    "agent_id": { "type": "string" },
+                    "note": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
           "live": { "type": "object" },
           "note": { "type": "string" }
         }
