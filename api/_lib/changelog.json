@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-15",
+      "id": "activity",
+      "title": "Client-held Settlement activity log",
+      "href": "/#activity"
+    },
+    {
+      "date": "2026-09-15",
       "id": "ledger",
       "title": "Client-held Settlement ledger",
       "href": "/#ledger"
@@ -76,12 +82,6 @@
       "id": "terminal-notes",
       "title": "Terminal receipt notes",
       "href": "/"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "idempotency",
-      "title": "Demo Idempotency-Key",
-      "href": "/#adapters"
     }
   ]
 }
