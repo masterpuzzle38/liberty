@@ -209,7 +209,7 @@
 
     <section id="adapters" class="panel adapter-examples" aria-labelledby="adapter-heading">
       <h2 id="adapter-heading">Try as an adapter</h2>
-      <p class="hint">Copy-ready curls against the live demo. Optional <code>Authorization: Bearer</code> or <code>X-Liberty-Key</code> — mint a key above. Missing keys still work (<code>key_optional</code>). Release returns <code>agent_credits_delta</code> (same as <code>agent_payout</code>); apply it to a client-held agent wallet. Demo only. <code>money: false</code>. Liberty does not persist jobs or receipts. Same bodies: <a href="/api/examples.json"><code>/api/examples.json</code></a>.</p>
+      <p class="hint">Copy-ready curls against the live demo. Optional <code>Authorization: Bearer</code> or <code>X-Liberty-Key</code> — mint a key above. Missing keys still work (<code>key_optional</code>). Optional <code>Idempotency-Key</code> (or body <code>idempotency_key</code>) keeps create ids stable for retries; Liberty does not replay stored responses. Release returns <code>agent_credits_delta</code> (same as <code>agent_payout</code>); apply it to a client-held agent wallet. Demo only. <code>money: false</code>. Liberty does not persist jobs or receipts. Same bodies: <a href="/api/examples.json"><code>/api/examples.json</code></a>.</p>
 
       <article class="adapter-example">
         <h3>POST /api/v0/quote</h3>
@@ -217,7 +217,8 @@
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/quote \
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
-# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'</code></pre>
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
+# optional: -H 'Idempotency-Key: retry-create-1' (echo only on quote)</code></pre>
         <div class="action-row">
           <button type="button" class="ghost" data-copy-example>Copy curl</button>
         </div>
@@ -230,6 +231,7 @@
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
 # optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
+# optional: -H 'Idempotency-Key: retry-create-1' (stable create id; no stored replay)
 
 # fund → submit → release sketch (send the job from create, or these sample jobs)
 curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
@@ -252,7 +254,8 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
   -H 'content-type: application/json' \
   -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release"}'
-# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'</code></pre>
+# optional: -H 'Authorization: Bearer lib_demo_…' or -H 'X-Liberty-Key: lib_demo_…'
+# optional: -H 'Idempotency-Key: retry-create-1' (stable create id; no stored replay)</code></pre>
         <div class="action-row">
           <button type="button" class="ghost" data-copy-example>Copy curl</button>
         </div>

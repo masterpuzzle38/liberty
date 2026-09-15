@@ -89,10 +89,17 @@
     "auth": "optional",
     "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
     "auth_note": "Optional demo API key. Mint on the human UI (localStorage only). If sent, response and receipt include key_id (SHA-256 hex prefix, k_ + 12 chars). Raw key is never stored server-side. If omitted, the engine still works and notes key_optional. Not production auth. Not real money.",
+    "idempotency": {
+      "header": "Idempotency-Key",
+      "body": "idempotency_key",
+      "persistence": false,
+      "replay": false,
+      "note": "Optional. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Same key and create fields = same job id. Different keys = different ids. Missing key = random as_ + 10 hex. Successful responses echo idempotency_key; create sets idempotent true when the id came from the key. Later actions echo the key only. Liberty does not store or replay responses. No SSRF. No real money."
+    },
     "persistence": false,
     "money": false,
     "mode": "demo",
-    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Dispute returns agent_credits_delta: 0. Not live escrow custody.",
+    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Dispute returns agent_credits_delta: 0. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody.",
     "job_object": {
       "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout)",
       "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl"]
@@ -100,24 +107,28 @@
     "requests": [
       {
         "action": "create",
-        "body": ["action", "title", "amount", "criteria"]
+        "body": ["action", "title", "amount", "criteria"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "fund",
-        "body": ["action", "job", "payer_credits"]
+        "body": ["action", "job", "payer_credits"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "submit",
-        "body": ["action", "job", "proof_url"]
+        "body": ["action", "job", "proof_url"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "release",
-        "body": ["action", "job"]
+        "body": ["action", "job"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "dispute",
         "body": ["action", "job"],
-        "optional": ["payer_credits"]
+        "optional": ["payer_credits", "idempotency_key"]
       }
     ]
   },
@@ -128,34 +139,45 @@
     "auth": "optional",
     "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
     "auth_note": "Same optional demo API key as /api/v0/transition. If sent, response includes key_id. If omitted, notes key_optional. Not production auth.",
+    "idempotency": {
+      "header": "Idempotency-Key",
+      "body": "idempotency_key",
+      "persistence": false,
+      "replay": false,
+      "note": "Optional. Echoed on success. Create quote stays dry-run and still has no durable id. Liberty does not replay stored responses."
+    },
     "dry_run": true,
     "persistence": false,
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Not live escrow custody.",
+    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
     "create_job": "Validated open job fields only. No durable id.",
     "requests": [
       {
         "action": "create",
-        "body": ["action", "title", "amount", "criteria"]
+        "body": ["action", "title", "amount", "criteria"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "fund",
-        "body": ["action", "job", "payer_credits"]
+        "body": ["action", "job", "payer_credits"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "submit",
-        "body": ["action", "job", "proof_url"]
+        "body": ["action", "job", "proof_url"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "release",
-        "body": ["action", "job"]
+        "body": ["action", "job"],
+        "optional": ["idempotency_key"]
       },
       {
         "action": "dispute",
         "body": ["action", "job"],
-        "optional": ["payer_credits"]
+        "optional": ["payer_credits", "idempotency_key"]
       }
     ]
   },
@@ -166,18 +188,25 @@
     "auth": "optional",
     "auth_headers": ["Authorization: Bearer <key>", "X-Liberty-Key"],
     "auth_note": "Same optional demo API key as /api/v0/transition. If sent, response and receipt include key_id. If omitted, notes key_optional. Not production auth.",
+    "idempotency": {
+      "header": "Idempotency-Key",
+      "body": "idempotency_key",
+      "persistence": false,
+      "replay": false,
+      "note": "Optional. Create uses the same stable as_ + 10 hex derivation as transition create. Successful walks echo idempotency_key and set idempotent true when the id came from the key. Liberty does not replay stored responses."
+    },
     "persistence": false,
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
-    "create_job": "Committed demo walk. Assigns as_ + 10 hex.",
+    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
+    "create_job": "Committed demo walk. Assigns as_ + 10 hex. Stable when Idempotency-Key is sent.",
     "terminals": ["release", "dispute"],
     "default_terminal": "release",
     "requests": [
       {
         "body": ["title", "amount", "criteria", "payer_credits", "proof_url"],
-        "optional": ["terminal"]
+        "optional": ["terminal", "idempotency_key"]
       }
     ]
   },
@@ -273,7 +302,7 @@
     "id": {
       "type": "string",
       "pattern": "^as_[0-9a-f]{10}$",
-      "note": "Assigned at create."
+      "note": "Assigned at create. Random as_ + 10 hex unless Idempotency-Key (or body idempotency_key) is sent; then SHA-256 of the key plus title/amount/criteria, truncated to 10 hex. Quote create still has no id."
     },
     "title": { "type": "string", "maxLength": 80 },
     "amount": { "type": "integer", "minimum": 1, "unit": "credits" },
@@ -319,7 +348,7 @@
     "mode": "demo",
     "origin": "https://liberty-amber.vercel.app",
     "human_path": "/#adapters",
-    "note": "Copy-ready request bodies for POST /api/v0/quote, /api/v0/transition (create → fund → submit → release), /api/v0/simulate, and /api/v0/verify. Optional Authorization: Bearer or X-Liberty-Key. Release returns agent_credits_delta. GET /api/examples.json for the bodies; the human UI shows the same curls on /#adapters."
+    "note": "Copy-ready request bodies for POST /api/v0/quote, /api/v0/transition (create → fund → submit → release), /api/v0/simulate, and /api/v0/verify. Optional Authorization: Bearer or X-Liberty-Key. Optional Idempotency-Key on quote, transition, and simulate. Release returns agent_credits_delta. GET /api/examples.json for the bodies; the human UI shows the same curls on /#adapters."
   },
   "templates": {
     "path": "/api/templates.json",
@@ -334,13 +363,14 @@
   },
   "adapter_notes": [
     "GET /.well-known/agent.json (same JSON as /api/agent.json) for the discovery card. Demo / money: false. Not an A2A Agent Card. Not a ChatGPT plugin.",
-    "GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). Optional Authorization: Bearer <key> or X-Liberty-Key. Release returns agent_credits_delta.",
+    "GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). Optional Authorization: Bearer <key> or X-Liberty-Key. Optional Idempotency-Key on quote, transition, and simulate. Release returns agent_credits_delta.",
     "GET /api/templates.json for preset create-job fields (same buttons as /#create). Fill only — no auto-create or fund.",
     "POST /api/v0/transition is a stateless demo engine. It does not persist jobs or take escrow custody. Not a live escrow service.",
-    "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id.",
-    "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Client holds the result. Liberty does not persist.",
+    "POST /api/v0/quote is a dry-run of that same engine. Use it to preview fee, payout, and credit impact before committing. Create quote does not assign a durable job id. Optional Idempotency-Key is echoed only.",
+    "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Client holds the result. Liberty does not persist.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
+    "Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries. Same key plus same title/amount/criteria = same as_ + 10 hex. Liberty does not store or replay responses. No persistence. No SSRF. No real money.",
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0, and the agent wallet under liberty.agent-settlement.agent-credits.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. A successful release credits the agent wallet by agent_credits_delta. Dispute does not. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export.",
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Payer credits, agent credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
     "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Payer credits, agent credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",

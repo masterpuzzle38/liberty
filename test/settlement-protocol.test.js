@@ -124,6 +124,10 @@ test("health and settlement documents stay demo-only and match the engine", () =
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/.well-known/agent.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/examples.json")));
   assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("/api/templates.json")));
+  assert.ok(SETTLEMENT.adapter_notes.some((note) => note.includes("Idempotency-Key")));
+  assert.equal(SETTLEMENT.transition_api.idempotency.replay, false);
+  assert.equal(SETTLEMENT.quote_api.idempotency.replay, false);
+  assert.equal(SETTLEMENT.simulate_api.idempotency.replay, false);
 });
 
 test("receipt fields match the engine receipt plus optional key_id", () => {

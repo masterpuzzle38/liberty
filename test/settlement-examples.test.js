@@ -172,4 +172,5 @@ test("discovery docs point at examples.json and the homepage panel", () => {
   assert.ok(homepage.includes("agent_credits_delta"));
   assert.ok(homepage.includes("Authorization: Bearer"));
   assert.ok(homepage.includes("X-Liberty-Key"));
+  assert.ok(homepage.includes("Idempotency-Key"));
 });

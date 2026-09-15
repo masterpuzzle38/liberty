@@ -20,8 +20,16 @@ function releaseFee(amount) {
   return Math.round(amount * FEE_RATE);
 }
 
+const JOB_ID_HEX_LEN = 10;
+
 function makeId() {
-  return `as_${crypto.randomBytes(5).toString("hex")}`;
+  return `as_${crypto.randomBytes(JOB_ID_HEX_LEN / 2).toString("hex")}`;
+}
+
+function idFromIdempotencyKey(key, { title, amount, criteria }) {
+  const material = `${key}\n${title}\n${amount}\n${criteria}`;
+  const digest = crypto.createHash("sha256").update(material, "utf8").digest("hex");
+  return `as_${digest.slice(0, JOB_ID_HEX_LEN)}`;
 }
 
 function firstDefined(...values) {
@@ -31,7 +39,7 @@ function firstDefined(...values) {
   return undefined;
 }
 
-const CORS_ALLOW_HEADERS = "Content-Type, Authorization, X-Liberty-Key";
+const CORS_ALLOW_HEADERS = "Content-Type, Authorization, X-Liberty-Key, Idempotency-Key";
 const KEY_ID_HEX_LEN = 12;
 
 function corsHeaders() {
@@ -83,6 +91,36 @@ function readDemoAuth(headers) {
     status: "accepted",
     key_id: keyIdFromSecret(secret),
   };
+}
+
+function readIdempotencyFromInput(input, options) {
+  const fromOpts = options && typeof options.idempotencyKey === "string"
+    ? options.idempotencyKey.trim()
+    : "";
+  if (fromOpts) return { value: fromOpts };
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { value: "" };
+  const raw = firstDefined(input.idempotency_key, input.idempotencyKey);
+  if (raw === undefined) return { value: "" };
+  if (typeof raw !== "string") {
+    return {
+      error: fail(400, "invalid_field", "idempotency_key must be a string.", { field: "idempotency_key" }),
+    };
+  }
+  return { value: raw.trim() };
+}
+
+function readIdempotencyKey(headers, body) {
+  const fromHeader = headerValue(headers, "idempotency-key");
+  if (fromHeader) return { value: fromHeader };
+  return readIdempotencyFromInput(body, {});
+}
+
+function attachIdempotency(result, key, { idempotent } = {}) {
+  if (!key || !result || result.status !== 200 || !result.body) return result;
+  const body = { ...result.body, idempotency_key: key };
+  if (idempotent) body.idempotent = true;
+  return { status: result.status, body };
 }
 
 function applyDemoAuth(body, headers) {
@@ -563,10 +601,23 @@ function discovery(kind) {
     note: verifyMode
       ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
       : simulateMode
-        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+        ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
         : quote
-          ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
-          : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+          ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+          : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
+    ...(verifyMode
+      ? {}
+      : {
+          idempotency: {
+            header: "Idempotency-Key",
+            body: "idempotency_key",
+            persistence: false,
+            replay: false,
+            note: quote
+              ? "Optional. Echoed on success. Create quote stays dry-run and still has no durable id. Liberty does not replay stored responses. No persistence. No SSRF. No real money."
+              : "Optional. On create, SHA-256 of the key plus title/amount/criteria yields as_ + 10 hex. Same key and create fields = same job id. Different keys = different ids. Missing key = random as_ + 10 hex. Echoed on success; idempotent is true when the id came from the key. Later actions echo the key only. Liberty does not replay stored responses. No persistence. No SSRF. No real money.",
+          },
+        }),
     protocol: "/api/settlement.json",
     discovery: "/.well-known/agent.json",
     quote: "/api/v0/quote",
@@ -603,6 +654,9 @@ function transition(input, options) {
     });
   }
 
+  const idem = readIdempotencyFromInput(input, opts);
+  if (idem.error) return idem.error;
+  const idempotencyKey = idem.value;
   const stamp = now();
 
   if (action === "create") {
@@ -626,9 +680,23 @@ function transition(input, options) {
       fee: 0,
       agentPayout: 0,
     };
-    if (!dryRun) job.id = idFactory();
+    let fromKey = false;
+    if (!dryRun) {
+      if (idempotencyKey) {
+        job.id = idFromIdempotencyKey(idempotencyKey, {
+          title: title.value,
+          amount: amount.value,
+          criteria: criteria.value,
+        });
+        fromKey = true;
+      } else {
+        job.id = idFactory();
+      }
+    }
     const created = ok({ action, job });
-    return dryRun ? decorateQuote(created) : created;
+    return attachIdempotency(dryRun ? decorateQuote(created) : created, idempotencyKey, {
+      idempotent: fromKey,
+    });
   }
 
   const parsedJob = readJob(input.job);
@@ -655,7 +723,7 @@ function transition(input, options) {
       job,
       payer_credits: credits.value - job.amount,
     });
-    return dryRun ? decorateQuote(funded) : funded;
+    return attachIdempotency(dryRun ? decorateQuote(funded) : funded, idempotencyKey);
   }
 
   if (action === "submit") {
@@ -667,7 +735,7 @@ function transition(input, options) {
     job.status = "submitted";
     job.submittedAt = stamp;
     const submitted = ok({ action, job });
-    return dryRun ? decorateQuote(submitted) : submitted;
+    return attachIdempotency(dryRun ? decorateQuote(submitted) : submitted, idempotencyKey);
   }
 
   if (action === "release") {
@@ -683,7 +751,7 @@ function transition(input, options) {
       agent_credits_delta: job.agentPayout,
       receipt: receiptFromJob(job),
     });
-    return dryRun ? decorateQuote(released) : released;
+    return attachIdempotency(dryRun ? decorateQuote(released) : released, idempotencyKey);
   }
 
   const credits = readCredits(firstDefined(input.payer_credits, input.payerCredits), "payer_credits", false);
@@ -705,7 +773,7 @@ function transition(input, options) {
     body.payer_credits = credits.value + job.amount;
   }
   const disputed = ok(body);
-  return dryRun ? decorateQuote(disputed) : disputed;
+  return attachIdempotency(dryRun ? decorateQuote(disputed) : disputed, idempotencyKey);
 }
 
 function quote(input, options) {
@@ -721,6 +789,10 @@ function stepFromResult(result) {
   if (Number.isInteger(body.agent_credits_delta)) step.agent_credits_delta = body.agent_credits_delta;
   if (Number.isInteger(body.returned_to_payer)) step.returned_to_payer = body.returned_to_payer;
   if (body.receipt && typeof body.receipt === "object") step.receipt = body.receipt;
+  if (typeof body.idempotency_key === "string" && body.idempotency_key) {
+    step.idempotency_key = body.idempotency_key;
+  }
+  if (body.idempotent === true) step.idempotent = true;
   return step;
 }
 
@@ -728,6 +800,11 @@ function simulate(input, options) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return fail(400, "invalid_json", "Body must be a JSON object.");
   }
+
+  const opts = options || {};
+  const idem = readIdempotencyFromInput(input, opts);
+  if (idem.error) return idem.error;
+  const nextOpts = { ...opts, idempotencyKey: idem.value };
 
   const title = readText(input.title, "title", { maxLength: 80, required: true });
   if (title.error) return title.error;
@@ -760,7 +837,7 @@ function simulate(input, options) {
     title: title.value,
     amount: amount.value,
     criteria: criteria.value,
-  }, options);
+  }, nextOpts);
   if (created.status !== 200) return created;
 
   const steps = [stepFromResult(created)];
@@ -769,7 +846,7 @@ function simulate(input, options) {
     action: "fund",
     job: created.body.job,
     payer_credits: credits.value,
-  }, options);
+  }, nextOpts);
   if (funded.status !== 200) return funded;
   steps.push(stepFromResult(funded));
 
@@ -777,7 +854,7 @@ function simulate(input, options) {
     action: "submit",
     job: funded.body.job,
     proof_url: proof.value,
-  }, options);
+  }, nextOpts);
   if (submitted.status !== 200) return submitted;
   steps.push(stepFromResult(submitted));
 
@@ -785,7 +862,7 @@ function simulate(input, options) {
     terminal === "release"
       ? { action: "release", job: submitted.body.job }
       : { action: "dispute", job: submitted.body.job, payer_credits: funded.body.payer_credits },
-    options,
+    nextOpts,
   );
   if (finished.status !== 200) return finished;
   steps.push(stepFromResult(finished));
@@ -794,7 +871,7 @@ function simulate(input, options) {
     ? finished.body.payer_credits
     : funded.body.payer_credits;
 
-  return ok({
+  return attachIdempotency(ok({
     terminal,
     job: finished.body.job,
     payer_credits: payerCredits,
@@ -808,7 +885,7 @@ function simulate(input, options) {
       : {}),
     receipt: finished.body.receipt,
     steps,
-  });
+  }), idem.value, { idempotent: Boolean(idem.value) });
 }
 
 function parseBody(raw) {
@@ -898,11 +975,24 @@ function handleHttp({ method, body, headers, dryRun, verify: verifyMode, simulat
     };
   }
 
+  let engineOpts = { dryRun: quoteMode };
+  if (!checking) {
+    const idem = readIdempotencyKey(headers, body);
+    if (idem.error) {
+      return {
+        status: idem.error.status,
+        headers: { ...cors, "Content-Type": "application/json" },
+        body: applyDemoAuth(idem.error.body, headers),
+      };
+    }
+    engineOpts = { ...engineOpts, idempotencyKey: idem.value };
+  }
+
   const result = checking
     ? verify(body)
     : walking
-      ? simulate(body)
-      : transition(body, { dryRun: quoteMode });
+      ? simulate(body, engineOpts)
+      : transition(body, engineOpts);
   return {
     status: result.status,
     headers: { ...cors, "Content-Type": "application/json" },
@@ -914,6 +1004,7 @@ module.exports = {
   ACTIONS,
   CORS_ALLOW_HEADERS,
   FEE_RATE,
+  JOB_ID_HEX_LEN,
   JOB_ID_PATTERN,
   SIMULATE_TERMINALS,
   STATUSES,
@@ -924,10 +1015,12 @@ module.exports = {
   createVercelHandler,
   discovery,
   handleHttp,
+  idFromIdempotencyKey,
   keyIdFromSecret,
   parseBody,
   quote,
   readDemoAuth,
+  readIdempotencyKey,
   receiptFromJob,
   releaseFee,
   simulate,
