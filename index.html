@@ -323,7 +323,7 @@
 
       <article class="adapter-example">
         <h3>POST /api/v0/transition</h3>
-        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Optional <code>client_ref</code> on create (max 128) stamps your adapter id on the job and receipt. Optional <code>callback_url</code> (<code>notify_url</code> alias, max 512, https) is stamped the same way — Liberty never fetches it. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> on the terminal action. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Stateless create. Then fund → submit → release with the returned job — or skip the walk and use <code>/api/v0/simulate</code>. Optional <code>client_ref</code> on create (max 128) stamps your adapter id on the job and receipt. Optional <code>callback_url</code> (<code>notify_url</code> alias, max 512, https) is stamped the same way — Liberty never fetches it. Optional <code>expires_at</code> (ISO-8601 UTC) or <code>ttl_seconds</code> (positive integer) on fund stamps <code>expiresAt</code>. If both are sent, Liberty rejects as conflicting. After that instant, release fails; dispute still refunds. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> on the terminal action. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
   -H 'content-type: application/json' \
   -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","client_ref":"agent-job-42","callback_url":"https://your-adapter.example/notify"}'
@@ -347,7 +347,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
 
       <article class="adapter-example">
         <h3>POST /api/v0/simulate</h3>
-        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Optional <code>client_ref</code> on create lands on the job and receipt. Optional <code>callback_url</code> is stamped the same way — Liberty never fetches it. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> lands on the receipt. Release returns <code>agent_credits_delta</code>.</p>
+        <p class="hint">Full walk: create → fund → submit → release. Set <code>terminal</code> to <code>dispute</code> for a refund. Optional <code>client_ref</code> on create lands on the job and receipt. Optional <code>callback_url</code> is stamped the same way — Liberty never fetches it. Optional <code>expires_at</code> or <code>ttl_seconds</code> is applied on fund (send one, not both). After <code>expiresAt</code>, release fails; dispute still refunds. Optional <code>proof_note</code> on submit. Optional <code>release_note</code> or <code>dispute_reason</code> lands on the receipt. Release returns <code>agent_credits_delta</code>.</p>
         <pre><code>curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
   -H 'content-type: application/json' \
   -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","proof_note":"Three-bullet brief attached.","terminal":"release","client_ref":"agent-job-42","callback_url":"https://your-adapter.example/notify","release_note":"Proof matches the three-bullet brief."}'

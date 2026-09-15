@@ -29,7 +29,7 @@
         {
           "action": "fund",
           "body": ["action", "job", "payer_credits"],
-          "optional": ["idempotency_key"]
+          "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
         },
         {
           "action": "submit",
@@ -63,7 +63,7 @@
         {
           "action": "fund",
           "body": ["action", "job", "payer_credits"],
-          "optional": ["idempotency_key"]
+          "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
         },
         {
           "action": "submit",
@@ -98,7 +98,7 @@
         {
           "action": "fund",
           "body": ["action", "job", "payer_credits"],
-          "optional": ["idempotency_key"]
+          "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
         },
         {
           "action": "submit",
@@ -123,7 +123,7 @@
       "path": "/api/v0/simulate",
       "purpose": "One-shot create → fund → submit → release|dispute through the same engine.",
       "body": ["title", "amount", "criteria", "payer_credits", "proof_url"],
-      "optional": ["terminal", "client_ref", "callback_url", "proof_note", "release_note", "dispute_reason", "idempotency_key"]
+      "optional": ["terminal", "client_ref", "callback_url", "expires_at", "ttl_seconds", "proof_note", "release_note", "dispute_reason", "idempotency_key"]
     },
     {
       "id": "verify",

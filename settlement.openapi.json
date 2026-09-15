@@ -1320,6 +1320,11 @@
           "fundedAt": { "type": ["string", "null"], "format": "date-time" },
           "submittedAt": { "type": ["string", "null"], "format": "date-time" },
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Present when expires_at or ttl_seconds was sent on fund. After this instant, release fails; dispute remains allowed."
+          },
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
           "clientRef": {
@@ -1586,6 +1591,18 @@
           "callbackUrl": { "type": "string", "maxLength": 512, "format": "uri" },
           "notify_url": { "type": "string", "maxLength": 512, "format": "uri" },
           "notifyUrl": { "type": "string", "maxLength": 512, "format": "uri" },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional. Applied on the fund step. ISO-8601 UTC. If both expires_at and ttl_seconds are sent, Liberty rejects as conflicting."
+          },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "ttl_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Optional. Applied on the fund step. Stamps expiresAt = now + ttl_seconds."
+          },
+          "ttlSeconds": { "type": "integer", "minimum": 1 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }
@@ -1708,6 +1725,11 @@
           "fundedAt": { "type": ["string", "null"], "format": "date-time" },
           "submittedAt": { "type": ["string", "null"], "format": "date-time" },
           "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Present when expires_at or ttl_seconds was sent on fund. After this instant, release fails; dispute remains allowed."
+          },
           "fee": { "type": "integer", "minimum": 0 },
           "agentPayout": { "type": "integer", "minimum": 0 },
           "clientRef": { "type": "string", "maxLength": 128 },
@@ -1827,6 +1849,18 @@
           "job": { "$ref": "#/components/schemas/Job" },
           "payer_credits": { "type": "integer", "minimum": 0 },
           "payerCredits": { "type": "integer", "minimum": 0 },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional ISO-8601 UTC datetime. Stamped on the funded job as expiresAt. After that instant, release fails; dispute remains allowed. If both expires_at and ttl_seconds are sent, Liberty rejects as conflicting."
+          },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "ttl_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Optional hold lifetime in seconds from fund. Liberty stamps expiresAt = now + ttl_seconds. Send this or expires_at, not both."
+          },
+          "ttlSeconds": { "type": "integer", "minimum": 1 },
           "idempotency_key": { "$ref": "#/components/schemas/IdempotencyKey" },
           "idempotencyKey": { "$ref": "#/components/schemas/IdempotencyKey" }
         }

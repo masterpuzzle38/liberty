@@ -65,6 +65,19 @@ test("handoff keeps optional clientRef on an open job", () => {
   assert.equal(decoded.job.clientRef, "agent-job-42");
 });
 
+test("handoff keeps optional expiresAt on a funded job", () => {
+  const job = sampleJob({ expiresAt: "2026-09-15T20:50:00.000Z" });
+  const encoded = encodeHandoff(job);
+  assert.equal(encoded.ok, true);
+  const raw = Buffer.from(encoded.token.slice(PREFIX.length), "base64url").toString("utf8");
+  const payload = JSON.parse(raw);
+  assert.equal(payload.job.ea, "2026-09-15T20:50:00.000Z");
+  assert.equal(payload.job.expiresAt, undefined);
+  const decoded = decodeHandoff(encoded.token);
+  assert.equal(decoded.ok, true);
+  assert.equal(decoded.job.expiresAt, "2026-09-15T20:50:00.000Z");
+});
+
 test("handoff keeps optional callbackUrl on an open job", () => {
   const job = sampleJob({
     status: "open",

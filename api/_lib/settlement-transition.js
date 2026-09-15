@@ -13,6 +13,9 @@ const NOTE_MAX_LENGTH = 400;
 const CLIENT_REF_MAX_LENGTH = 128;
 const CALLBACK_URL_MAX_LENGTH = 512;
 const CALLBACK_URL_ALIASES = ["callback_url", "callbackUrl", "notify_url", "notifyUrl"];
+const EXPIRES_AT_ALIASES = ["expires_at", "expiresAt"];
+const TTL_SECONDS_ALIASES = ["ttl_seconds", "ttlSeconds"];
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 const EXPECTED_FROM = {
   fund: "open",
   submit: "funded",
@@ -307,6 +310,120 @@ function rejectForeignCallbackUrl(input, action) {
   return fail(400, "invalid_field", "callback_url is only accepted on create.", { field: "callback_url" });
 }
 
+function present(value) {
+  return value !== undefined && value !== null;
+}
+
+function parseIsoUtc(value, field) {
+  if (typeof value !== "string") {
+    return {
+      error: fail(400, "invalid_field", `${field} must be an ISO-8601 UTC datetime.`, { field }),
+    };
+  }
+  const text = value.trim();
+  if (!text || !ISO_DATE_TIME.test(text)) {
+    return {
+      error: fail(400, "invalid_field", `${field} must be an ISO-8601 UTC datetime.`, { field }),
+    };
+  }
+  const ms = Date.parse(text);
+  if (!Number.isFinite(ms)) {
+    return {
+      error: fail(400, "invalid_field", `${field} must be an ISO-8601 UTC datetime.`, { field }),
+    };
+  }
+  return { value: new Date(ms).toISOString(), ms };
+}
+
+function readOptionalHoldExpiry(input, stamp) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { value: undefined };
+  }
+  const rawExpires = firstDefined(...EXPIRES_AT_ALIASES.map((name) => input[name]));
+  const rawTtl = firstDefined(...TTL_SECONDS_ALIASES.map((name) => input[name]));
+  const hasExpires = present(rawExpires);
+  const hasTtl = present(rawTtl);
+
+  if (hasExpires && hasTtl) {
+    return {
+      error: fail(400, "invalid_field", "Send expires_at or ttl_seconds, not both.", {
+        field: "expires_at",
+      }),
+    };
+  }
+
+  if (hasExpires) {
+    const parsed = parseIsoUtc(rawExpires, "expires_at");
+    if (parsed.error) return parsed;
+    const nowMs = Date.parse(stamp);
+    if (!Number.isFinite(nowMs) || parsed.ms <= nowMs) {
+      return {
+        error: fail(400, "invalid_field", "expires_at must be in the future.", { field: "expires_at" }),
+      };
+    }
+    return { value: parsed.value };
+  }
+
+  if (hasTtl) {
+    const ttl = readInteger(rawTtl, "ttl_seconds", { min: 1 });
+    if (ttl.error) return ttl;
+    const nowMs = Date.parse(stamp);
+    const expiresMs = nowMs + ttl.value * 1000;
+    if (!Number.isFinite(nowMs) || !Number.isFinite(expiresMs)) {
+      return {
+        error: fail(400, "invalid_field", "ttl_seconds must be an integer >= 1.", {
+          field: "ttl_seconds",
+        }),
+      };
+    }
+    return { value: new Date(expiresMs).toISOString() };
+  }
+
+  return { value: undefined };
+}
+
+function rejectForeignHoldExpiry(input, action) {
+  if (action === "fund") return null;
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const rawExpires = firstDefined(...EXPIRES_AT_ALIASES.map((name) => input[name]));
+  const rawTtl = firstDefined(...TTL_SECONDS_ALIASES.map((name) => input[name]));
+  if (present(rawExpires)) {
+    return fail(400, "invalid_field", "expires_at is only accepted on fund.", { field: "expires_at" });
+  }
+  if (present(rawTtl)) {
+    return fail(400, "invalid_field", "ttl_seconds is only accepted on fund.", { field: "ttl_seconds" });
+  }
+  return null;
+}
+
+function readOptionalJobExpiresAt(raw) {
+  const rawExpires = firstDefined(raw.expiresAt, raw.expires_at);
+  if (!present(rawExpires) || rawExpires === "") return { value: undefined };
+  const parsed = parseIsoUtc(rawExpires, "job.expiresAt");
+  if (parsed.error) return parsed;
+  return { value: parsed.value };
+}
+
+function holdExpired(job, stamp, { skip } = {}) {
+  if (skip || !job || !job.expiresAt) return null;
+  const nowMs = Date.parse(stamp);
+  const expiresMs = Date.parse(job.expiresAt);
+  if (!Number.isFinite(nowMs) || !Number.isFinite(expiresMs)) {
+    return fail(400, "invalid_field", "job.expiresAt must be an ISO-8601 UTC datetime.", {
+      field: "job.expiresAt",
+    });
+  }
+  if (nowMs > expiresMs) {
+    return fail(
+      409,
+      "hold_expired",
+      `Cannot release after expiresAt. The hold ended at ${job.expiresAt}. Dispute remains allowed.`,
+      { field: "expiresAt", expiresAt: job.expiresAt },
+    );
+  }
+  return null;
+}
+
 function readOptionalNote(input, field, aliases) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { value: undefined };
@@ -447,6 +564,9 @@ function readJob(raw) {
   const proofNote = readOptionalNote(raw, "proof_note", ["proofNote", "proof_note"]);
   if (proofNote.error) return proofNote;
 
+  const expiresAt = readOptionalJobExpiresAt(raw);
+  if (expiresAt.error) return expiresAt;
+
   return {
     value: {
       id: raw.id,
@@ -464,6 +584,7 @@ function readJob(raw) {
       ...(clientRef.value ? { clientRef: clientRef.value } : {}),
       ...(callbackUrl.value ? { callbackUrl: callbackUrl.value } : {}),
       ...(proofNote.value ? { proofNote: proofNote.value } : {}),
+      ...(expiresAt.value ? { expiresAt: expiresAt.value } : {}),
     },
   };
 }
@@ -609,8 +730,13 @@ function moneyMismatches(expected, claimed) {
 }
 
 function expectedFromAction(job, action, options) {
-  const inputJob = job.status === "submitted" ? job : asSubmittedJob(job);
-  return transition({ action, job: inputJob }, { ...(options || {}), dryRun: true });
+  const wasSubmitted = job.status === "submitted";
+  const inputJob = wasSubmitted ? job : asSubmittedJob(job);
+  return transition({ action, job: inputJob }, {
+    ...(options || {}),
+    dryRun: true,
+    skipHoldExpiry: !wasSubmitted,
+  });
 }
 
 function verifySuccess(expected, claimed, extra) {
@@ -777,6 +903,7 @@ const SCHEMA_ERROR_CODES = new Set([
 const STATE_ERROR_CODES = new Set([
   "illegal_transition",
   "insufficient_credits",
+  "hold_expired",
 ]);
 
 function errorKind(error) {
@@ -854,7 +981,7 @@ function discovery(kind) {
       : simulateMode
         ? "One-shot demo lifecycle. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
         : validateMode
-          ? "Dry-check of the same engine and JSON Schema as POST /api/v0/transition. Same request shape as quote and transition. Returns { ok: true } when the body would be accepted, or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits) with kind: state. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+          ? "Dry-check of the same engine and JSON Schema as POST /api/v0/transition. Same request shape as quote and transition. Returns { ok: true } when the body would be accepted, or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits, hold_expired) with kind: state. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
           : quote
             ? "Dry-run of the same engine as POST /api/v0/transition. Computes the next status and fee math without mutating state. Create quote returns validated open job fields without a durable id. Optional Idempotency-Key is echoed only. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
             : "Stateless demo engine. Client holds the job and credits. Liberty returns the next state and fee math. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth.",
@@ -916,6 +1043,8 @@ function transition(input, options) {
   if (foreignRef) return foreignRef;
   const foreignCallback = rejectForeignCallbackUrl(input, action);
   if (foreignCallback) return foreignCallback;
+  const foreignExpiry = rejectForeignHoldExpiry(input, action);
+  if (foreignExpiry) return foreignExpiry;
   const note = readActionNote(input, action);
   if (note.error) return note.error;
   const stamp = now();
@@ -983,8 +1112,11 @@ function transition(input, options) {
         { action, needed: job.amount, payer_credits: credits.value },
       );
     }
+    const expiry = readOptionalHoldExpiry(input, stamp);
+    if (expiry.error) return expiry.error;
     job.status = "funded";
     job.fundedAt = stamp;
+    if (expiry.value) job.expiresAt = expiry.value;
     const funded = ok({
       action,
       job,
@@ -1007,6 +1139,8 @@ function transition(input, options) {
   }
 
   if (action === "release") {
+    const expired = holdExpired(job, stamp, { skip: Boolean(opts.skipHoldExpiry) });
+    if (expired) return expired;
     job.fee = releaseFee(job.amount);
     job.agentPayout = job.amount - job.fee;
     job.status = "released";
@@ -1122,6 +1256,10 @@ function simulate(input, options) {
     action: "fund",
     job: created.body.job,
     payer_credits: credits.value,
+    expires_at: input.expires_at,
+    expiresAt: input.expiresAt,
+    ttl_seconds: input.ttl_seconds,
+    ttlSeconds: input.ttlSeconds,
   }, nextOpts);
   if (funded.status !== 200) return funded;
   steps.push(stepFromResult(funded));

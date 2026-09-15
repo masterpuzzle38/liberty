@@ -588,6 +588,9 @@
     lines.push(
       `- Created: ${job.createdAt}`,
       `- Funded: ${job.fundedAt || "—"}`,
+    );
+    if (job.expiresAt) lines.push(`- Hold expires: ${job.expiresAt}`);
+    lines.push(
       `- Submitted: ${job.submittedAt || "—"}`,
       `- Resolved: ${job.resolvedAt || "—"}`,
     );
@@ -1000,6 +1003,7 @@
     } else if (job.status === "open") {
       const canFund = state.credits >= job.amount;
       actions.push(`<button type="button" data-action="fund" ${canFund ? "" : "disabled"}>${canFund ? `Fund ${job.amount} credits` : "Need more credits to fund"}</button>`);
+      actions.push(`<p class="hint">Adapters can stamp optional <code>expires_at</code> or <code>ttl_seconds</code> on fund. After that instant, release fails; dispute still refunds. This demo fund button does not send an expiry.</p>`);
     } else if (job.status === "funded") {
       actions.push(`
         <form id="proof-form" class="stack-form">
@@ -1060,6 +1064,7 @@
         <dt>Proof</dt><dd></dd>
         <dt>Created</dt><dd>${escapeHtml(formatWhen(job.createdAt))}</dd>
         <dt>Funded</dt><dd>${escapeHtml(formatWhen(job.fundedAt))}</dd>
+        ${job.expiresAt ? `<dt>Hold expires</dt><dd>${escapeHtml(formatWhen(job.expiresAt))}</dd>` : ""}
         <dt>Submitted</dt><dd>${escapeHtml(formatWhen(job.submittedAt))}</dd>
         <dt>Resolved</dt><dd>${escapeHtml(formatWhen(job.resolvedAt))}</dd>
         ${(() => {

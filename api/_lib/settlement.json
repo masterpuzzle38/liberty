@@ -163,10 +163,10 @@
     "persistence": false,
     "money": false,
     "mode": "demo",
-    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Optional client_ref (max 128) on create stamps the adapter’s reference on the job and later receipt. It is independent of Idempotency-Key. Optional callback_url (notify_url alias, max 512, https) is stamped the same way so the adapter’s own client can notify itself after release or dispute. Liberty never HTTP-fetches or calls this URL. No SSRF. Optional proof_note on submit (max 400) and release_note / dispute_reason on the terminal action echo on the job and receipt. Dispute returns agent_credits_delta: 0. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody.",
+    "note": "Client holds the job and credits. Send action plus the fields below. Liberty returns the updated job, updated credits when relevant, fee/agent_payout/agent_credits_delta on release, and a receipt on release or dispute. Optional client_ref (max 128) on create stamps the adapter’s reference on the job and later receipt. It is independent of Idempotency-Key. Optional callback_url (notify_url alias, max 512, https) is stamped the same way so the adapter’s own client can notify itself after release or dispute. Liberty never HTTP-fetches or calls this URL. No SSRF. Optional expires_at (ISO-8601 UTC) or ttl_seconds (positive integer) on fund stamps expiresAt. If both are sent, Liberty rejects as conflicting. After expiresAt, release fails; dispute remains allowed. Missing expiry keeps today’s behavior. Optional proof_note on submit (max 400) and release_note / dispute_reason on the terminal action echo on the job and receipt. Dispute returns agent_credits_delta: 0. Optional Idempotency-Key makes create ids stable for retries; it does not replay stored responses. Not live escrow custody.",
     "job_object": {
-      "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout, clientRef, callbackUrl)",
-      "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl", "client_ref", "clientRef", "callback_url", "callbackUrl", "notify_url", "notifyUrl"]
+      "response": "camelCase matching the browser UI and OpenAPI Job schema (proofUrl, createdAt, agentPayout, clientRef, callbackUrl, expiresAt)",
+      "request_aliases": ["proof_url", "created_at", "funded_at", "submitted_at", "resolved_at", "agent_payout", "payerCredits", "proofUrl", "client_ref", "clientRef", "callback_url", "callbackUrl", "notify_url", "notifyUrl", "expires_at", "expiresAt", "ttl_seconds", "ttlSeconds"]
     },
     "requests": [
       {
@@ -177,7 +177,7 @@
       {
         "action": "fund",
         "body": ["action", "job", "payer_credits"],
-        "optional": ["idempotency_key"]
+        "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
       },
       {
         "action": "submit",
@@ -215,7 +215,7 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Optional client_ref echoes on the quoted create job. Optional callback_url echoes the same way. Liberty never fetches it. Optional proof_note echoes on the quoted submit job. Optional release_note / dispute_reason echo on the quoted receipt and job. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
+    "note": "Same request shape and engine as transition. Returns the next status and money impact (fee, agent_payout, agent_credits_delta, payer_credits_after, returned_to_payer when those apply) without mutating state. Optional client_ref echoes on the quoted create job. Optional callback_url echoes the same way. Liberty never fetches it. Optional expires_at or ttl_seconds on fund stamps expiresAt on the quoted job (same conflicting-both rule). After expiresAt, a release quote fails; dispute remains allowed. Optional proof_note echoes on the quoted submit job. Optional release_note / dispute_reason echo on the quoted receipt and job. Create quote returns validated open job fields without a durable id — Liberty does not assign as_… until POST /api/v0/transition. Optional Idempotency-Key is echoed only. Not live escrow custody.",
     "create_job": "Validated open job fields only. No durable id. Optional client_ref and callback_url echo when sent.",
     "requests": [
       {
@@ -226,7 +226,7 @@
       {
         "action": "fund",
         "body": ["action", "job", "payer_credits"],
-        "optional": ["idempotency_key"]
+        "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
       },
       {
         "action": "submit",
@@ -265,7 +265,7 @@
     "mode": "demo",
     "engine": "/api/v0/transition",
     "schema": "/api/schemas/transition.json",
-    "note": "Same request shape and engine as transition and quote. Dry-checks the body and returns { ok: true } or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits) with kind: state. Optional Idempotency-Key is echoed only. Not live escrow custody.",
+    "note": "Same request shape and engine as transition and quote. Dry-checks the body and returns { ok: true } or structured field errors. Does not apply fund/submit/release/dispute, mint a job id, persist, or move real money. Non-create actions must include the client-held job object the same way transition does — Liberty does not look jobs up. Schema errors are 400 (invalid_json, invalid_action, missing_field, invalid_field) with kind: schema. State errors are 409 (illegal_transition, insufficient_credits, hold_expired) with kind: state. Optional expires_at or ttl_seconds on fund is checked the same way (both together are rejected). After expiresAt, validate of release fails; dispute remains allowed. Optional Idempotency-Key is echoed only. Not live escrow custody.",
     "create_job": "Validated only. No durable id. No job object in the success body.",
     "requests": [
       {
@@ -276,7 +276,7 @@
       {
         "action": "fund",
         "body": ["action", "job", "payer_credits"],
-        "optional": ["idempotency_key"]
+        "optional": ["expires_at", "ttl_seconds", "idempotency_key"]
       },
       {
         "action": "submit",
@@ -313,14 +313,14 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias, max 512, https) is stamped the same way. Liberty never HTTP-fetches or calls it. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note / dispute_reason (max 400) land on the terminal receipt and job. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
+    "note": "One-shot demo lifecycle through the same engine as transition. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Optional client_ref (max 128) lands on the job and receipt. Optional callback_url (notify_url alias, max 512, https) is stamped the same way. Liberty never HTTP-fetches or calls it. Optional expires_at or ttl_seconds is applied on the fund step (same conflicting-both rule) and stamps expiresAt. After that instant, the release step fails; dispute remains allowed. Optional proof_note (max 400) lands on the submit job and later receipt. Optional release_note / dispute_reason (max 400) land on the terminal receipt and job. Runs create → fund → submit → release or dispute. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody.",
     "create_job": "Committed demo walk. Assigns as_ + 10 hex. Stable when Idempotency-Key is sent. Optional client_ref and callback_url are independent of that id.",
     "terminals": ["release", "dispute"],
     "default_terminal": "release",
     "requests": [
       {
         "body": ["title", "amount", "criteria", "payer_credits", "proof_url"],
-        "optional": ["terminal", "client_ref", "callback_url", "proof_note", "release_note", "dispute_reason", "idempotency_key"]
+        "optional": ["terminal", "client_ref", "callback_url", "expires_at", "ttl_seconds", "proof_note", "release_note", "dispute_reason", "idempotency_key"]
       }
     ]
   },
@@ -389,7 +389,8 @@
       "from": "open",
       "to": "funded",
       "requires": ["job", "payer_credits >= amount"],
-      "effect": "Deducts amount from payer credits and holds it in escrow."
+      "optional": ["expires_at", "ttl_seconds"],
+      "effect": "Deducts amount from payer credits and holds it in escrow. Optional expires_at (ISO-8601 UTC) or ttl_seconds (positive integer) stamps expiresAt. If both are sent, Liberty rejects as conflicting. Missing expiry keeps today’s behavior (no expiry)."
     },
     {
       "id": "submit",
@@ -405,7 +406,7 @@
       "to": "released",
       "requires": ["job"],
       "optional": ["release_note"],
-      "effect": "Computes fee, agent_payout, and agent_credits_delta. Optional release_note (max 400) lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. Terminal."
+      "effect": "Computes fee, agent_payout, and agent_credits_delta. Optional release_note (max 400) lands on the job and receipt. Escrow is not returned to the payer. Client may credit an agent wallet by the delta. If the job has expiresAt and now is after that instant, release fails (hold_expired). Dispute remains allowed. Terminal."
     },
     {
       "id": "dispute",
@@ -413,7 +414,7 @@
       "to": "disputed",
       "requires": ["job"],
       "optional": ["dispute_reason"],
-      "effect": "Returns the full amount to the payer. Optional dispute_reason (max 400) lands on the job and receipt. fee=0, agent_payout=0, agent_credits_delta=0. Terminal."
+      "effect": "Returns the full amount to the payer. Optional dispute_reason (max 400) lands on the job and receipt. fee=0, agent_payout=0, agent_credits_delta=0. Allowed after expiresAt (refund path for a stuck hold). Terminal."
     }
   ],
   "job": {
@@ -434,6 +435,7 @@
     "funded_at": { "type": ["string", "null"], "format": "date-time" },
     "submitted_at": { "type": ["string", "null"], "format": "date-time" },
     "resolved_at": { "type": ["string", "null"], "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time", "optional": true, "when": "fund", "aliases": ["expiresAt"], "note": "Optional escrow hold expiry. Job field is expiresAt. Set on fund from expires_at (ISO-8601 UTC) or ttl_seconds (positive integer). If both are sent, Liberty rejects as conflicting. After this instant, release fails; dispute remains allowed. Missing expiry keeps today’s behavior." },
     "fee": { "type": "integer", "unit": "credits", "zero_until": "release" },
     "agent_payout": { "type": "integer", "unit": "credits", "zero_until": "release" },
     "release_note": { "type": "string", "maxLength": 400, "optional": true, "when": "release" },
@@ -559,7 +561,7 @@
     "POST /api/v0/simulate runs create → fund → submit → release|dispute in one request through that same engine. Create assigns a real as_… id. Optional Idempotency-Key makes that create id stable for retries. Client holds the result. Liberty does not persist.",
     "Send the current job on fund, submit, release, and dispute. Clients hold state. Liberty returns the next state and fee math.",
     "Optional demo API key: send Authorization: Bearer <key> or X-Liberty-Key. If present, response/receipt include key_id (hash prefix only). If omitted, the engine notes key_optional and still works. Not production auth.",
-    "Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries. Same key plus same title/amount/criteria = same as_ + 10 hex. Optional client_ref and optional callback_url (notify_url alias) are separate adapter stamps on the job and receipt; they do not change the derived id. Liberty never HTTP-fetches callback_url. Liberty does not store or replay responses. No persistence. No SSRF. No real money.",
+    "Optional Idempotency-Key (or body idempotency_key) makes create ids stable for retries. Same key plus same title/amount/criteria = same as_ + 10 hex. Optional client_ref and optional callback_url (notify_url alias) are separate adapter stamps on the job and receipt; they do not change the derived id. Liberty never HTTP-fetches callback_url. Optional expires_at (ISO-8601 UTC) or ttl_seconds (positive integer) on fund stamps expiresAt. If both are sent, Liberty rejects as conflicting. After expiresAt, release fails; dispute remains allowed. Liberty does not store or replay responses. No persistence. No SSRF. No real money.",
     "The human UI persists { credits, jobs } in localStorage under liberty.agent-settlement.v0, and the agent wallet under liberty.agent-settlement.agent-credits.v0. It quotes fund / release / dispute on /api/v0/quote, then POSTs the five actions to /api/v0/transition. A successful release credits the agent wallet by agent_credits_delta. Dispute does not. Run a full demo settlement POSTs /api/v0/simulate. Terminal receipts are stored separately under liberty.agent-settlement.receipts.v0 for JSON / NDJSON export. /#ledger sums those stored receipts (fees, agent payouts, disputed returns) and can download CSV. /#activity appends local demo actions (create/fund/submit/release/dispute, simulate, verify, demo pack import/export/reset) under liberty.agent-settlement.activity.v0. Clear activity does not wipe wallets, jobs, or receipts. A demo pack on /#demo-pack exports or replaces those keys as one client-held JSON file. Import does not merge. Reset demo on that section clears the known Settlement keys after confirm. Liberty never receives the pack or the activity log.",
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Payer credits, agent credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot.",
     "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Payer credits, agent credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",
