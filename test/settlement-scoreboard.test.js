@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 22);
+  assert.equal(listings.length, 25);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -119,6 +119,9 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.ok(listingUrls.includes("https://veii.ai/profile/liberty-settle"));
   assert.ok(listingUrls.includes("https://robauto.ai/agenthub/marketplace"));
   assert.ok(listingUrls.includes("https://agentsignet.com/lookup?sid=SID-0x9325e6395c8fe8e2"));
+  assert.ok(listingUrls.includes("https://registry.asabove.tech/agents/liberty-agent-settlement"));
+  assert.ok(listingUrls.includes("https://onlyflies.buzz/clawswarm/agents/agent_522e47f22d4a9fc8"));
+  assert.ok(listingUrls.includes("https://vivioo.io/showcase/liberty-agent-settlement"));
   const agentlair = listings.find((entry) => entry.directory === "AgentLair");
   assert.match(agentlair.note, /x402/i);
   const agrenting = listings.find((entry) => entry.directory === "Agrenting");
@@ -164,16 +167,31 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(signet.note, /composite_score=300/);
   assert.match(signet.note, /provisional platform default/i);
   assert.match(signet.note, /not liberty traction/i);
+  const acp = listings.find((entry) => entry.directory === "ACP Registry");
+  assert.match(acp.note, /registry\.asabove\.tech\/v1\/agents\/liberty-agent-settlement/);
+  assert.match(acp.note, /#integrate/i);
+  assert.match(acp.note, /validate/i);
+  const clawswarm = listings.find((entry) => entry.directory === "ClawSwarm");
+  assert.match(clawswarm.note, /clawswarm\/api\/v1\/agents\/agent_522e47f22d4a9fc8/);
+  assert.match(clawswarm.note, /reputation=100/);
+  assert.match(clawswarm.note, /new-agent default/i);
+  assert.match(clawswarm.note, /not liberty traction/i);
+  assert.match(clawswarm.note, /tasksCompleted=0/);
+  const vivioo = listings.find((entry) => entry.directory === "Vivioo");
+  assert.match(vivioo.note, /trustScore=5/);
+  assert.match(vivioo.note, /self-reported/i);
+  assert.match(vivioo.note, /badges are not users/i);
+  assert.match(vivioo.note, /zero external users/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket/i.test(
         url,
       ),
     ),
