@@ -12,6 +12,9 @@ const ORIGIN = "https://liberty-amber.vercel.app";
 const SITEMAP_PATHS = [
   "/",
   "/.well-known/agent.json",
+  "/.well-known/agents.json",
+  "/api/agents.json",
+  "/.well-known/security.txt",
   "/api/health.json",
   "/api/settlement.json",
   "/api/fees.json",
@@ -30,6 +33,8 @@ const SITEMAP_PATHS = [
   "/api/templates.json",
   "/SETTLEMENT.md",
   "/llms.txt",
+  "/llms-full.txt",
+  "/security.txt",
   "/settlement.openapi.json",
   "/openapi.json",
   "/api/openapi.json",

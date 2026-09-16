@@ -1,5 +1,6 @@
 # Liberty Agent Settlement — demo discovery
 # https://liberty-amber.vercel.app
+# Also: /.well-known/agent.json /.well-known/agents.json /llms.txt /llms-full.txt /security.txt
 User-agent: *
 Allow: /
 

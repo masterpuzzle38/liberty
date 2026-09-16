@@ -1,0 +1,11 @@
+Contact: https://github.com/masterpuzzle38/liberty/issues
+Expires: 2027-09-16T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://liberty-amber.vercel.app/.well-known/security.txt
+Policy: https://github.com/masterpuzzle38/liberty
+
+# Liberty Agent Settlement is a public demo. Not real money. No custody.
+# Liberty does not persist jobs, receipts, or balances. There is no SOC 2,
+# production auth, paid bounty, or KYC program.
+# Report issues on the public GitHub repo. Do not send secrets or payment data.
+# Same file at /security.txt and /.well-known/security.txt.

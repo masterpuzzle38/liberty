@@ -119,6 +119,9 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     "examples",
     "templates",
     "agent",
+    "agents",
+    "llms_full",
+    "security",
     "openapi",
     "transition_schema",
     "quote_schema",
@@ -135,6 +138,10 @@ test("tools JSON stays demo-only and lists callable Settlement surfaces", () => 
     assert.equal(typeof row.purpose, "string");
   }
   assert.equal(TOOLS.discovery.find((row) => row.id === "agent").alias, "/.well-known/agent.json");
+  assert.equal(TOOLS.discovery.find((row) => row.id === "agents").path, "/.well-known/agents.json");
+  assert.equal(TOOLS.discovery.find((row) => row.id === "agents").alias, "/api/agents.json");
+  assert.equal(TOOLS.discovery.find((row) => row.id === "llms_full").path, "/llms-full.txt");
+  assert.equal(TOOLS.discovery.find((row) => row.id === "security").path, "/.well-known/security.txt");
   assert.equal(TOOLS.discovery.find((row) => row.id === "openapi").path, "/settlement.openapi.json");
   assert.deepEqual(TOOLS.discovery.find((row) => row.id === "openapi").aliases, [
     "/openapi.json",

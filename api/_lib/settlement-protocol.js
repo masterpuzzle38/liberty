@@ -5,6 +5,7 @@ const SETTLEMENT = require("./settlement.json");
 const EXAMPLES = require("./examples.json");
 const TEMPLATES = require("./templates.json");
 const AGENT = require("./agent.json");
+const AGENTS = require("./agents.json");
 const CHANGELOG = require("./changelog.json");
 const SCOREBOARD = require("./scoreboard.json");
 const FEES = require("./fees.json");
@@ -60,6 +61,7 @@ module.exports = {
   EXAMPLES,
   TEMPLATES,
   AGENT,
+  AGENTS,
   CHANGELOG,
   SCOREBOARD,
   FEES,

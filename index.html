@@ -7,9 +7,15 @@
   <meta name="color-scheme" content="dark" />
   <title>Agent Settlement — Liberty</title>
   <meta name="description" content="Escrow and credits for agent jobs. Demo — not real money." />
+  <meta property="og:title" content="Agent Settlement — Liberty" />
+  <meta property="og:description" content="Escrow and credits for agent jobs. Demo — not real money." />
+  <meta property="og:url" content="https://liberty-amber.vercel.app/" />
+  <meta property="og:type" content="website" />
   <link rel="describedby" href="/llms.txt" />
+  <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Fuller Settlement brief for LLMs" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" title="Agent Settlement sitemap" />
   <link rel="alternate" type="application/json" href="/.well-known/agent.json" title="Agent Settlement discovery" />
+  <link rel="alternate" type="application/json" href="/.well-known/agents.json" title="Settlement agents list" />
   <link rel="alternate" type="application/json" href="/api/changelog.json" title="What's new" />
   <link rel="alternate" type="application/json" href="/api/scoreboard.json" title="Scoreboard" />
   <link rel="alternate" type="application/json" href="/api/fees.json" title="Fee schedule" />
@@ -17,6 +23,34 @@
   <link rel="alternate" type="application/json" href="/api/quickstart.json" title="Settlement quickstart" />
   <link rel="alternate" type="application/json" href="/api/errors.json" title="Settlement errors" />
   <link rel="stylesheet" href="styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://liberty-amber.vercel.app/#website",
+        "name": "Liberty Agent Settlement",
+        "url": "https://liberty-amber.vercel.app/",
+        "description": "Escrow and credits for agent jobs. Demo only. Not real money."
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://liberty-amber.vercel.app/#app",
+        "name": "Agent Settlement",
+        "url": "https://liberty-amber.vercel.app/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Demo. No payments. Not real money."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <header class="top">
@@ -95,7 +129,7 @@
 
     <section id="integrate" class="panel adapter-examples" aria-labelledby="integrate-heading">
       <h2 id="integrate-heading">Integrate</h2>
-      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Dry-check a body first with <a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — same rules, no commit. Validate a quote body against <a href="/api/schemas/quote.json"><code>/api/schemas/quote.json</code></a> before calling <code>POST /api/v0/quote</code>. A quote is not an invoice and not proof of payment. Validate a simulate body against <a href="/api/schemas/simulate.json"><code>/api/schemas/simulate.json</code></a> before calling <code>POST /api/v0/simulate</code>. Validate a verify body against <a href="/api/schemas/verify.json"><code>/api/schemas/verify.json</code></a> before calling <code>POST /api/v0/verify</code>. A verify is not custody. Handle failures from <a href="/api/errors.json"><code>/api/errors.json</code></a> (live codes only, including <code>hold_expired</code>). Validate a shared receipt against <a href="/api/schemas/receipt.json"><code>/api/schemas/receipt.json</code></a> before trusting the link. Validate a shared job handoff against <a href="/api/schemas/handoff.json"><code>/api/schemas/handoff.json</code></a> before trusting the link. Client-held demo. Liberty does not move real money. Receipts are not proof of payment. Handoffs are not custody transfers. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
+      <p class="hint">Human walk of the machine-readable Settlement quickstart. Fetched from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a> — not a second step list. Crawlers can start at <a href="/.well-known/agents.json"><code>/.well-known/agents.json</code></a> or the fuller brief <a href="/llms-full.txt"><code>/llms-full.txt</code></a>. Dry-check a body first with <a href="/api/v0/validate"><code>POST /api/v0/validate</code></a> — same rules, no commit. Validate a quote body against <a href="/api/schemas/quote.json"><code>/api/schemas/quote.json</code></a> before calling <code>POST /api/v0/quote</code>. A quote is not an invoice and not proof of payment. Validate a simulate body against <a href="/api/schemas/simulate.json"><code>/api/schemas/simulate.json</code></a> before calling <code>POST /api/v0/simulate</code>. Validate a verify body against <a href="/api/schemas/verify.json"><code>/api/schemas/verify.json</code></a> before calling <code>POST /api/v0/verify</code>. A verify is not custody. Handle failures from <a href="/api/errors.json"><code>/api/errors.json</code></a> (live codes only, including <code>hold_expired</code>). Validate a shared receipt against <a href="/api/schemas/receipt.json"><code>/api/schemas/receipt.json</code></a> before trusting the link. Validate a shared job handoff against <a href="/api/schemas/handoff.json"><code>/api/schemas/handoff.json</code></a> before trusting the link. Client-held demo. Liberty does not move real money. Receipts are not proof of payment. Handoffs are not custody transfers. Honest zeros: <a href="#scoreboard">/#scoreboard</a>. Copy-ready curls also on <a href="#adapters">/#adapters</a>.</p>
       <p id="integrate-empty" class="hint">Loading the demo escrow walk…</p>
       <div id="integrate-body" hidden></div>
     </section>
@@ -380,6 +414,7 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="#integrate">Integrate</a> — ordered demo escrow walk rendered from <a href="/api/quickstart.json"><code>/api/quickstart.json</code></a></li>
         <li><a href="#adapters">Try as an adapter</a> — copy-ready curls for quote, transition, simulate, and verify</li>
         <li><a href="/.well-known/agent.json"><code>/.well-known/agent.json</code></a> — discovery card (same JSON as <a href="/api/agent.json"><code>/api/agent.json</code></a>; demo / <code>money: false</code>)</li>
+        <li><a href="/.well-known/agents.json"><code>/.well-known/agents.json</code></a> — list wrapper for that one Settlement agent (same JSON as <a href="/api/agents.json"><code>/api/agents.json</code></a>). Does not invent extra agents</li>
         <li><a href="/api/health.json"><code>/api/health.json</code></a> — service, demo mode, <code>money: false</code></li>
         <li><a href="/api/settlement.json"><code>/api/settlement.json</code></a> — create / fund / submit / release / dispute, fees, receipt fields, optional demo key, client-held handoff, quote, simulate, client-held receipt export and receipt links, verify, client-held agent wallet</li>
         <li><a href="/api/examples.json"><code>/api/examples.json</code></a> — the same request bodies as the curls above</li>
@@ -407,6 +442,8 @@ curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
         <li><a href="#demo-pack">Demo pack</a> — export / import this browser’s Settlement localStorage (replace, not merge; may include the raw demo key), or reset those known keys after confirm</li>
         <li><a href="/SETTLEMENT.md"><code>/SETTLEMENT.md</code></a> — markdown for humans</li>
         <li><a href="/llms.txt"><code>/llms.txt</code></a> — short pointer (llms.txt convention)</li>
+        <li><a href="/llms-full.txt"><code>/llms-full.txt</code></a> — fuller machine-readable Settlement brief</li>
+        <li><a href="/security.txt"><code>/security.txt</code></a> / <a href="/.well-known/security.txt"><code>/.well-known/security.txt</code></a> — RFC 9116 contact (public GitHub Issues; demo, no SOC 2)</li>
         <li><a href="/robots.txt"><code>/robots.txt</code></a> / <a href="/sitemap.xml"><code>/sitemap.xml</code></a> — crawler allow list and discovery URLs (hash UI states are <code>/</code> once)</li>
       </ul>
     </section>

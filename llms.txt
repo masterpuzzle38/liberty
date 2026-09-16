@@ -9,6 +9,7 @@ Human demo: https://liberty-amber.vercel.app
 ## Protocol
 
 - [Discovery](/.well-known/agent.json): machine-readable card (`mode: demo`, `money: false`). Same JSON as `/api/agent.json`. Not an A2A Agent Card. Not a ChatGPT plugin
+- [Agents](/.well-known/agents.json): list wrapper for the one Settlement agent (same JSON at `/api/agents.json`). Does not invent extra agents
 - [Health](/api/health.json): service, demo mode, `money: false`
 - [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export, shareable receipt links, verify, client-held agent wallet
 - [Examples](/api/examples.json): copy-ready request bodies for quote, transition, simulate, and verify (same curls as `/#adapters`)
@@ -34,7 +35,9 @@ Human demo: https://liberty-amber.vercel.app
 - [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
 - [robots.txt](/robots.txt): crawler allow list
 - [sitemap.xml](/sitemap.xml): same discovery URLs (hash UI states are `/` once)
+- [security.txt](/security.txt): RFC 9116 contact (same file at `/.well-known/security.txt`)
 
 ## Optional
 
+- [Full brief](/llms-full.txt): Settlement rails, endpoints, schemas, and honest zeros in one file
 - [GitHub](https://github.com/masterpuzzle38/liberty): source
