@@ -160,7 +160,7 @@
       "path": "/api/v0/verify",
       "url": "https://liberty-amber.vercel.app/api/v0/verify",
       "title": "Verify a receipt",
-      "note": "Stateless. Recomputes fee / agent_payout / returned_to_payer. A wrong fee is 200 with valid:false. Liberty does not store the receipt.",
+      "note": "Stateless. Validate against GET /api/schemas/verify.json. Recomputes fee / agent_payout / returned_to_payer. A wrong fee is 200 with valid:false. A verify is not custody. Liberty does not store the receipt.",
       "body": {
         "receipt": {
           "job_id": "as_0123456789",

@@ -15,6 +15,7 @@ const QUOTE_SCHEMA = require("./quote.schema.json");
 const RECEIPT_SCHEMA = require("./receipt.schema.json");
 const HANDOFF_SCHEMA = require("./handoff.schema.json");
 const SIMULATE_SCHEMA = require("./simulate.schema.json");
+const VERIFY_SCHEMA = require("./verify.schema.json");
 const ERRORS = require("./errors.json");
 
 function protocolHeaders() {
@@ -69,6 +70,7 @@ module.exports = {
   RECEIPT_SCHEMA,
   HANDOFF_SCHEMA,
   SIMULATE_SCHEMA,
+  VERIFY_SCHEMA,
   ERRORS,
   protocolHeaders,
   serveProtocol,

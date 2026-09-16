@@ -12,6 +12,12 @@
   "note": "Newest first. Demo only. money is always false. Entries are shipped slices, not traction. No user counts or revenue claims.",
   "entries": [
     {
+      "date": "2026-09-16",
+      "id": "verify-schema",
+      "title": "JSON Schema for verify request bodies",
+      "href": "/api/schemas/verify.json"
+    },
+    {
       "date": "2026-09-15",
       "id": "scoreboard-wave-16",
       "title": "Scoreboard curated listings + wave 16",
@@ -76,12 +82,6 @@
       "id": "scoreboard-wave-11",
       "title": "Scoreboard curated listings + wave 11",
       "href": "/#scoreboard"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "hold-expiry",
-      "title": "Optional escrow hold expiry",
-      "href": "/SETTLEMENT.md"
     }
   ]
 }

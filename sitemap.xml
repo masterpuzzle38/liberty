@@ -31,6 +31,9 @@
     <loc>https://liberty-amber.vercel.app/api/schemas/simulate.json</loc>
   </url>
   <url>
+    <loc>https://liberty-amber.vercel.app/api/schemas/verify.json</loc>
+  </url>
+  <url>
     <loc>https://liberty-amber.vercel.app/api/schemas/receipt.json</loc>
   </url>
   <url>
