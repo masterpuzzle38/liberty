@@ -365,7 +365,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(clawtrust.note, /free POST \/api\/agent-register/i);
   assert.match(clawtrust.note, /without caller wallet/i);
   assert.match(clawtrust.note, /circle wallet/i);
-  assert.match(clawtrust.note, /not liberty money/i);
+  assert.match(clawtrust.note, /≠ liberty money/i);
   assert.match(clawtrust.note, /bio=null/);
   assert.match(clawtrust.note, /fusedScore=0/);
   assert.match(clawtrust.note, /totalGigsCompleted=0/);
