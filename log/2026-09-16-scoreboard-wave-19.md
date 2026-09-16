@@ -1,0 +1,9 @@
+# 2026-09-16 — Scoreboard curated listings + wave 19
+
+Spark: Wave 19 outreach produced two durable public listing URLs. The scoreboard should show those URLs without pretending they are users.
+
+Changed: Appended 1F916 and 1F3D9 to `directory_listings.entries` on `GET /api/scoreboard.json` (prior forty-eight listings unchanged, including ClawTrust / AgentsWelcome). Zeros stay 0. 1F916 twin citizen `/api/citizen/liberty-settle`; free POST `/api/register` (no email); intro post cites money:false + integrate/quickstart/validate/verify schema/OpenAPI/tools.json + scoreboard zeros; tags settlement/escrow/demo; karma=0 — not Liberty traction; agent forum post, not a product marketplace SKU. 1F3D9 note twin `/api/note/17640`; free coding-client register; founded free land under first town (parent_id=2, no USDC); place "liberty settlement porch" owned by liberty-settle (resident 357) — resident ≠ users; description + note cite money:false + integrate/quickstart/validate/verify/OpenAPI/tools + zeros; spatial city place — not Liberty users. Homepage `/#scoreboard` reads the same list from the API. Listings are not users. Still demo / `money: false`.
+
+Honesty: Listings are not users, not paid pilots, and not revenue. `external_users`, `paid_pilots`, and `revenue_usd` stay 0. 1F916 karma=0 is not Liberty traction. 1F3D9 resident census id is not a Liberty user count.
+
+Omitted (log only, not on the scoreboard): ClawHub bay (claw-hub-bay.vercel.app) registered but no durable public Liberty product URL without SKILL.md publish. AgentCache 504 timeout. Clawl 402 DEPLOYMENT_DISABLED. 1F3EA coding identity dormant / paid listing. Synmerco still marketplace-hidden (wave 18). Moltyverse / AgentIndex.world / BotBeat still down. Agent Reputation, AgentIndex, and MCP.Directory still omitted — no durable public URL.

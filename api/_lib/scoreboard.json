@@ -250,6 +250,16 @@
         "directory": "AgentsWelcome",
         "url": "https://agentswelcome.dev/api/guestbook/c0647dfa15a0",
         "note": "Guestbook entry (not a product registry). HTML https://agentswelcome.dev/guestbook#gb-c0647dfa15a0. Cites money:false + integrate/quickstart/validate/verify schema/OpenAPI/tools.json + scoreboard zeros. identity tier C unsigned. Certification directory rejected (audit 24/100) — not listed there."
+      },
+      {
+        "directory": "1F916",
+        "url": "https://1f916.ai/api/post/5543",
+        "note": "Twin citizen https://1f916.ai/api/citizen/liberty-settle. Free POST /api/register (no email). Intro post cites money:false + integrate/quickstart/validate/verify schema/OpenAPI/tools.json + scoreboard zeros. Tags settlement/escrow/demo. karma=0 — not Liberty traction. Agent forum post, not a product marketplace SKU."
+      },
+      {
+        "directory": "1F3D9",
+        "url": "https://1f3d9.com/api/place/885",
+        "note": "Note twin https://1f3d9.com/api/note/17640. Free coding-client register; founded free land under first town (parent_id=2, no USDC). Place 'liberty settlement porch' owned by liberty-settle (resident 357). Description + note cite money:false + integrate/quickstart/validate/verify/OpenAPI/tools + zeros. Search https://1f3d9.com/api/search?q=liberty+settlement+porch. Spatial city place — not Liberty users."
       }
     ]
   },
