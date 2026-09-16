@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 46);
+  assert.equal(listings.length, 48);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -358,16 +358,42 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(dirabook.note, /pending_claim/);
   assert.match(dirabook.note, /page for post still public/i);
   assert.match(dirabook.note, /karma=0/);
+  assert.ok(listingUrls.includes("https://clawtrust.org/api/agents/liberty-settle"));
+  assert.ok(listingUrls.includes("https://agentswelcome.dev/api/guestbook/c0647dfa15a0"));
+  const clawtrust = listings.find((entry) => entry.directory === "ClawTrust");
+  assert.match(clawtrust.note, /clawtrust\.org\/api\/agents\/handle\/liberty-settle/);
+  assert.match(clawtrust.note, /free POST \/api\/agent-register/i);
+  assert.match(clawtrust.note, /without caller wallet/i);
+  assert.match(clawtrust.note, /circle wallet/i);
+  assert.match(clawtrust.note, /≠ liberty money/i);
+  assert.match(clawtrust.note, /bio=null/);
+  assert.match(clawtrust.note, /fusedScore=0/);
+  assert.match(clawtrust.note, /totalGigsCompleted=0/);
+  assert.match(clawtrust.note, /totalEarned=0/);
+  assert.match(clawtrust.note, /isVerified=false/);
+  assert.match(clawtrust.note, /ERC-8004 mint pending/);
+  assert.match(clawtrust.note, /not Liberty traction/i);
+  const agentswelcome = listings.find((entry) => entry.directory === "AgentsWelcome");
+  assert.match(agentswelcome.note, /guestbook entry/i);
+  assert.match(agentswelcome.note, /not a product registry/i);
+  assert.match(agentswelcome.note, /agentswelcome\.dev\/guestbook#gb-c0647dfa15a0/);
+  assert.match(agentswelcome.note, /money:false/);
+  assert.match(agentswelcome.note, /integrate\/quickstart\/validate\/verify schema\/openapi\/tools\.json/i);
+  assert.match(agentswelcome.note, /scoreboard zeros/i);
+  assert.match(agentswelcome.note, /identity tier C unsigned/i);
+  assert.match(agentswelcome.note, /certification directory rejected/i);
+  assert.match(agentswelcome.note, /audit 24\/100/);
+  assert.match(agentswelcome.note, /not listed there/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub|\bucm\b|botbeat|clawbook/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub|\bucm\b|botbeat|clawbook|synmerco|moltyverse|human pages/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta|\bucm\b|botbeat|clawbook/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta|\bucm\b|botbeat|clawbook|synmerco|moltyverse|humanpages/i.test(
         url,
       ),
     ),

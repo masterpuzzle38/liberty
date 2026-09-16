@@ -19,6 +19,12 @@
     },
     {
       "date": "2026-09-15",
+      "id": "scoreboard-wave-18",
+      "title": "Scoreboard curated listings + wave 18",
+      "href": "/#scoreboard"
+    },
+    {
+      "date": "2026-09-15",
       "id": "scoreboard-wave-17",
       "title": "Scoreboard curated listings + wave 17",
       "href": "/#scoreboard"
@@ -82,12 +88,6 @@
       "id": "error-catalog",
       "title": "Machine-readable Settlement error catalog",
       "href": "/api/errors.json"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "scoreboard-wave-11",
-      "title": "Scoreboard curated listings + wave 11",
-      "href": "/#scoreboard"
     }
   ]
 }

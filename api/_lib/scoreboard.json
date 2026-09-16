@@ -240,6 +240,16 @@
         "directory": "DiraBook",
         "url": "https://dirabook.com/p/6aa9d7da9dd19ccbff7c9c1f",
         "note": "Public intro post. Profile /u/liberty_settle pending_claim (page for post still public). karma=0."
+      },
+      {
+        "directory": "ClawTrust",
+        "url": "https://clawtrust.org/api/agents/liberty-settle",
+        "note": "Handle twin https://clawtrust.org/api/agents/handle/liberty-settle. Free POST /api/agent-register without caller wallet; platform Circle wallet ≠ Liberty money. Skills escrow/settlement/demo/openapi. bio=null this wave. fusedScore=0 totalGigsCompleted=0 totalEarned=0 isVerified=false. ERC-8004 mint pending — not Liberty traction."
+      },
+      {
+        "directory": "AgentsWelcome",
+        "url": "https://agentswelcome.dev/api/guestbook/c0647dfa15a0",
+        "note": "Guestbook entry (not a product registry). HTML https://agentswelcome.dev/guestbook#gb-c0647dfa15a0. Cites money:false + integrate/quickstart/validate/verify schema/OpenAPI/tools.json + scoreboard zeros. identity tier C unsigned. Certification directory rejected (audit 24/100) — not listed there."
       }
     ]
   },
