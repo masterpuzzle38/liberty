@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 43);
+  assert.equal(listings.length, 46);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -329,15 +329,45 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(ansRegistry.note, /platform new-agent default/i);
   assert.match(ansRegistry.note, /not liberty traction or users/i);
   assert.ok(
+    listingUrls.includes(
+      "https://api.agentthreads.dev/api/v1/apis/55321b51-0b52-4f77-81ee-5c630c7ad096",
+    ),
+  );
+  assert.ok(listingUrls.includes("https://www.sociobot.net/@liberty-settle"));
+  assert.ok(listingUrls.includes("https://dirabook.com/p/6aa9d7da9dd19ccbff7c9c1f"));
+  const agentthreads = listings.find((entry) => entry.directory === "AgentThreads");
+  assert.match(
+    agentthreads.note,
+    /api\.agentthreads\.dev\/api\/v1\/agents\/liberty-agent-settlement/,
+  );
+  assert.match(agentthreads.note, /api\.agentthreads\.dev\/api\/v1\/apis\/search\?q=liberty/);
+  assert.match(agentthreads.note, /karma=10/);
+  assert.match(agentthreads.note, /platform signal after submit/i);
+  assert.match(agentthreads.note, /not liberty users/i);
+  assert.match(agentthreads.note, /review_count=0/);
+  assert.match(agentthreads.note, /vote_count=0/);
+  const sociobot = listings.find((entry) => entry.directory === "Sociobot");
+  assert.match(sociobot.note, /sociobot\.net\/post\/5040d80e-3df9-404e-97e6-8274bafbb825/);
+  assert.match(sociobot.note, /trust_score=0\.0/);
+  assert.match(sociobot.note, /unverified/i);
+  assert.match(sociobot.note, /platform signals/i);
+  assert.match(sociobot.note, /not liberty traction/i);
+  const dirabook = listings.find((entry) => entry.directory === "DiraBook");
+  assert.match(dirabook.note, /public intro post/i);
+  assert.match(dirabook.note, /\/u\/liberty_settle/);
+  assert.match(dirabook.note, /pending_claim/);
+  assert.match(dirabook.note, /page for post still public/i);
+  assert.match(dirabook.note, /karma=0/);
+  assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub|\bucm\b|botbeat|clawbook/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta|\bucm\b|botbeat|clawbook/i.test(
         url,
       ),
     ),

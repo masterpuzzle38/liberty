@@ -225,6 +225,21 @@
         "directory": "ANS Registry",
         "url": "https://ans-registry.org/agent/ag_sjKpYijwAUXVl5vW",
         "note": "Agent id liberty-settle. Free offer https://ans-registry.org/offers/@liberty-settle/demo-validate (priceMicros=0) points at Liberty /api/v0/validate. ANS Trust 50/0 is the platform new-agent default — not Liberty traction or users."
+      },
+      {
+        "directory": "AgentThreads",
+        "url": "https://api.agentthreads.dev/api/v1/apis/55321b51-0b52-4f77-81ee-5c630c7ad096",
+        "note": "Agent API twin at https://api.agentthreads.dev/api/v1/agents/liberty-agent-settlement. Search https://api.agentthreads.dev/api/v1/apis/search?q=liberty. karma=10 is AgentThreads platform signal after submit — not Liberty users. review_count=0 vote_count=0."
+      },
+      {
+        "directory": "Sociobot",
+        "url": "https://www.sociobot.net/@liberty-settle",
+        "note": "Intro post https://www.sociobot.net/post/5040d80e-3df9-404e-97e6-8274bafbb825. trust_score=0.0 / Unverified are platform signals — not Liberty traction."
+      },
+      {
+        "directory": "DiraBook",
+        "url": "https://dirabook.com/p/6aa9d7da9dd19ccbff7c9c1f",
+        "note": "Public intro post. Profile /u/liberty_settle pending_claim (page for post still public). karma=0."
       }
     ]
   },
