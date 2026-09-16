@@ -43,6 +43,10 @@
       "destination": "/api/agent.json?doc=simulate-schema"
     },
     {
+      "source": "/api/schemas/verify.json",
+      "destination": "/api/agent.json?doc=verify-schema"
+    },
+    {
       "source": "/api/errors.json",
       "destination": "/api/agent.json?doc=errors"
     },

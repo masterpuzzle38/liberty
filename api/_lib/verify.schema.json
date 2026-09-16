@@ -1,0 +1,336 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liberty-amber.vercel.app/api/schemas/verify.json",
+  "title": "Liberty Agent Settlement verify request",
+  "description": "JSON Schema for POST /api/v0/verify request bodies. Recompute fee math for a terminal receipt or a proposed release/dispute. Same fee engine as POST /api/v0/quote and POST /api/v0/transition. A verify is not custody. Liberty does not persist receipts, take custody, or move real money. money is always false. Demo only.",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/ReceiptRequest" },
+    { "$ref": "#/$defs/BareReceiptRequest" },
+    { "$ref": "#/$defs/JobRequest" },
+    { "$ref": "#/$defs/BareJobRequest" }
+  ],
+  "$defs": {
+    "JobId": {
+      "type": "string",
+      "pattern": "^as_[0-9a-f]{10}$",
+      "description": "Job id assigned at create. as_ plus 10 hex characters."
+    },
+    "KeyId": {
+      "type": "string",
+      "pattern": "^k_[0-9a-f]{12}$",
+      "description": "Present when a demo key header was sent. SHA-256 hex prefix. Never the raw key."
+    },
+    "Title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "Amount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Job amount in integer demo credits. Not real money."
+    },
+    "Credits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Integer demo credits. Not real money. Not proof of payment. Not custody."
+    },
+    "Criteria": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Success criteria. Same text as the job."
+    },
+    "Proof": {
+      "type": "string",
+      "description": "Proof URL or text. May be empty. Terminal receipts usually have a string."
+    },
+    "Created": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Created stamp from the job. Live receipts use ISO-8601 UTC."
+    },
+    "Stamp": {
+      "type": ["string", "null"],
+      "description": "Funded, submitted, or resolved stamp. Null if that step has no time. Live values use ISO-8601 UTC or null."
+    },
+    "ExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional escrow hold expiry on a client-held job. After this instant, a release verify fails; dispute remains allowed."
+    },
+    "ClientRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Adapter/correlation id stamped on create. Empty or whitespace-only is rejected. clientRef is an alias."
+    },
+    "CallbackUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^https://",
+      "description": "Adapter-owned https URL stamped on create. Liberty never HTTP-fetches or calls it. notify_url / notifyUrl / callbackUrl are aliases."
+    },
+    "Note": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Optional note. Whitespace-only is ignored. Max 400 after trim. proof_note is read on a receipt or job."
+    },
+    "Action": {
+      "type": "string",
+      "enum": ["release", "dispute"],
+      "description": "Required on a submitted job. Optional on a terminal job — omitted action is inferred from status (released → release, disputed → dispute). Other values are rejected. No camelCase alias."
+    },
+    "JobStatus": {
+      "type": "string",
+      "enum": ["open", "funded", "submitted", "released", "disputed"],
+      "description": "Known settlement state. Verify accepts submitted plus action, or a terminal job. open and funded return 409."
+    },
+    "ReceiptStatus": {
+      "type": "string",
+      "enum": ["released", "disputed"],
+      "description": "Terminal only. Verify rejects open, funded, and submitted on a receipt."
+    },
+    "Receipt": {
+      "type": "object",
+      "description": "Terminal receipt the live verify handler reads. Canonical snake_case matches export and GET /api/schemas/receipt.json. camelCase and a few aliases are accepted. Compact short keys (j, t, s, …) are encoding-only inside an r1. token — expand them before POST /api/v0/verify.",
+      "required": ["title", "amount", "status"],
+      "allOf": [
+        {
+          "anyOf": [
+            { "required": ["job_id"] },
+            { "required": ["jobId"] },
+            { "required": ["id"] }
+          ]
+        },
+        {
+          "anyOf": [
+            { "required": ["success_criteria"] },
+            { "required": ["successCriteria"] },
+            { "required": ["criteria"] }
+          ]
+        },
+        {
+          "anyOf": [
+            { "required": ["created"] },
+            { "required": ["createdAt"] },
+            { "required": ["created_at"] }
+          ]
+        },
+        {
+          "anyOf": [
+            { "required": ["release_fee"] },
+            { "required": ["releaseFee"] },
+            { "required": ["fee"] }
+          ]
+        },
+        {
+          "anyOf": [
+            { "required": ["agent_payout"] },
+            { "required": ["agentPayout"] }
+          ]
+        }
+      ],
+      "properties": {
+        "job_id": { "$ref": "#/$defs/JobId" },
+        "jobId": { "$ref": "#/$defs/JobId" },
+        "id": { "$ref": "#/$defs/JobId" },
+        "title": { "$ref": "#/$defs/Title" },
+        "status": { "$ref": "#/$defs/ReceiptStatus" },
+        "amount": { "$ref": "#/$defs/Amount" },
+        "release_fee": { "$ref": "#/$defs/Credits" },
+        "releaseFee": { "$ref": "#/$defs/Credits" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" },
+        "returnedToPayer": { "$ref": "#/$defs/Credits" },
+        "success_criteria": { "$ref": "#/$defs/Criteria" },
+        "successCriteria": { "$ref": "#/$defs/Criteria" },
+        "criteria": { "$ref": "#/$defs/Criteria" },
+        "proof": { "$ref": "#/$defs/Proof" },
+        "proofUrl": { "$ref": "#/$defs/Proof" },
+        "proof_url": { "$ref": "#/$defs/Proof" },
+        "created": { "$ref": "#/$defs/Created" },
+        "createdAt": { "$ref": "#/$defs/Created" },
+        "created_at": { "$ref": "#/$defs/Created" },
+        "funded": { "$ref": "#/$defs/Stamp" },
+        "fundedAt": { "$ref": "#/$defs/Stamp" },
+        "funded_at": { "$ref": "#/$defs/Stamp" },
+        "submitted": { "$ref": "#/$defs/Stamp" },
+        "submittedAt": { "$ref": "#/$defs/Stamp" },
+        "submitted_at": { "$ref": "#/$defs/Stamp" },
+        "resolved": { "$ref": "#/$defs/Stamp" },
+        "resolvedAt": { "$ref": "#/$defs/Stamp" },
+        "resolved_at": { "$ref": "#/$defs/Stamp" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "proofNote": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "Job": {
+      "type": "object",
+      "description": "Client-held job for a proposed release/dispute or a terminal recompute. Liberty does not look jobs up. camelCase matches the UI and OpenAPI Job schema; snake_case aliases are accepted.",
+      "required": ["id", "title", "amount", "criteria", "status"],
+      "anyOf": [
+        { "required": ["createdAt"] },
+        { "required": ["created_at"] }
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/JobId" },
+        "title": { "$ref": "#/$defs/Title" },
+        "amount": { "$ref": "#/$defs/Amount" },
+        "criteria": { "$ref": "#/$defs/Criteria" },
+        "status": { "$ref": "#/$defs/JobStatus" },
+        "proofUrl": { "$ref": "#/$defs/Proof" },
+        "proof_url": { "$ref": "#/$defs/Proof" },
+        "createdAt": { "$ref": "#/$defs/Created" },
+        "created_at": { "$ref": "#/$defs/Created" },
+        "fundedAt": { "$ref": "#/$defs/Stamp" },
+        "funded_at": { "$ref": "#/$defs/Stamp" },
+        "submittedAt": { "$ref": "#/$defs/Stamp" },
+        "submitted_at": { "$ref": "#/$defs/Stamp" },
+        "resolvedAt": { "$ref": "#/$defs/Stamp" },
+        "resolved_at": { "$ref": "#/$defs/Stamp" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "release_fee": { "$ref": "#/$defs/Credits" },
+        "releaseFee": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" },
+        "returnedToPayer": { "$ref": "#/$defs/Credits" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "proof_note": { "$ref": "#/$defs/Note" }
+      }
+    },
+    "ReceiptRequest": {
+      "type": "object",
+      "description": "Wrapped receipt. Canonical body in examples and tools.json. A verify is not custody.",
+      "required": ["receipt"],
+      "properties": {
+        "receipt": { "$ref": "#/$defs/Receipt" }
+      }
+    },
+    "BareReceiptRequest": {
+      "type": "object",
+      "description": "Top-level receipt. Detected when job_id or jobId is a string. Same fields as Receipt.",
+      "required": ["title", "amount", "status"],
+      "allOf": [
+        {
+          "anyOf": [
+            { "required": ["job_id"] },
+            { "required": ["jobId"] }
+          ]
+        },
+        { "$ref": "#/$defs/Receipt" }
+      ]
+    },
+    "JobRequest": {
+      "type": "object",
+      "description": "Wrapped job. Send a terminal job, or a submitted job plus action release or dispute. Optional claimed fee / agent_payout / returned_to_payer (camelCase and release_fee aliases accepted). A verify is not custody.",
+      "required": ["job"],
+      "properties": {
+        "job": { "$ref": "#/$defs/Job" },
+        "action": { "$ref": "#/$defs/Action" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "release_fee": { "$ref": "#/$defs/Credits" },
+        "releaseFee": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" },
+        "returnedToPayer": { "$ref": "#/$defs/Credits" }
+      }
+    },
+    "BareJobRequest": {
+      "type": "object",
+      "description": "Top-level job. Detected when id and status are strings and the body is not a receipt (no job_id / jobId). Same job fields plus optional action and claimed money.",
+      "required": ["id", "title", "amount", "criteria", "status"],
+      "anyOf": [
+        { "required": ["createdAt"] },
+        { "required": ["created_at"] }
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/JobId" },
+        "title": { "$ref": "#/$defs/Title" },
+        "amount": { "$ref": "#/$defs/Amount" },
+        "criteria": { "$ref": "#/$defs/Criteria" },
+        "status": { "$ref": "#/$defs/JobStatus" },
+        "proofUrl": { "$ref": "#/$defs/Proof" },
+        "proof_url": { "$ref": "#/$defs/Proof" },
+        "createdAt": { "$ref": "#/$defs/Created" },
+        "created_at": { "$ref": "#/$defs/Created" },
+        "fundedAt": { "$ref": "#/$defs/Stamp" },
+        "funded_at": { "$ref": "#/$defs/Stamp" },
+        "submittedAt": { "$ref": "#/$defs/Stamp" },
+        "submitted_at": { "$ref": "#/$defs/Stamp" },
+        "resolvedAt": { "$ref": "#/$defs/Stamp" },
+        "resolved_at": { "$ref": "#/$defs/Stamp" },
+        "expiresAt": { "$ref": "#/$defs/ExpiresAt" },
+        "expires_at": { "$ref": "#/$defs/ExpiresAt" },
+        "clientRef": { "$ref": "#/$defs/ClientRef" },
+        "client_ref": { "$ref": "#/$defs/ClientRef" },
+        "callbackUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "callback_url": { "$ref": "#/$defs/CallbackUrl" },
+        "notifyUrl": { "$ref": "#/$defs/CallbackUrl" },
+        "notify_url": { "$ref": "#/$defs/CallbackUrl" },
+        "proofNote": { "$ref": "#/$defs/Note" },
+        "proof_note": { "$ref": "#/$defs/Note" },
+        "action": { "$ref": "#/$defs/Action" },
+        "fee": { "$ref": "#/$defs/Credits" },
+        "release_fee": { "$ref": "#/$defs/Credits" },
+        "releaseFee": { "$ref": "#/$defs/Credits" },
+        "agentPayout": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" },
+        "returnedToPayer": { "$ref": "#/$defs/Credits" }
+      }
+    },
+    "VerifyMoney": {
+      "type": "object",
+      "properties": {
+        "fee": { "$ref": "#/$defs/Credits" },
+        "agent_payout": { "$ref": "#/$defs/Credits" },
+        "returned_to_payer": { "$ref": "#/$defs/Credits" }
+      }
+    },
+    "VerifySuccess": {
+      "type": "object",
+      "description": "200 body from POST /api/v0/verify. money is always false. verified is true when the check ran. valid is true when claimed money matches the engine. A wrong fee is still 200 with valid: false. Does not persist receipts. A verify is not custody. Not proof of payment.",
+      "required": ["ok", "mode", "money", "valid", "verified", "expected", "received", "mismatches"],
+      "properties": {
+        "ok": { "const": true },
+        "mode": { "const": "demo" },
+        "money": { "const": false },
+        "valid": { "type": "boolean" },
+        "verified": { "const": true },
+        "expected": { "$ref": "#/$defs/VerifyMoney" },
+        "received": { "$ref": "#/$defs/VerifyMoney" },
+        "mismatches": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "action": { "$ref": "#/$defs/Action" },
+        "job_id": { "$ref": "#/$defs/JobId" },
+        "key_id": { "$ref": "#/$defs/KeyId" },
+        "key_optional": {
+          "type": "boolean",
+          "description": "True when no demo key header was sent."
+        }
+      }
+    }
+  }
+}

@@ -977,7 +977,7 @@ function discovery(kind) {
     dry_run: quote || verifyMode || validateMode,
     actions: verifyMode ? VERIFY_ACTIONS : ACTIONS,
     note: verifyMode
-      ? "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
+      ? "Stateless receipt / settlement verify. Validate the body against GET /api/schemas/verify.json. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Liberty recomputes expected money fields and lists mismatches. Does not store receipts. A verify is not custody. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
       : simulateMode
         ? "One-shot demo lifecycle. Validate the body against GET /api/schemas/simulate.json. Runs create → fund → submit → release|dispute through the same engine as POST /api/v0/transition. Create assigns a real as_… id. Optional Idempotency-Key (or body idempotency_key) makes that create id stable for retries; Liberty does not replay stored responses. Returns ordered steps, final job, payer_credits, agent_credits_delta, and the terminal receipt. Does not persist jobs or receipts. Not live escrow custody. Optional demo API key identifies the adapter; omit it and the route still works (key_optional). Not production auth."
         : validateMode
@@ -1001,7 +1001,7 @@ function discovery(kind) {
     protocol: "/api/settlement.json",
     discovery: "/.well-known/agent.json",
     schema: verifyMode
-      ? "/api/schemas/receipt.json"
+      ? "/api/schemas/verify.json"
       : quote
         ? "/api/schemas/quote.json"
         : simulateMode

@@ -4,7 +4,7 @@
   "mode": "demo",
   "money": false,
   "title": "Agent Settlement",
-  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). GET /api/tools.json lists callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/schemas/transition.json is the JSON Schema for POST /api/v0/transition bodies. GET /api/schemas/quote.json is the JSON Schema for POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. GET /api/schemas/simulate.json is the JSON Schema for POST /api/v0/simulate bodies (one-shot create → fund → submit → release|dispute). Client-held demo; Liberty does not move real money. GET /api/schemas/receipt.json is the JSON Schema for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment. GET /api/schemas/handoff.json is the JSON Schema for shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers. GET /api/errors.json lists the live error codes the engine returns (schema vs state, including hold_expired). Client-held demo; Liberty does not move real money. GET /settlement.openapi.json is the OpenAPI 3.1 document (same JSON at /openapi.json and /api/openapi.json). GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/validate dry-checks that same request shape without applying or persisting. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
+  "description": "Escrow and credits for agent jobs. This file describes the demo protocol. GET /.well-known/agent.json (same JSON as GET /api/agent.json) is the small discovery card for crawlers and other agents. GET /api/quickstart.json is the ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). GET /api/tools.json lists callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server. GET /api/schemas/transition.json is the JSON Schema for POST /api/v0/transition bodies. GET /api/schemas/quote.json is the JSON Schema for POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. GET /api/schemas/simulate.json is the JSON Schema for POST /api/v0/simulate bodies (one-shot create → fund → submit → release|dispute). Client-held demo; Liberty does not move real money. GET /api/schemas/verify.json is the JSON Schema for POST /api/v0/verify bodies (receipt, terminal job, or submitted job plus release/dispute). Demo only. money is always false. A verify is not custody. GET /api/schemas/receipt.json is the JSON Schema for shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment. GET /api/schemas/handoff.json is the JSON Schema for shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers. GET /api/errors.json lists the live error codes the engine returns (schema vs state, including hold_expired). Client-held demo; Liberty does not move real money. GET /settlement.openapi.json is the OpenAPI 3.1 document (same JSON at /openapi.json and /api/openapi.json). GET /api/changelog.json lists recent shipped slices (newest first; no user counts or revenue). GET /api/scoreboard.json reports honest zeros (external users, paid pilots, revenue). GET /api/fees.json is the machine-readable demo fee schedule (same math as fee_schedule below). POST /api/v0/validate dry-checks that same request shape without applying or persisting. POST /api/v0/quote dry-runs the same engine as POST /api/v0/transition: next status and fee math, no state change. Transition commits one action. POST /api/v0/simulate runs create → fund → submit → release|dispute in one request. POST /api/v0/verify recomputes fee math for a client-held receipt or proposed release/dispute. Release also returns agent_credits_delta so a client-held agent wallet can be credited. GET /api/examples.json for copy-ready request bodies (same curls as /#adapters). GET /api/templates.json for preset create-job fields (same buttons as /#create; fill only, no auto-create or fund). None persist jobs, receipts, or balances, take custody, or move real money.",
   "human_path": {
     "ui": "/",
     "storage": "localStorage",
@@ -44,6 +44,7 @@
     "transition_schema": "/api/schemas/transition.json",
     "quote_schema": "/api/schemas/quote.json",
     "simulate_schema": "/api/schemas/simulate.json",
+    "verify_schema": "/api/schemas/verify.json",
     "receipt_schema": "/api/schemas/receipt.json",
     "handoff_schema": "/api/schemas/handoff.json",
     "errors": "/api/errors.json",
@@ -343,8 +344,8 @@
     "money": false,
     "mode": "demo",
     "engine": "/api/v0/transition",
-    "schema": "/api/schemas/receipt.json",
-    "note": "Stateless receipt / settlement verify. Same fee engine as quote/transition. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Response includes valid, verified, expected, received, and mismatches. Validate the receipt object against GET /api/schemas/receipt.json. Receipts are not proof of payment. Does not store receipts. Not live escrow custody.",
+    "schema": "/api/schemas/verify.json",
+    "note": "Stateless receipt / settlement verify. Same fee engine as quote/transition. Validate the body against GET /api/schemas/verify.json before calling. Send a terminal receipt, or a job (terminal, or submitted plus release/dispute) and optional claimed fee / agent_payout / returned_to_payer. Response includes valid, verified, expected, received, and mismatches. The receipt object itself is also described by GET /api/schemas/receipt.json. Receipts are not proof of payment. A verify is not custody. Does not store receipts. Not live escrow custody.",
     "requests": [
       {
         "body": ["receipt"]
@@ -530,6 +531,16 @@
     "validates": "POST /api/v0/simulate",
     "note": "JSON Schema for simulate request bodies (one-shot create → fund → submit → release|dispute). Client-held demo protocol; Liberty does not move real money. Same engine as POST /api/v0/transition. Create assigns a real as_… id."
   },
+  "verify_schema": {
+    "path": "/api/schemas/verify.json",
+    "money": false,
+    "mode": "demo",
+    "persistence": false,
+    "origin": "https://liberty-amber.vercel.app",
+    "draft": "2020-12",
+    "validates": "POST /api/v0/verify",
+    "note": "JSON Schema for verify request bodies (receipt, terminal job, or submitted job plus release/dispute). Demo only. money is always false. A verify is not custody. Liberty does not persist receipts or move real money."
+  },
   "receipt_schema": {
     "path": "/api/schemas/receipt.json",
     "money": false,
@@ -609,6 +620,7 @@
     "GET /api/schemas/transition.json for the JSON Schema (2020-12) of POST /api/v0/transition bodies. Client-held demo protocol; Liberty does not move real money.",
     "GET /api/schemas/quote.json for the JSON Schema (2020-12) of POST /api/v0/quote bodies (create / fund / submit / release / dispute). Dry-run only. A quote is not an invoice and not proof of payment. Client-held demo; Liberty does not move real money.",
     "GET /api/schemas/simulate.json for the JSON Schema (2020-12) of POST /api/v0/simulate bodies (one-shot create → fund → submit → release|dispute). Client-held demo protocol; Liberty does not move real money.",
+    "GET /api/schemas/verify.json for the JSON Schema (2020-12) of POST /api/v0/verify bodies (receipt, terminal job, or submitted job plus release/dispute). Demo only. money is always false. A verify is not custody.",
     "GET /api/schemas/receipt.json for the JSON Schema (2020-12) of shareable terminal receipts (#receipt/r1.… / verify). Client-held demo; Liberty does not move real money. Receipts are not proof of payment.",
     "GET /api/schemas/handoff.json for the JSON Schema (2020-12) of shareable job handoffs (#handoff/h1.…). Client-held demo; Liberty does not move real money. Handoffs are not custody transfers.",
     "GET /api/errors.json for the live error codes the engine returns (schema vs state, including hold_expired and conflicting expires_at / ttl_seconds). Client-held demo. Liberty does not move real money.",
@@ -629,7 +641,7 @@
     "Share a job across browsers with a client-held handoff link (#handoff/h1.… or ?handoff=). The token is base64url JSON of the current job. Payer credits, agent credits, the demo API key, and the receipts list are not in the payload. Liberty does not persist the snapshot. Validate the decoded payload against GET /api/schemas/handoff.json. Handoffs are not custody transfers.",
     "Share a terminal receipt with a client-held receipt link (#receipt/r1.… or ?receipt=). The token is base64url JSON of the receipt. Opening the link loads it into Verify. Payer credits, agent credits, jobs, and the demo API key are not in the payload. Liberty does not persist the receipt.",
     "Receipt export is client-held. POST /api/v0/transition and POST /api/v0/simulate return receipt on release or dispute. The human UI downloads that object as JSON or copies a receipt link. There is no receipt GET and no server ledger.",
-    "POST /api/v0/verify recomputes fee / agent_payout / returned_to_payer with the same engine as quote/transition. Send a receipt or a job (terminal, or submitted plus action). A mismatch is 200 with valid:false. Liberty does not store the receipt.",
+    "POST /api/v0/verify recomputes fee / agent_payout / returned_to_payer with the same engine as quote/transition. Validate the body against GET /api/schemas/verify.json before calling. Send a receipt or a job (terminal, or submitted plus action). A mismatch is 200 with valid:false. A verify is not custody. Liberty does not store the receipt.",
     "Release and simulate return agent_credits_delta (same integer as agent_payout on release; 0 on dispute). The human UI credits liberty.agent-settlement.agent-credits.v0 by that delta. Liberty does not store the agent wallet. Not a server ledger.",
     "Credits are simulated. money is always false. Do not claim live volume or user counts from this surface."
   ]

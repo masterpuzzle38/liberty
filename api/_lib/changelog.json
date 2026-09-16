@@ -12,6 +12,12 @@
   "note": "Newest first. Demo only. money is always false. Entries are shipped slices, not traction. No user counts or revenue claims.",
   "entries": [
     {
+      "date": "2026-09-16",
+      "id": "verify-schema",
+      "title": "JSON Schema for verify request bodies",
+      "href": "/api/schemas/verify.json"
+    },
+    {
       "date": "2026-09-15",
       "id": "scoreboard-wave-17",
       "title": "Scoreboard curated listings + wave 17",

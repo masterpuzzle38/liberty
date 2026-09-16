@@ -86,6 +86,13 @@
       "purpose": "JSON Schema (2020-12) for POST /api/v0/simulate bodies (one-shot create → fund → submit → release|dispute). Client-held demo protocol; Liberty does not move real money."
     },
     {
+      "id": "verify_schema",
+      "method": "GET",
+      "path": "/api/schemas/verify.json",
+      "url": "https://liberty-amber.vercel.app/api/schemas/verify.json",
+      "purpose": "JSON Schema (2020-12) for POST /api/v0/verify bodies (receipt, terminal job, or submitted job plus release/dispute). Demo only. money is always false. A verify is not custody."
+    },
+    {
       "id": "receipt_schema",
       "method": "GET",
       "path": "/api/schemas/receipt.json",
