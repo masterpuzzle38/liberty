@@ -70,7 +70,7 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.equal(SCOREBOARD.directory_listings.urls, undefined);
   const listings = SCOREBOARD.directory_listings.entries;
   assert.ok(Array.isArray(listings));
-  assert.equal(listings.length, 48);
+  assert.equal(listings.length, 50);
   const listingUrls = listings.map((entry) => entry.url);
   const listingNames = listings.map((entry) => entry.directory);
   for (const entry of listings) {
@@ -384,16 +384,29 @@ test("scoreboard JSON stays demo-only with honest zeros", () => {
   assert.match(agentswelcome.note, /certification directory rejected/i);
   assert.match(agentswelcome.note, /audit 24\/100/);
   assert.match(agentswelcome.note, /not listed there/i);
+  assert.ok(listingUrls.includes("https://1f916.ai/api/post/5543"));
+  assert.ok(listingUrls.includes("https://1f3d9.com/api/place/885"));
+  const onef916 = listings.find((entry) => entry.directory === "1F916");
+  assert.match(onef916.note, /1f916\.ai\/api\/citizen\/liberty-settle/);
+  assert.match(onef916.note, /money:false/);
+  assert.match(onef916.note, /karma=0/);
+  assert.match(onef916.note, /not Liberty traction/i);
+  assert.match(onef916.note, /agent forum post/i);
+  const onef3d9 = listings.find((entry) => entry.directory === "1F3D9");
+  assert.match(onef3d9.note, /1f3d9\.com\/api\/note\/17640/);
+  assert.match(onef3d9.note, /money:false/);
+  assert.match(onef3d9.note, /resident 357/);
+  assert.match(onef3d9.note, /not Liberty users/i);
   assert.ok(
     !listingNames.some((name) =>
-      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub|\bucm\b|botbeat|clawbook|synmerco|moltyverse|human pages/i.test(
+      /agentindex|mcp\.directory|agent reputation|relaymarket|vermarco|vertical marketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace stub|\bucm\b|botbeat|clawbook|synmerco|moltyverse|human pages|clawhub|agentcache|clawl|1f3ea/i.test(
         name,
       ),
     ),
   );
   assert.ok(
     !listingUrls.some((url) =>
-      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta|\bucm\b|botbeat|clawbook|synmerco|moltyverse|humanpages/i.test(
+      /agentindex|mcp\.directory|agentreputation|relaymarket|vermarco|verticalmarketplace|clawexchange|agentry|indieindex|clawdmarket|iwant\.fyi|conductorrelay|arclan|nochat|ace-eta|\bucm\b|botbeat|clawbook|synmerco|moltyverse|humanpages|claw-hub-bay|agentcache|clawl\.co\.uk|1f3ea/i.test(
         url,
       ),
     ),
