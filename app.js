@@ -59,6 +59,7 @@
     simulateDemo: document.getElementById("simulate-demo"),
     simulateDispute: document.getElementById("simulate-dispute"),
     simulateNote: document.getElementById("simulate-note"),
+    simulateHold: document.getElementById("simulate-hold-expiry"),
     simulateResult: document.getElementById("simulate-result"),
     whatsNewList: document.getElementById("whats-new-list"),
     whatsNewEmpty: document.getElementById("whats-new-empty"),
@@ -88,6 +89,7 @@
   const packApi = window.LibertyDemoPack;
   const ledgerApi = window.LibertySettlementLedger;
   const activityApi = window.LibertySettlementActivity;
+  const holdExpiryApi = window.LibertyHoldExpiry;
 
   function emptyState() {
     return { credits: 0, jobs: [] };
@@ -675,14 +677,20 @@
     return postEngine(SIMULATE_URL, payload, "Simulate failed.");
   }
 
+  function holdExpiryLine(job) {
+    if (!job || !job.expiresAt) return "";
+    return ` Hold expires ${job.expiresAt}. After that instant, release fails; dispute still refunds.`;
+  }
+
   function simulateImpactLine(data) {
     const job = data.job || {};
     const receipt = data.receipt || {};
+    const expiry = holdExpiryLine(job);
     if (job.status === "disputed") {
-      return `Disputed ${job.id}. Returned to payer ${receipt.returned_to_payer}. Fee 0. Agent wallet unchanged. Payer credits: ${data.payer_credits}.`;
+      return `Disputed ${job.id}. Returned to payer ${receipt.returned_to_payer}. Fee 0. Agent wallet unchanged. Payer credits: ${data.payer_credits}.${expiry}`;
     }
     const delta = Number.isInteger(data.agent_credits_delta) ? data.agent_credits_delta : receipt.agent_payout;
-    return `Released ${job.id}. Fee ${receipt.release_fee}. Agent payout ${receipt.agent_payout}. Agent wallet +${delta}. Payer credits: ${data.payer_credits}.`;
+    return `Released ${job.id}. Fee ${receipt.release_fee}. Agent payout ${receipt.agent_payout}. Agent wallet +${delta}. Payer credits: ${data.payer_credits}.${expiry}`;
   }
 
   function renderSimulateResult(data) {
@@ -707,10 +715,20 @@
       `Full walk: ${path}. Receipt saved in this browser. Copy a receipt link to inspect or verify on another device. Liberty did not store the job.`;
   }
 
+  function readHoldExpiry(root, prefix) {
+    if (!holdExpiryApi) return { ok: true, fields: {} };
+    return holdExpiryApi.readFromRoot(root, prefix);
+  }
+
   async function runSimulate(terminal) {
     const amount = SIMULATE_DEFAULTS.amount;
     const starting = state.credits < amount ? state.credits + amount : state.credits;
     const note = els.simulateNote ? els.simulateNote.value.trim() : "";
+    const expiry = readHoldExpiry(els.simulateHold, "simulate-hold");
+    if (!expiry.ok) {
+      renderSimulateResult(null);
+      return flash(expiry.message || "Hold expiry is not valid.", true);
+    }
     const data = await postSimulate({
       title: SIMULATE_DEFAULTS.title,
       amount,
@@ -719,6 +737,7 @@
       proof_url: SIMULATE_DEFAULTS.proof_url,
       proof_note: SIMULATE_DEFAULTS.proof_note,
       terminal,
+      ...expiry.fields,
       ...(note
         ? (terminal === "dispute" ? { dispute_reason: note } : { release_note: note })
         : {}),
@@ -731,7 +750,9 @@
     recordActivity("simulate", {
       job: data.job,
       receipt: data.receipt,
-      detail: data.terminal || (data.job && data.job.status) || "release",
+      detail: holdExpiryApi && holdExpiryApi.withExpiryDetail
+        ? holdExpiryApi.withExpiryDetail(data.job, data.terminal || (data.job && data.job.status) || "release")
+        : (data.terminal || (data.job && data.job.status) || "release"),
     });
     renderSimulateResult(data);
     flash(
@@ -772,8 +793,10 @@
     }
   }
 
-  function moneyActionPayload(action, job, note) {
-    if (action === "fund") return { action, job, payer_credits: state.credits };
+  function moneyActionPayload(action, job, note, extras) {
+    if (action === "fund") {
+      return { action, job, payer_credits: state.credits, ...(extras || {}) };
+    }
     if (action === "submit") return { action, job };
     if (action === "release") {
       const payload = { action, job };
@@ -795,7 +818,7 @@
 
   function quoteImpactLine(action, data) {
     if (action === "fund") {
-      return `Hold ${data.job.amount} credits. Fee 0. Payer credits after: ${data.payer_credits_after}.`;
+      return `Hold ${data.job.amount} credits. Fee 0. Payer credits after: ${data.payer_credits_after}.${holdExpiryLine(data.job)}`;
     }
     if (action === "release") {
       const delta = Number.isInteger(data.agent_credits_delta) ? data.agent_credits_delta : data.agent_payout;
@@ -836,18 +859,24 @@
   async function requestQuote(action, id) {
     const job = findJob(id);
     if (!job) return;
-    const data = await postQuote(moneyActionPayload(action, job));
+    let extras = {};
+    if (action === "fund") {
+      const expiry = readHoldExpiry(els.detail, "fund-hold");
+      if (!expiry.ok) return flash(expiry.message || "Hold expiry is not valid.", true);
+      extras = expiry.fields || {};
+    }
+    const data = await postQuote(moneyActionPayload(action, job, undefined, extras));
     if (!data) return;
-    pendingQuote = { jobId: id, action, data };
+    pendingQuote = { jobId: id, action, data, extras };
     render();
   }
 
   async function confirmQuotedAction() {
     if (!pendingQuote) return;
-    const { action, jobId } = pendingQuote;
+    const { action, jobId, extras } = pendingQuote;
     const note = readTerminalNote();
     pendingQuote = null;
-    if (action === "fund") return fundJob(jobId);
+    if (action === "fund") return fundJob(jobId, extras);
     if (action === "release") return releaseJob(jobId, note);
     if (action === "dispute") return disputeJob(jobId, note);
   }
@@ -886,18 +915,26 @@
     return true;
   }
 
-  async function fundJob(id) {
+  async function fundJob(id, extras) {
     const job = findJob(id);
     if (!job) return;
     const data = await postTransition({
       action: "fund",
       job,
       payer_credits: state.credits,
+      ...(extras || {}),
     });
     if (!data) return;
     applyResult(data);
-    recordActivity("fund", data);
-    flash(`${data.job.amount} credits held in escrow for ${data.job.id}.`);
+    recordActivity("fund", {
+      ...data,
+      detail: holdExpiryApi && holdExpiryApi.withExpiryDetail
+        ? holdExpiryApi.withExpiryDetail(data.job)
+        : undefined,
+    });
+    flash(data.job.expiresAt
+      ? `${data.job.amount} credits held in escrow for ${data.job.id} until ${data.job.expiresAt}. After that instant, release fails; dispute still refunds. Demo — not real money.`
+      : `${data.job.amount} credits held in escrow for ${data.job.id}.`);
     render();
   }
 
@@ -959,7 +996,14 @@
       if (job.id === current) button.setAttribute("aria-current", "true");
       button.innerHTML = `<span class="job-item-title"></span><span class="job-item-meta"></span>`;
       button.querySelector(".job-item-title").textContent = job.title;
-      button.querySelector(".job-item-meta").textContent = `${job.id} · ${job.amount} cr · ${job.status}`;
+      const bits = [`${job.id}`, `${job.amount} cr`, job.status];
+      if (job.expiresAt) {
+        const expired = holdExpiryApi && holdExpiryApi.holdExpired
+          ? holdExpiryApi.holdExpired(job)
+          : Date.parse(job.expiresAt) < Date.now();
+        bits.push(expired ? `hold expired ${formatWhen(job.expiresAt)}` : `hold expires ${formatWhen(job.expiresAt)}`);
+      }
+      button.querySelector(".job-item-meta").textContent = bits.join(" · ");
       item.appendChild(button);
       els.jobList.appendChild(item);
     }
@@ -1002,8 +1046,10 @@
       actions.push(quotePreviewHtml(pendingQuote));
     } else if (job.status === "open") {
       const canFund = state.credits >= job.amount;
+      if (holdExpiryApi && holdExpiryApi.formHtml) {
+        actions.push(holdExpiryApi.formHtml("fund-hold"));
+      }
       actions.push(`<button type="button" data-action="fund" ${canFund ? "" : "disabled"}>${canFund ? `Fund ${job.amount} credits` : "Need more credits to fund"}</button>`);
-      actions.push(`<p class="hint">Adapters can stamp optional <code>expires_at</code> or <code>ttl_seconds</code> on fund. After that instant, release fails; dispute still refunds. This demo fund button does not send an expiry.</p>`);
     } else if (job.status === "funded") {
       actions.push(`
         <form id="proof-form" class="stack-form">
@@ -1019,6 +1065,14 @@
         </form>
       `);
     } else if (job.status === "submitted") {
+      if (job.expiresAt) {
+        const expired = holdExpiryApi && holdExpiryApi.holdExpired
+          ? holdExpiryApi.holdExpired(job)
+          : Date.parse(job.expiresAt) < Date.now();
+        actions.push(`<p class="hint">${expired
+          ? `Hold expired ${escapeHtml(formatWhen(job.expiresAt))}. Release will fail; dispute still refunds. Demo — not real money.`
+          : `Hold expires ${escapeHtml(formatWhen(job.expiresAt))}. After that instant, release fails; dispute still refunds. Demo — not real money.`}</p>`);
+      }
       actions.push(`
         <div class="action-row">
           <button type="button" data-action="release">Release (5% fee)</button>
@@ -1156,6 +1210,10 @@
         const noteInput = document.getElementById("proof-note");
         submitProof(job.id, input ? input.value : "", noteInput ? noteInput.value.trim() : "");
       });
+    }
+
+    if (holdExpiryApi && holdExpiryApi.bindAutoMode && job.status === "open") {
+      holdExpiryApi.bindAutoMode(els.detail, "fund-hold");
     }
   }
 
@@ -2069,6 +2127,11 @@
         els.integrateBody.hidden = true;
       }
     }
+  }
+
+  if (holdExpiryApi && els.simulateHold) {
+    if (holdExpiryApi.formHtml) els.simulateHold.innerHTML = holdExpiryApi.formHtml("simulate-hold");
+    if (holdExpiryApi.bindAutoMode) holdExpiryApi.bindAutoMode(els.simulateHold, "simulate-hold");
   }
 
   if (!consumeReceiptFromLocation()) consumeHandoffFromLocation();

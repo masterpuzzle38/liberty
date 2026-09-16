@@ -373,13 +373,15 @@ h1 {
 
 input,
 textarea,
+select,
 button {
   font: inherit;
   color: var(--ink);
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--line);
@@ -389,12 +391,49 @@ textarea {
 
 textarea { resize: vertical; min-height: 4.5rem; }
 
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+}
+
 input:focus,
 textarea:focus,
+select:focus,
 button:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+.hold-expiry {
+  margin: 0;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.hold-expiry legend {
+  padding: 0 0.25rem;
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.hold-expiry .hint { margin: 0; }
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.choice input { margin: 0; }
+
+.hold-expiry-ttl { align-items: flex-end; }
 
 button {
   border: 0;
