@@ -277,7 +277,10 @@ test("discovery, protocol, and docs point at the receipt schema", () => {
     SCHEMA_ID,
   );
   assert.match(openapi.components.schemas.Receipt.description, /schemas\/receipt\.json/);
-  assert.equal(openapi.components.schemas.VerifyDiscovery.properties.schema.const, SCHEMA_PATH);
+  assert.equal(
+    openapi.components.schemas.VerifyDiscovery.properties.schema.const,
+    "/api/schemas/verify.json",
+  );
 
   const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
   assert.ok(
@@ -303,5 +306,5 @@ test("discovery, protocol, and docs point at the receipt schema", () => {
 
   const verifyDiscovery = handleHttp({ method: "GET", body: null, verify: true });
   assert.equal(verifyDiscovery.status, 200);
-  assert.equal(verifyDiscovery.body.schema, SCHEMA_PATH);
+  assert.equal(verifyDiscovery.body.schema, "/api/schemas/verify.json");
 });

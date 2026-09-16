@@ -155,8 +155,8 @@ test("verify JSON Schema stays aligned with the live request shape", () => {
   assert.equal(def("CallbackUrl").maxLength, 512);
   assert.equal(def("CallbackUrl").pattern, "^https://");
   assert.equal(def("Credits").minimum, 0);
-  assert.equal(receipt.properties.amount.minimum, 1);
-  assert.equal(receipt.properties.title.maxLength, 80);
+  assert.equal(def("Amount").minimum, 1);
+  assert.equal(def("Title").maxLength, 80);
 
   const success = def("VerifySuccess");
   assert.deepEqual(success.required, [
