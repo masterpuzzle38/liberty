@@ -538,6 +538,7 @@
     els.flash.hidden = false;
     els.flash.textContent = message;
     els.flash.classList.toggle("error", Boolean(isError));
+    if (isError) els.flash.scrollIntoView({ block: "nearest" });
   }
 
   function parseCredits(value) {
@@ -869,6 +870,7 @@
     if (!data) return;
     pendingQuote = { jobId: id, action, data, extras };
     render();
+    els.detail?.querySelector(".quote-preview")?.scrollIntoView({ block: "nearest" });
   }
 
   async function confirmQuotedAction() {
@@ -1046,10 +1048,15 @@
       actions.push(quotePreviewHtml(pendingQuote));
     } else if (job.status === "open") {
       const canFund = state.credits >= job.amount;
-      if (holdExpiryApi && holdExpiryApi.formHtml) {
-        actions.push(holdExpiryApi.formHtml("fund-hold"));
-      }
-      actions.push(`<button type="button" data-action="fund" ${canFund ? "" : "disabled"}>${canFund ? `Fund ${job.amount} credits` : "Need more credits to fund"}</button>`);
+      const expiryFields = holdExpiryApi && holdExpiryApi.formHtml
+        ? holdExpiryApi.formHtml("fund-hold")
+        : "";
+      actions.push(`
+        <form id="fund-form" class="stack-form">
+          ${expiryFields}
+          <button type="submit" ${canFund ? "" : "disabled"}>${canFund ? `Fund ${job.amount} credits` : "Need more credits to fund"}</button>
+        </form>
+      `);
     } else if (job.status === "funded") {
       actions.push(`
         <form id="proof-form" class="stack-form">
@@ -1209,6 +1216,14 @@
         const input = document.getElementById("proof-url");
         const noteInput = document.getElementById("proof-note");
         submitProof(job.id, input ? input.value : "", noteInput ? noteInput.value.trim() : "");
+      });
+    }
+
+    const fundForm = els.detail.querySelector("#fund-form");
+    if (fundForm) {
+      fundForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        requestQuote("fund", job.id);
       });
     }
 

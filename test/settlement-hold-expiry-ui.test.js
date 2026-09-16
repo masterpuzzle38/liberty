@@ -146,6 +146,7 @@ test("human UI wires optional hold expiry into fund and simulate", () => {
   assert.ok(app.includes("expiry.fields"));
   assert.ok(app.includes("simulate-hold"));
   assert.ok(app.includes("fund-hold"));
+  assert.ok(app.includes("fund-form"));
   assert.ok(app.includes("withExpiryDetail"));
   assert.ok(!app.includes("This demo fund button does not send an expiry."));
 
