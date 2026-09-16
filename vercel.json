@@ -7,6 +7,18 @@
       "destination": "/api/agent.json"
     },
     {
+      "source": "/.well-known/agents.json",
+      "destination": "/api/agent.json?doc=agents"
+    },
+    {
+      "source": "/api/agents.json",
+      "destination": "/api/agent.json?doc=agents"
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "destination": "/security.txt"
+    },
+    {
       "source": "/api/tools.json",
       "destination": "/api/agent.json?doc=tools"
     },
@@ -64,6 +76,34 @@
       ]
     },
     {
+      "source": "/.well-known/agents.json",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/api/agents.json",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/security.txt",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
       "source": "/api/(.*).json",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
@@ -93,6 +133,13 @@
     },
     {
       "source": "/llms.txt",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/llms-full.txt",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Cache-Control", "value": "public, max-age=300" }

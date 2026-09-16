@@ -13,6 +13,12 @@
   "entries": [
     {
       "date": "2026-09-16",
+      "id": "agent-readiness",
+      "title": "Agent-readiness discovery pack",
+      "href": "/.well-known/agents.json"
+    },
+    {
+      "date": "2026-09-16",
       "id": "hold-expiry-ui",
       "title": "Human UI for escrow hold expiry on fund",
       "href": "/#jobs"
@@ -76,12 +82,6 @@
       "id": "scoreboard-wave-13",
       "title": "Scoreboard curated listings + wave 13",
       "href": "/#scoreboard"
-    },
-    {
-      "date": "2026-09-15",
-      "id": "receipt-schema",
-      "title": "JSON Schema for shareable receipts",
-      "href": "/api/schemas/receipt.json"
     }
   ]
 }

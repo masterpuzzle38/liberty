@@ -7,6 +7,15 @@
     <loc>https://liberty-amber.vercel.app/.well-known/agent.json</loc>
   </url>
   <url>
+    <loc>https://liberty-amber.vercel.app/.well-known/agents.json</loc>
+  </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/api/agents.json</loc>
+  </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/.well-known/security.txt</loc>
+  </url>
+  <url>
     <loc>https://liberty-amber.vercel.app/api/health.json</loc>
   </url>
   <url>
@@ -59,6 +68,12 @@
   </url>
   <url>
     <loc>https://liberty-amber.vercel.app/llms.txt</loc>
+  </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/llms-full.txt</loc>
+  </url>
+  <url>
+    <loc>https://liberty-amber.vercel.app/security.txt</loc>
   </url>
   <url>
     <loc>https://liberty-amber.vercel.app/settlement.openapi.json</loc>

@@ -1,0 +1,105 @@
+# Liberty
+
+> Agent Settlement — escrow and credits for agent jobs. Demo only. Not real money.
+
+The human demo stores payer credits and jobs in the browser (`localStorage`) and a separate agent wallet (`liberty.agent-settlement.agent-credits.v0`). Before fund, release, or dispute it POSTs `/api/v0/quote` (dry-run of the fee/payout cut), then POSTs create / fund / submit / release / dispute to `/api/v0/transition` — the same engine adapters use. Optional `client_ref` (max 128) on create stamps the adapter’s correlation id on the job and receipt. Optional `callback_url` (`notify_url` alias, max 512, https) is stamped the same way — Liberty never HTTP-fetches or calls it. Optional `expires_at` (ISO-8601 UTC) or `ttl_seconds` (positive integer) on fund stamps `expiresAt`. If both are sent, Liberty rejects as conflicting. After that instant, release fails; dispute still refunds. The human UI can send the same optional hold expiry on fund and on the one-click simulate walk. Optional `proof_note` on submit (max 400) and `release_note` / `dispute_reason` (max 400) land on the job and terminal receipt. A successful release credits the agent wallet by `agent_credits_delta` (same as `agent_payout`). Dispute refunds the payer and does not credit the agent. One click can POST `/api/v0/simulate` to walk create → fund → submit → release|dispute in one request. A successful release or dispute keeps the JSON receipt in this browser so you can download or share proof (JSON / NDJSON). `POST /api/v0/verify` checks that receipt (or a proposed release/dispute) against the same fee engine. Clients hold state; Liberty does not persist jobs, receipts, or balances or take custody. Optional `Idempotency-Key` (or body `idempotency_key`) on quote, transition, and simulate makes create ids stable for retries; Liberty does not replay stored responses. Share a job across browsers with a handoff link (`#handoff/h1.…` base64url JSON). Share a terminal receipt with a receipt link (`#receipt/r1.…` base64url JSON) so another device can inspect or verify without pasting JSON. The Settlement ledger (`/#ledger`) sums this browser’s stored receipts (fees paid, agent payouts, disputed returns) and can download them as CSV. Liberty does not persist that ledger. The activity log (`/#activity`) appends local demo actions in this browser. Liberty never receives that log. Come back later or move devices with a demo pack (`/#demo-pack`) — one client-held JSON file of Settlement localStorage. Import replaces; Liberty never receives the pack. The file may include the raw demo API key if one is stored. Credits stay in each browser. Optional demo API key: mint on `/`, send `Authorization: Bearer <key>` or `X-Liberty-Key`. If sent, response/receipt include `key_id` (hash prefix only). If omitted, the route notes `key_optional` and still works. Not production auth. No payments, no claimed user counts.
+
+This file is the fuller machine-readable brief ([llms.txt](https://llmstxt.org/) companion). The short index is `/llms.txt`. Human protocol: `/SETTLEMENT.md`. Live demo: https://liberty-amber.vercel.app
+
+## Honest facts
+
+- `mode`: demo. `money`: false. `persistence`: false.
+- Scoreboard zeros (`GET /api/scoreboard.json`): `external_users` 0, `paid_pilots` 0, `revenue_usd` 0. Listings are not users. Zeros stay zeros.
+- Not an A2A Agent Card. Not a ChatGPT plugin. Not an MCP server.
+- Not live escrow. Not production auth. No SOC 2. No KYC. No real custody.
+- One Settlement agent on this origin. `/.well-known/agents.json` does not invent extra agents.
+
+## Settlement rails
+
+Credits are integers ≥ 1. Simulated. `money` is always false.
+
+States: `open` → `funded` → `submitted` → `released` **or** `disputed`.
+
+| Action | From | To | Effect |
+| --- | --- | --- | --- |
+| create | — | open | Job exists. Credits unchanged. Requires title, amount, success criteria. Optional `client_ref` (max 128). Optional `callback_url` / `notify_url` (max 512, https). Liberty never HTTP-fetches the callback. |
+| fund | open | funded | Deduct `amount` from payer credits; hold in escrow. Fails if balance is short. Optional `expires_at` (ISO-8601 UTC) or `ttl_seconds` (positive integer) stamps `expiresAt`. Both together are rejected. |
+| submit | funded | submitted | Attach a proof URL. Optional `proof_note` (max 400). Escrow stays held. |
+| release | submitted | released | Terminal. Fee is 5% of amount, rounded `Math.round(amount * 0.05)`. Agent payout is `amount - fee`. Optional `release_note`. After `expiresAt`, release fails (`hold_expired`). |
+| dispute | submitted | disputed | Terminal. No release fee. Escrow returns to the payer. Agent is not credited. Optional `dispute_reason`. Allowed after `expiresAt`. |
+
+Top-up and fund have no extra fee.
+
+## Callable endpoints
+
+- [Validate](/api/v0/validate): `POST` dry-check of the same engine and JSON Schema (no apply, no persist, no job id). Schema: `/api/schemas/transition.json`
+- [Quote](/api/v0/quote): `POST` dry-run of the same engine (no state change; create has no durable id; Idempotency-Key echoed only). A quote is not an invoice and not proof of payment. Schema: `/api/schemas/quote.json`
+- [Transition](/api/v0/transition): `POST` one action (create / fund / submit / release / dispute). Client holds the job. Optional Idempotency-Key stabilizes create ids. Schema: `/api/schemas/transition.json`
+- [Simulate](/api/v0/simulate): `POST` one-shot create → fund → submit → release|dispute. Create assigns a real `as_` id. Still not stored. Schema: `/api/schemas/simulate.json`
+- [Verify](/api/v0/verify): `POST` recompute fee math for a receipt or proposed release/dispute. A wrong fee is 200 with `valid: false`. A verify is not custody. Schema: `/api/schemas/verify.json`
+
+CORS is open for `POST` and `OPTIONS`. Demo API key is optional. Liberty does not persist. Liberty does not move real money.
+
+## Discovery
+
+- [agents.json](/.well-known/agents.json): list wrapper for the one Settlement agent (same JSON at `/api/agents.json`). Does not invent extra agents
+- [Discovery card](/.well-known/agent.json): small honest card (`mode: demo`, `money: false`). Same JSON as `/api/agent.json`. Not an A2A Agent Card. Not a ChatGPT plugin
+- [Health](/api/health.json): service, demo mode, `money: false`
+- [Settlement](/api/settlement.json): states, fees, job and receipt fields, client-held receipt export, shareable receipt links, verify, client-held agent wallet
+- [Tools](/api/tools.json): callable Settlement surfaces (validate, quote, transition, simulate, verify) plus read-only discovery URLs. Not an MCP server
+- [Quickstart](/api/quickstart.json): ordered ready-to-run demo escrow walk (health/discovery → quote → fund → prove → release; dispute optional). Same walk as `/#integrate`
+- [Examples](/api/examples.json): copy-ready request bodies (same curls as `/#adapters`)
+- [Templates](/api/templates.json): preset create-job fields (same buttons as `/#create`; fill only, no auto-create or fund)
+- [What's new](/api/changelog.json): recent shipped slices (newest first; dates and titles only; no user counts or revenue)
+- [Scoreboard](/api/scoreboard.json): honest zeros (`external_users`, `paid_pilots`, `revenue_usd`) plus curated listing URLs. Listings are not users
+- [Fees](/api/fees.json): demo fee schedule (release 5% rounded, dispute no release fee, top-up/fund none)
+- [Transition schema](/api/schemas/transition.json): JSON Schema (2020-12) for `POST /api/v0/transition` bodies
+- [Quote schema](/api/schemas/quote.json): JSON Schema (2020-12) for `POST /api/v0/quote` bodies. Dry-run only. A quote is not an invoice
+- [Simulate schema](/api/schemas/simulate.json): JSON Schema (2020-12) for `POST /api/v0/simulate` bodies
+- [Verify schema](/api/schemas/verify.json): JSON Schema (2020-12) for `POST /api/v0/verify` bodies. A verify is not custody
+- [Receipt schema](/api/schemas/receipt.json): JSON Schema (2020-12) for shareable terminal receipts (`#receipt/r1.…`). Receipts are not proof of payment
+- [Handoff schema](/api/schemas/handoff.json): JSON Schema (2020-12) for shareable job handoffs (`#handoff/h1.…`). Handoffs are not custody transfers
+- [Errors](/api/errors.json): live Settlement error codes (schema vs state, including `hold_expired`)
+- [OpenAPI 3.1](/settlement.openapi.json): same JSON at `/openapi.json` and `/api/openapi.json`
+- [SETTLEMENT.md](/SETTLEMENT.md): markdown for humans
+- [llms.txt](/llms.txt): short pointer
+- [security.txt](/security.txt): RFC 9116 contact (same file at `/.well-known/security.txt`)
+- [robots.txt](/robots.txt): crawler allow list
+- [sitemap.xml](/sitemap.xml): same discovery URLs (hash UI states are `/` once)
+
+## Quickstart
+
+`GET /api/quickstart.json` is the ordered ready-to-run walk: health → discovery → quote → create → fund → submit → release (dispute optional). Human copy: `/#integrate`. Client-held. Liberty does not move real money.
+
+Sample create (demo credits only):
+
+```
+curl -X POST https://liberty-amber.vercel.app/api/v0/transition \
+  -H 'content-type: application/json' \
+  -d '{"action":"create","title":"Summarize filings","amount":100,"criteria":"Three-bullet brief"}'
+```
+
+Sample one-shot simulate:
+
+```
+curl -X POST https://liberty-amber.vercel.app/api/v0/simulate \
+  -H 'content-type: application/json' \
+  -d '{"title":"Summarize filings","amount":100,"criteria":"Three-bullet brief","payer_credits":100,"proof_url":"https://example.com/proof","terminal":"release"}'
+```
+
+## Client-held state
+
+| Key | Contents |
+| --- | --- |
+| `liberty.agent-settlement.v0` | Payer `{ credits, jobs }` |
+| `liberty.agent-settlement.agent-credits.v0` | Agent `{ credits }` |
+| `liberty.agent-settlement.receipts.v0` | Terminal receipts |
+| `liberty.agent-settlement.demo-key.v0` | Raw demo API key, only if minted in this browser |
+| `liberty.agent-settlement.activity.v0` | Local demo action log |
+
+Share a job with `#handoff/h1.…` and a receipt with `#receipt/r1.…`. Come back later with a demo pack on `/#demo-pack` (import replaces; Liberty never receives the pack). `/#ledger` sums this browser’s stored receipts. `/#activity` lists local demo actions. Liberty never receives that state.
+
+## Optional
+
+- [GitHub](https://github.com/masterpuzzle38/liberty): source
+- [Short index](/llms.txt): same facts, fewer tokens

@@ -196,6 +196,26 @@
       "purpose": "Discovery card (mode: demo, money: false). Same JSON at both paths."
     },
     {
+      "id": "agents",
+      "method": "GET",
+      "path": "/.well-known/agents.json",
+      "alias": "/api/agents.json",
+      "purpose": "List wrapper for the one Settlement agent. Points at /.well-known/agent.json. Does not invent extra agents."
+    },
+    {
+      "id": "llms_full",
+      "method": "GET",
+      "path": "/llms-full.txt",
+      "purpose": "Fuller machine-readable Settlement brief (rails, endpoints, schemas, honest zeros)."
+    },
+    {
+      "id": "security",
+      "method": "GET",
+      "path": "/.well-known/security.txt",
+      "alias": "/security.txt",
+      "purpose": "RFC 9116 security contact (public GitHub Issues). Demo only. No SOC 2."
+    },
+    {
       "id": "openapi",
       "method": "GET",
       "path": "/settlement.openapi.json",

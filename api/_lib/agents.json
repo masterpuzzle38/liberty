@@ -1,0 +1,130 @@
+{
+  "service": "liberty-agent-settlement",
+  "kind": "liberty-agent-settlement-agents",
+  "version": "0",
+  "mode": "demo",
+  "money": false,
+  "persistence": false,
+  "title": "Agent Settlement",
+  "name": "Liberty Agent Settlement",
+  "description": "Escrow and credits for agent jobs. Demo only. Not real money. Clients hold jobs, receipts, and balances. Liberty does not persist or take custody.",
+  "origin": "https://liberty-amber.vercel.app",
+  "base_url": "https://liberty-amber.vercel.app",
+  "human": "/",
+  "well_known": "/.well-known/agents.json",
+  "path": "/.well-known/agents.json",
+  "alias": "/api/agents.json",
+  "card": "/.well-known/agent.json",
+  "card_alias": "/api/agent.json",
+  "not": ["a2a-agent-card", "openai-ai-plugin", "mcp-server"],
+  "agents": [
+    {
+      "id": "liberty-agent-settlement",
+      "title": "Agent Settlement",
+      "mode": "demo",
+      "money": false,
+      "persistence": false,
+      "card": "/.well-known/agent.json",
+      "card_alias": "/api/agent.json",
+      "human": "/",
+      "tools": "/api/tools.json",
+      "quickstart": "/api/quickstart.json",
+      "openapi": "/settlement.openapi.json",
+      "note": "The only Settlement agent on this origin. Not a second product. Not an A2A Agent Card."
+    }
+  ],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v0/validate",
+      "schema": "/api/schemas/transition.json",
+      "purpose": "Dry-check a transition body. No apply, no persist, no job id."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v0/quote",
+      "schema": "/api/schemas/quote.json",
+      "purpose": "Dry-run of the transition engine. No state change. A quote is not an invoice."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v0/transition",
+      "schema": "/api/schemas/transition.json",
+      "purpose": "Apply one create / fund / submit / release / dispute. Client holds the job."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v0/simulate",
+      "schema": "/api/schemas/simulate.json",
+      "purpose": "One-shot create → fund → submit → release|dispute."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v0/verify",
+      "schema": "/api/schemas/verify.json",
+      "purpose": "Recompute fee math for a receipt or proposed release/dispute. A verify is not custody."
+    },
+    {
+      "method": "GET",
+      "path": "/.well-known/agent.json",
+      "alias": "/api/agent.json",
+      "purpose": "Small honest discovery card (mode: demo, money: false)."
+    },
+    {
+      "method": "GET",
+      "path": "/api/health.json",
+      "purpose": "Service, demo mode, money: false."
+    },
+    {
+      "method": "GET",
+      "path": "/api/settlement.json",
+      "purpose": "Protocol: states, fees, job and receipt fields."
+    },
+    {
+      "method": "GET",
+      "path": "/api/tools.json",
+      "purpose": "Callable Settlement surfaces plus read-only discovery URLs. Not an MCP server."
+    },
+    {
+      "method": "GET",
+      "path": "/api/quickstart.json",
+      "purpose": "Ordered ready-to-run demo escrow walk."
+    },
+    {
+      "method": "GET",
+      "path": "/api/scoreboard.json",
+      "purpose": "Honest zeros (external_users, paid_pilots, revenue_usd) plus curated listing URLs. Listings are not users."
+    }
+  ],
+  "workflows": [
+    {
+      "id": "demo-escrow",
+      "title": "Demo escrow walk",
+      "path": "/api/quickstart.json",
+      "human": "/#integrate",
+      "steps": ["health", "discovery", "quote", "create", "fund", "submit", "release"],
+      "optional": ["dispute"],
+      "note": "Client-held. Liberty does not move real money."
+    }
+  ],
+  "discovery": {
+    "agent": "/.well-known/agent.json",
+    "agent_alias": "/api/agent.json",
+    "llms": "/llms.txt",
+    "llms_full": "/llms-full.txt",
+    "security": "/.well-known/security.txt",
+    "security_alias": "/security.txt",
+    "markdown": "/SETTLEMENT.md",
+    "robots": "/robots.txt",
+    "sitemap": "/sitemap.xml",
+    "openapi": "/settlement.openapi.json"
+  },
+  "scoreboard": {
+    "path": "/api/scoreboard.json",
+    "external_users": 0,
+    "paid_pilots": 0,
+    "revenue_usd": 0,
+    "note": "Zeros stay zeros. Listings are not users."
+  },
+  "note": "List wrapper for crawlers that look for /.well-known/agents.json. Points at the existing Settlement discovery card — it does not invent a second agent. Same JSON at /api/agents.json. Not an A2A Agent Card, not a ChatGPT plugin, and not an MCP server. Demo only. money is always false. No payments. No claimed user counts."
+}
